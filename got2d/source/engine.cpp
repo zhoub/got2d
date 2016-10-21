@@ -1,6 +1,5 @@
 #include "engine.h"
 
-
 g2d::Engine::~Engine() { }
 
 g2d::Engine* g2d::CreateEngine(const EngineConfig& config)
@@ -14,8 +13,9 @@ g2d::Engine* g2d::CreateEngine(const EngineConfig& config)
 			{
 				break;
 			}
+			
 			return rst;
-		} while (0);
+		} while (false);
 		delete rst;
 	}
 	return nullptr;
@@ -25,6 +25,7 @@ bool Engine::Update(unsigned long elapsedTime)
 {
 	//render
 	m_renderSystem.Clear();
+	m_renderSystem.Render();
 	m_renderSystem.Present();
 	return true;
 }

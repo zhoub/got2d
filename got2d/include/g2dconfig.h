@@ -6,3 +6,6 @@
 #define G2DAPI __declspec(dllimport)
 #endif
 
+#ifndef SR
+#define SR(x) if(x){ x->Release(); x=nullptr;}
+#endif

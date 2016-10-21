@@ -1,4 +1,121 @@
 #include "render_system.h"
+#include <d3dcompiler.h>
+#pragma comment(lib,"d3dcompiler.lib")
+#include <string>
+namespace
+{
+	const std::string vsCode = R"(
+		struct GeometryVertex
+		{
+			float2 position : POSITION;
+			float2 texcoord : TEXCOORD0;
+			float4 vtxcolor : COLOR;
+		};
+		struct VertexOutput
+		{
+			float4 position : SV_POSITION;
+			float2 texcoord : TEXCOORD0;
+			float4 vtxcolor : COLOR;
+		};
+		VertexOutput VSMain(GeometryVertex input)
+		{
+			VertexOutput output;
+			output.position = float4(input.position, 0, 1);
+			output.texcoord = input.texcoord;
+			output.vtxcolor = input.vtxcolor;
+			return output;
+		}
+	)";
+
+	const std::string psCode = R"(
+		struct VertexInput
+		{
+			float4 position : SV_POSITION;
+			float2 texcoord : TEXCOORD0;
+			float4 vtxcolor : COLOR;
+		};
+		float4 PSMain(VertexInput input):SV_TARGET
+		{
+			return input.vtxcolor;
+		}
+	)";
+}
+
+bool Geometry::Create(ID3D11Device* device, unsigned int vertexCount, unsigned int indexCount)
+{
+	if (vertexCount == 0 || indexCount == 0)
+		return false;
+
+	m_vertexCount = vertexCount;
+	m_indexCount = indexCount;
+
+	do
+	{
+		D3D11_BUFFER_DESC bufferDesc =
+		{
+			sizeof(g2d::GeometryVertex) * m_vertexCount,//UINT ByteWidth;
+			D3D11_USAGE_DYNAMIC,						//D3D11_USAGE Usage;
+			D3D11_BIND_VERTEX_BUFFER,					//UINT BindFlags;
+			D3D11_CPU_ACCESS_WRITE,						//UINT CPUAccessFlags;
+			0,											//UINT MiscFlags;
+			0											//UINT StructureByteStride;
+		};
+
+		if (S_OK != device->CreateBuffer(&bufferDesc, NULL, &m_vertexBuffer))
+		{
+			break;
+		}
+
+		bufferDesc.ByteWidth = sizeof(unsigned int) * m_indexCount;
+		bufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
+
+		if (S_OK != device->CreateBuffer(&bufferDesc, NULL, &m_indexBuffer))
+		{
+			break;
+		}
+
+		return true;
+	} while (false);
+	Destroy();
+	return false;
+}
+
+void Geometry::UploadVertices(ID3D11DeviceContext* ctx, g2d::GeometryVertex* vertices)
+{
+	if (vertices == nullptr || m_vertexBuffer == nullptr)
+	{
+		return;
+	}
+
+	D3D11_MAPPED_SUBRESOURCE mappedResource;
+	if (S_OK == ctx->Map(m_vertexBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource))
+	{
+		memcpy(mappedResource.pData, vertices, sizeof(g2d::GeometryVertex) * m_vertexCount);
+		ctx->Unmap(m_vertexBuffer, 0);
+	}
+}
+void Geometry::UploadIndices(ID3D11DeviceContext* ctx, unsigned int* indices)
+{
+	if (indices == nullptr || m_indexBuffer == nullptr)
+	{
+		return;
+	}
+
+	D3D11_MAPPED_SUBRESOURCE mappedResource;
+	if (S_OK == ctx->Map(m_indexBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource))
+	{
+		memcpy(mappedResource.pData, indices, sizeof(unsigned int) * m_indexCount);
+		ctx->Unmap(m_indexBuffer, 0);
+	}
+}
+
+void Geometry::Destroy()
+{
+	SR(m_vertexBuffer);
+	SR(m_indexBuffer);
+	m_vertexCount = 0;
+	m_indexCount = 0;
+}
 
 RenderSystem::RenderSystem() :m_bkColor(gml::color4::blue())
 {
@@ -9,21 +126,9 @@ bool RenderSystem::OnResize(int width, int height)
 	//though we create an individual render target
 	//we do not use it for rendering, for now.
 	//it will be used after Compositor System finished.
-	if (m_colorTexture)
-	{
-		m_colorTexture->Release();
-		m_colorTexture = nullptr;
-	}
-	if (m_rtView)
-	{
-		m_rtView->Release();
-		m_rtView = nullptr;
-	}
-	if (m_bbView)
-	{
-		m_bbView->Release();
-		m_bbView = nullptr;
-	}
+	SR(m_colorTexture);
+	SR(m_rtView);
+	SR(m_bbView);
 
 	//CreateRenderTarget and Views.
 	D3D11_TEXTURE2D_DESC colorTexDesc;
@@ -63,11 +168,9 @@ bool RenderSystem::OnResize(int width, int height)
 
 bool RenderSystem::Create(void* nativeWindow)
 {
-	HWND hWnd = reinterpret_cast<HWND>(nativeWindow);
 	int windowWidth = 0;
 	int windowHeight = 0;
 
-	IDXGIFactory1* factory = nullptr;
 	do
 	{
 		//Create Device
@@ -81,6 +184,7 @@ bool RenderSystem::Create(void* nativeWindow)
 		}
 
 		//CreateSwapChain
+		IDXGIFactory1* factory = nullptr;
 		if (S_OK != ::CreateDXGIFactory1(__uuidof(IDXGIFactory1), reinterpret_cast<void**>(&factory)))
 		{
 			break;
@@ -105,11 +209,12 @@ bool RenderSystem::Create(void* nativeWindow)
 		scDesc.SampleDesc.Quality = 0;
 		scDesc.Flags = 0;
 
-		if (S_OK != factory->CreateSwapChain(m_d3dDevice, &scDesc, &m_swapChain))
+		auto ret = factory->CreateSwapChain(m_d3dDevice, &scDesc, &m_swapChain);
+		factory->Release();
+		if (S_OK != ret)
 		{
 			break;
 		}
-		factory->Release();
 
 		m_swapChain->GetDesc(&scDesc);
 		windowWidth = scDesc.BufferDesc.Width;
@@ -133,15 +238,128 @@ bool RenderSystem::Create(void* nativeWindow)
 		//m_d3dContext->OMSetRenderTargets(1, &m_rtView, nullptr);
 		m_d3dContext->OMSetRenderTargets(1, &m_bbView, nullptr);
 		m_d3dContext->RSSetViewports(1, &m_viewport);
-		Clear();
 
+		g2d::GeometryVertex vertices[4];
+		vertices[0].position.set(-0.5f, -0.5f);
+		vertices[1].position.set(-0.5f, +0.5f);
+		vertices[2].position.set(+0.5f, +0.5f);
+		vertices[3].position.set(+0.5f, -0.5f);
+
+		vertices[0].vtxcolor = gml::color4::red();
+		vertices[1].vtxcolor = gml::color4::red();
+		vertices[2].vtxcolor = gml::color4::red();
+		vertices[3].vtxcolor = gml::color4::red();
+
+		unsigned int indices[] = { 0, 1, 2, 0, 2, 3 };
+		m_geometry.Create(m_d3dDevice, 4, 6);
+		m_geometry.UploadVertices(m_d3dContext, vertices);
+		m_geometry.UploadIndices(m_d3dContext, indices);
+
+		//compile shader
+		ID3DBlob* vsBlob = nullptr;
+		ID3DBlob* vsError = nullptr;
+		ret = D3DCompile(
+			vsCode.c_str(),
+			vsCode.length() + 1,
+			NULL,
+			NULL,
+			NULL,
+			"VSMain",
+			"vs_5_0",
+			0,
+			0,
+			&vsBlob,
+			&vsError);
+
+		if (S_OK != ret)
+		{
+			if (vsError)
+			{
+				std::string error = (const char*)vsError->GetBufferPointer();
+				vsError->Release();
+			}
+			break;
+		}
+
+		//vetex shader
+		ret = m_d3dDevice->CreateVertexShader(
+			vsBlob->GetBufferPointer(),
+			vsBlob->GetBufferSize(),
+			NULL,
+			&m_vertexShader);
+
+		if (S_OK != ret)
+		{
+			break;
+		}
+
+		D3D11_INPUT_ELEMENT_DESC layoutDesc[3];
+		layoutDesc[0].SemanticName = "POSITION";
+		layoutDesc[0].SemanticIndex = 0;
+		layoutDesc[0].Format = DXGI_FORMAT_R32G32_FLOAT;
+		layoutDesc[0].InputSlot = 0;
+		layoutDesc[0].AlignedByteOffset = 0;
+		layoutDesc[0].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
+		layoutDesc[0].InstanceDataStepRate = 0;
+
+		layoutDesc[1].SemanticName = "TEXCOORD";
+		layoutDesc[1].SemanticIndex = 0;
+		layoutDesc[1].Format = DXGI_FORMAT_R32G32_FLOAT;
+		layoutDesc[1].InputSlot = 0;
+		layoutDesc[1].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
+		layoutDesc[1].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
+		layoutDesc[1].InstanceDataStepRate = 0;
+
+		layoutDesc[2].SemanticName = "COLOR";
+		layoutDesc[2].SemanticIndex = 0;
+		layoutDesc[2].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+		layoutDesc[2].InputSlot = 0;
+		layoutDesc[2].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
+		layoutDesc[2].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
+		layoutDesc[2].InstanceDataStepRate = 0;
+
+		ret = m_d3dDevice->CreateInputLayout(layoutDesc, sizeof(layoutDesc) / sizeof(layoutDesc[0]), vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), &m_shaderLayout);
+		SR(vsBlob);
+		if (S_OK != ret)
+		{
+			break;
+		}
+
+		ID3DBlob* psBlob = nullptr;
+		ID3DBlob* psError = nullptr;
+		ret = D3DCompile(
+			psCode.c_str(),
+			psCode.length() + 1,
+			NULL,
+			NULL,
+			NULL,
+			"PSMain",
+			"ps_5_0",
+			0,
+			0,
+			&psBlob,
+			&psError);
+
+		if (S_OK != ret)
+		{
+			if (psError)
+			{
+				std::string errorString = (const char*)psError->GetBufferPointer();
+				psError->Release();
+			}
+			break;
+		}
+
+		ret = m_d3dDevice->CreatePixelShader(psBlob->GetBufferPointer(), psBlob->GetBufferSize(), NULL, &m_pixelShader);
+		SR(psBlob);
+		if (S_OK != ret)
+		{
+			return false;
+		}
 		return true;
-	} while (0);
+	} while (false);
 
-	if (factory)
-	{
-		factory->Release();
-	}
+
 	Destroy();
 
 	return false;
@@ -149,39 +367,15 @@ bool RenderSystem::Create(void* nativeWindow)
 
 void RenderSystem::Destroy()
 {
-
-	if (m_colorTexture)
-	{
-		m_colorTexture->Release();
-		m_colorTexture = nullptr;
-	}
-	if (m_rtView)
-	{
-		m_rtView->Release();
-		m_rtView = nullptr;
-	}
-	if (m_bbView)
-	{
-		m_bbView->Release();
-		m_bbView = nullptr;
-	}
-
-	if (m_d3dDevice)
-	{
-		m_d3dDevice->Release();
-		m_d3dDevice = nullptr;
-	}
-
-	if (m_d3dContext)
-	{
-		m_d3dContext->Release();
-		m_d3dContext = nullptr;
-	}
-	if (m_swapChain)
-	{
-		m_swapChain->Release();
-		m_swapChain = 0;
-	}
+	SR(m_vertexShader);
+	SR(m_pixelShader);
+	SR(m_shaderLayout);
+	SR(m_colorTexture);
+	SR(m_rtView);
+	SR(m_bbView);
+	SR(m_d3dDevice);
+	SR(m_d3dContext);
+	SR(m_swapChain);
 }
 
 void RenderSystem::Clear()
@@ -192,4 +386,19 @@ void RenderSystem::Clear()
 void RenderSystem::Present()
 {
 	m_swapChain->Present(0, 0);
+}
+
+void RenderSystem::Render()
+{
+	auto stride = sizeof(g2d::GeometryVertex);
+	unsigned int offset = 0;
+	m_d3dContext->IASetVertexBuffers(0, 1, &(m_geometry.m_vertexBuffer), &stride, &offset);
+	m_d3dContext->IASetIndexBuffer(m_geometry.m_indexBuffer, DXGI_FORMAT_R32_UINT, 0);
+	m_d3dContext->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+	m_d3dContext->IASetInputLayout(m_shaderLayout);
+	m_d3dContext->VSSetShader(m_vertexShader, NULL, 0);
+	m_d3dContext->PSSetShader(m_pixelShader, NULL, 0);
+
+	m_d3dContext->DrawIndexed(6, 0, 0);
 }

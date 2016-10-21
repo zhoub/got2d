@@ -27,6 +27,9 @@
     <ClInclude Include="source\render_system.h">
       <Filter>源文件</Filter>
     </ClInclude>
+    <ClInclude Include="include\g2drender.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="source\engine.cpp">

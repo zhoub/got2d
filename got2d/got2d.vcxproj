@@ -168,6 +168,7 @@
   <ItemGroup>
     <ClInclude Include="include\g2dconfig.h" />
     <ClInclude Include="include\g2dengine.h" />
+    <ClInclude Include="include\g2drender.h" />
     <ClInclude Include="source\engine.h" />
     <ClInclude Include="source\render_system.h" />
   </ItemGroup>
