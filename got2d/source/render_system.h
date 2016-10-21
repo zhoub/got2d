@@ -23,6 +23,21 @@ public:
 	unsigned int m_indexCount = 0;
 };
 
+class Shader
+{
+public:
+	bool Create(ID3D11Device* device, const char* vsCode, const char* psCode);
+	void Destroy();
+
+	ID3D11VertexShader* GetVertexShader();
+	ID3D11PixelShader* GetPixelShader();
+	ID3D11InputLayout* GetInputLayout();
+private:
+	ID3D11VertexShader* m_vertexShader = nullptr;
+	ID3D11PixelShader* m_pixelShader = nullptr;
+	ID3D11InputLayout* m_shaderLayout = nullptr;
+};
+
 class RenderSystem
 {
 public:
@@ -49,7 +64,6 @@ private:
 
 
 	Geometry m_geometry;
-	ID3D11VertexShader* m_vertexShader;
-	ID3D11PixelShader* m_pixelShader;
-	ID3D11InputLayout* m_shaderLayout;
+
+	Shader m_shader;
 };

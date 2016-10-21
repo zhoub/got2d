@@ -175,6 +175,7 @@
   <ItemGroup>
     <ClCompile Include="source\engine.cpp" />
     <ClCompile Include="source\render_system.cpp" />
+    <ClCompile Include="source\shader.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

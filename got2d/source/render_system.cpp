@@ -1,6 +1,5 @@
 #include "render_system.h"
-#include <d3dcompiler.h>
-#pragma comment(lib,"d3dcompiler.lib")
+
 #include <string>
 namespace
 {
@@ -255,106 +254,9 @@ bool RenderSystem::Create(void* nativeWindow)
 		m_geometry.UploadVertices(m_d3dContext, vertices);
 		m_geometry.UploadIndices(m_d3dContext, indices);
 
-		//compile shader
-		ID3DBlob* vsBlob = nullptr;
-		ID3DBlob* vsError = nullptr;
-		ret = D3DCompile(
-			vsCode.c_str(),
-			vsCode.length() + 1,
-			NULL,
-			NULL,
-			NULL,
-			"VSMain",
-			"vs_5_0",
-			0,
-			0,
-			&vsBlob,
-			&vsError);
-
-		if (S_OK != ret)
-		{
-			if (vsError)
-			{
-				std::string error = (const char*)vsError->GetBufferPointer();
-				vsError->Release();
-			}
-			break;
-		}
-
-		//vetex shader
-		ret = m_d3dDevice->CreateVertexShader(
-			vsBlob->GetBufferPointer(),
-			vsBlob->GetBufferSize(),
-			NULL,
-			&m_vertexShader);
-
-		if (S_OK != ret)
+		if (!m_shader.Create(m_d3dDevice, vsCode.c_str(), psCode.c_str()))
 		{
 			break;
-		}
-
-		D3D11_INPUT_ELEMENT_DESC layoutDesc[3];
-		layoutDesc[0].SemanticName = "POSITION";
-		layoutDesc[0].SemanticIndex = 0;
-		layoutDesc[0].Format = DXGI_FORMAT_R32G32_FLOAT;
-		layoutDesc[0].InputSlot = 0;
-		layoutDesc[0].AlignedByteOffset = 0;
-		layoutDesc[0].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
-		layoutDesc[0].InstanceDataStepRate = 0;
-
-		layoutDesc[1].SemanticName = "TEXCOORD";
-		layoutDesc[1].SemanticIndex = 0;
-		layoutDesc[1].Format = DXGI_FORMAT_R32G32_FLOAT;
-		layoutDesc[1].InputSlot = 0;
-		layoutDesc[1].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
-		layoutDesc[1].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
-		layoutDesc[1].InstanceDataStepRate = 0;
-
-		layoutDesc[2].SemanticName = "COLOR";
-		layoutDesc[2].SemanticIndex = 0;
-		layoutDesc[2].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-		layoutDesc[2].InputSlot = 0;
-		layoutDesc[2].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
-		layoutDesc[2].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
-		layoutDesc[2].InstanceDataStepRate = 0;
-
-		ret = m_d3dDevice->CreateInputLayout(layoutDesc, sizeof(layoutDesc) / sizeof(layoutDesc[0]), vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(), &m_shaderLayout);
-		SR(vsBlob);
-		if (S_OK != ret)
-		{
-			break;
-		}
-
-		ID3DBlob* psBlob = nullptr;
-		ID3DBlob* psError = nullptr;
-		ret = D3DCompile(
-			psCode.c_str(),
-			psCode.length() + 1,
-			NULL,
-			NULL,
-			NULL,
-			"PSMain",
-			"ps_5_0",
-			0,
-			0,
-			&psBlob,
-			&psError);
-
-		if (S_OK != ret)
-		{
-			if (psError)
-			{
-				std::string errorString = (const char*)psError->GetBufferPointer();
-				psError->Release();
-			}
-			break;
-		}
-
-		ret = m_d3dDevice->CreatePixelShader(psBlob->GetBufferPointer(), psBlob->GetBufferSize(), NULL, &m_pixelShader);
-		SR(psBlob);
-		if (S_OK != ret)
-		{
-			return false;
 		}
 		return true;
 	} while (false);
@@ -367,9 +269,7 @@ bool RenderSystem::Create(void* nativeWindow)
 
 void RenderSystem::Destroy()
 {
-	SR(m_vertexShader);
-	SR(m_pixelShader);
-	SR(m_shaderLayout);
+	m_shader.Destroy();
 	SR(m_colorTexture);
 	SR(m_rtView);
 	SR(m_bbView);
@@ -396,9 +296,9 @@ void RenderSystem::Render()
 	m_d3dContext->IASetIndexBuffer(m_geometry.m_indexBuffer, DXGI_FORMAT_R32_UINT, 0);
 	m_d3dContext->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-	m_d3dContext->IASetInputLayout(m_shaderLayout);
-	m_d3dContext->VSSetShader(m_vertexShader, NULL, 0);
-	m_d3dContext->PSSetShader(m_pixelShader, NULL, 0);
+	m_d3dContext->IASetInputLayout(m_shader.GetInputLayout());
+	m_d3dContext->VSSetShader(m_shader.GetVertexShader(), NULL, 0);
+	m_d3dContext->PSSetShader(m_shader.GetPixelShader(), NULL, 0);
 
 	m_d3dContext->DrawIndexed(6, 0, 0);
 }
