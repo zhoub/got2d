@@ -390,7 +390,7 @@ void RenderSystem::Present()
 
 void RenderSystem::Render()
 {
-	auto stride = sizeof(g2d::GeometryVertex);
+	unsigned int stride = sizeof(g2d::GeometryVertex);
 	unsigned int offset = 0;
 	m_d3dContext->IASetVertexBuffers(0, 1, &(m_geometry.m_vertexBuffer), &stride, &offset);
 	m_d3dContext->IASetIndexBuffer(m_geometry.m_indexBuffer, DXGI_FORMAT_R32_UINT, 0);
