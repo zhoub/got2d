@@ -1,0 +1,14 @@
+bin
+lib
+tmp
+ipch
+.vs
+Debug
+Release
+
+*.suo
+*.sdf
+*.opendb
+*.pch
+*.aps
+
