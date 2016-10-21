@@ -19,7 +19,9 @@ bool Testbed::InitApp()
 	m_elapsedTime = 0;
 	m_tickInterval = 1000 / 60;
 
-	m_engine = g2d::CreateEngine();
+	g2d::EngineConfig ecfg;
+	ecfg.nativeWindow = hWnd;
+	m_engine = g2d::CreateEngine(ecfg);
 	if (m_engine == nullptr)
 		return false;
 	return true;

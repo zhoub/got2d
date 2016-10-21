@@ -14,7 +14,11 @@ namespace g2d
 		virtual void Release() = 0;
 	};
 
-	extern "C" G2DAPI Engine* CreateEngine();
+	struct G2DAPI EngineConfig
+	{
+		void* nativeWindow;
+	};
+	extern "C" G2DAPI Engine* CreateEngine(const EngineConfig& config);
 }
 
 

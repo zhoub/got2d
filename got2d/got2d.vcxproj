@@ -161,9 +161,11 @@
     <ClInclude Include="include\g2dconfig.h" />
     <ClInclude Include="include\g2dengine.h" />
     <ClInclude Include="source\engine.h" />
+    <ClInclude Include="source\render_system.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="source\engine.cpp" />
+    <ClCompile Include="source\render_system.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

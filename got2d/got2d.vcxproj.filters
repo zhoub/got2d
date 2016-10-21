@@ -24,9 +24,15 @@
     <ClInclude Include="source\engine.h">
       <Filter>源文件</Filter>
     </ClInclude>
+    <ClInclude Include="source\render_system.h">
+      <Filter>源文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="source\engine.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="source\render_system.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
