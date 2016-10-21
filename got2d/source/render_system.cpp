@@ -1,5 +1,8 @@
 #include "render_system.h"
 
+RenderSystem::RenderSystem() :m_bkColor(gml::color4::blue())
+{
+}
 
 bool RenderSystem::OnResize(int width, int height)
 {
@@ -183,8 +186,7 @@ void RenderSystem::Destroy()
 
 void RenderSystem::Clear()
 {
-	float color[] = { 0.5f, 0.0f, 0.0f, 1.0f };
-	m_d3dContext->ClearRenderTargetView(m_bbView, color);
+	m_d3dContext->ClearRenderTargetView(m_bbView, static_cast<float*>(m_bkColor));
 }
 
 void RenderSystem::Present()

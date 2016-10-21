@@ -1,0 +1,3 @@
+[submodule "extern/gml"]
+	path = extern/gml
+	url = git@github:goteet/gml.git

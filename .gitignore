@@ -1,6 +1,7 @@
 bin
 lib
 tmp
+internal
 ipch
 .vs
 Debug

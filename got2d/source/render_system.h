@@ -2,12 +2,15 @@
 
 #include <windows.h>
 #include <d3d11.h>
+#include <gmlcolor.h>
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "dxgi.lib")
 
 class RenderSystem
 {
 public:
+	RenderSystem();
+
 	bool Create(void* nativeWindow);
 	bool OnResize(int width, int height);
 	void Destroy();
@@ -24,4 +27,5 @@ private:
 	ID3D11RenderTargetView* m_bbView = nullptr;
 	D3D11_VIEWPORT m_viewport;
 
+	gml::color4 m_bkColor;
 };
