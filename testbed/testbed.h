@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <windows.h>
+#include <g2dengine.h>
 
 extern HINSTANCE hInst;
 extern HWND hWnd;
@@ -23,7 +24,7 @@ protected:
 
 	virtual void Start();
 	virtual void End();
-	virtual void Update(unsigned long);
+	virtual bool Update(unsigned long);
 	
 private:
 	unsigned long m_frameCount = 0;
@@ -31,4 +32,6 @@ private:
 	unsigned long m_lastTimeStamp;
 	unsigned long m_tickInterval;
 	bool m_running = true;
+
+	g2d::Engine* m_engine;
 };

@@ -18,12 +18,21 @@ bool Testbed::InitApp()
 {
 	m_elapsedTime = 0;
 	m_tickInterval = 1000 / 60;
+
+	m_engine = g2d::CreateEngine();
+	if (m_engine == nullptr)
+		return false;
 	return true;
 }
 
 void Testbed::DestroyApp()
 {
 	End();
+	if (m_engine)
+	{
+		m_engine->Release();
+		m_engine = nullptr;
+	}
 }
 
 void Testbed::FirstTick()
@@ -35,15 +44,16 @@ void Testbed::FirstTick()
 //return false表示关闭窗口退出。
 bool Testbed::MainLoop()
 {
+	bool rst = true;
 	auto elapseTime = timeGetTime() - m_lastTimeStamp;
 	if (elapseTime > m_tickInterval)
 	{
 		m_elapsedTime += elapseTime;
 		m_lastTimeStamp = timeGetTime();
-		Update(elapseTime);
+		rst = Update(elapseTime);
 		m_frameCount++;
 	}
-	return m_running;
+	return rst;
 }
 
 void Testbed::QuitApp()
@@ -71,6 +81,7 @@ void Testbed::End()
 
 }
 
-void Testbed::Update(unsigned long elapsedTime)
+bool Testbed::Update(unsigned long elapsedTime)
 {
+	return m_engine->Update(elapsedTime);
 }
