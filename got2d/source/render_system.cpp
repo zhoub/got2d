@@ -2,7 +2,10 @@
 
 #include <string>
 
-bool Geometry::Create(ID3D11Device* device, unsigned int vertexCount, unsigned int indexCount)
+g2d::RenderSystem::~RenderSystem() { }
+RenderSystem* RenderSystem::Instance = nullptr;
+
+bool Geometry::Create(unsigned int vertexCount, unsigned int indexCount)
 {
 	if (vertexCount == 0 || indexCount == 0)
 		return false;
@@ -22,7 +25,7 @@ bool Geometry::Create(ID3D11Device* device, unsigned int vertexCount, unsigned i
 			0											//UINT StructureByteStride;
 		};
 
-		if (S_OK != device->CreateBuffer(&bufferDesc, NULL, &m_vertexBuffer))
+		if (S_OK != GetRenderSystem()->GetDevice()->CreateBuffer(&bufferDesc, NULL, &m_vertexBuffer))
 		{
 			break;
 		}
@@ -30,7 +33,7 @@ bool Geometry::Create(ID3D11Device* device, unsigned int vertexCount, unsigned i
 		bufferDesc.ByteWidth = sizeof(unsigned int) * m_indexCount;
 		bufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
 
-		if (S_OK != device->CreateBuffer(&bufferDesc, NULL, &m_indexBuffer))
+		if (S_OK != GetRenderSystem()->GetDevice()->CreateBuffer(&bufferDesc, NULL, &m_indexBuffer))
 		{
 			break;
 		}
@@ -41,7 +44,7 @@ bool Geometry::Create(ID3D11Device* device, unsigned int vertexCount, unsigned i
 	return false;
 }
 
-void Geometry::UploadVertices(ID3D11DeviceContext* ctx, g2d::GeometryVertex* vertices)
+void Geometry::UploadVertices(g2d::GeometryVertex* vertices)
 {
 	if (vertices == nullptr || m_vertexBuffer == nullptr)
 	{
@@ -49,13 +52,13 @@ void Geometry::UploadVertices(ID3D11DeviceContext* ctx, g2d::GeometryVertex* ver
 	}
 
 	D3D11_MAPPED_SUBRESOURCE mappedResource;
-	if (S_OK == ctx->Map(m_vertexBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource))
+	if (S_OK == GetRenderSystem()->GetContext()->Map(m_vertexBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource))
 	{
 		memcpy(mappedResource.pData, vertices, sizeof(g2d::GeometryVertex) * m_vertexCount);
-		ctx->Unmap(m_vertexBuffer, 0);
+		GetRenderSystem()->GetContext()->Unmap(m_vertexBuffer, 0);
 	}
 }
-void Geometry::UploadIndices(ID3D11DeviceContext* ctx, unsigned int* indices)
+void Geometry::UploadIndices(unsigned int* indices)
 {
 	if (indices == nullptr || m_indexBuffer == nullptr)
 	{
@@ -63,10 +66,10 @@ void Geometry::UploadIndices(ID3D11DeviceContext* ctx, unsigned int* indices)
 	}
 
 	D3D11_MAPPED_SUBRESOURCE mappedResource;
-	if (S_OK == ctx->Map(m_indexBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource))
+	if (S_OK == GetRenderSystem()->GetContext()->Map(m_indexBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource))
 	{
 		memcpy(mappedResource.pData, indices, sizeof(unsigned int) * m_indexCount);
-		ctx->Unmap(m_indexBuffer, 0);
+		GetRenderSystem()->GetContext()->Unmap(m_indexBuffer, 0);
 	}
 }
 
@@ -129,6 +132,11 @@ bool RenderSystem::OnResize(int width, int height)
 
 bool RenderSystem::Create(void* nativeWindow)
 {
+	if (Instance)
+	{
+		return Instance == this;
+	}
+
 	int windowWidth = 0;
 	int windowHeight = 0;
 
@@ -199,7 +207,7 @@ bool RenderSystem::Create(void* nativeWindow)
 		//m_d3dContext->OMSetRenderTargets(1, &m_rtView, nullptr);
 		m_d3dContext->OMSetRenderTargets(1, &m_bbView, nullptr);
 		m_d3dContext->RSSetViewports(1, &m_viewport);
-
+		Instance = this;
 		g2d::GeometryVertex vertices[4];
 		vertices[0].position.set(-0.5f, -0.5f);
 		vertices[1].position.set(-0.5f, +0.5f);
@@ -212,11 +220,11 @@ bool RenderSystem::Create(void* nativeWindow)
 		vertices[3].vtxcolor = gml::color4::red();
 
 		unsigned int indices[] = { 0, 1, 2, 0, 2, 3 };
-		m_geometry.Create(m_d3dDevice, 4, 6);
-		m_geometry.UploadVertices(m_d3dContext, vertices);
-		m_geometry.UploadIndices(m_d3dContext, indices);
+		m_geometry.Create(4, 6);
+		m_geometry.UploadVertices(vertices);
+		m_geometry.UploadIndices(indices);
 
-		shaderlib = new ShaderLib(m_d3dDevice);
+		shaderlib = new ShaderLib();
 		return true;
 	} while (false);
 
@@ -239,6 +247,11 @@ void RenderSystem::Destroy()
 	SR(m_d3dDevice);
 	SR(m_d3dContext);
 	SR(m_swapChain);
+
+	if (Instance == this)
+	{
+		Instance = nullptr;
+	}
 }
 
 void RenderSystem::Clear()
@@ -253,6 +266,7 @@ void RenderSystem::Present()
 
 void RenderSystem::Render()
 {
+	return;
 	auto shader = shaderlib->GetShaderByName("simple.color");
 	if (shader)
 	{
@@ -268,4 +282,42 @@ void RenderSystem::Render()
 
 		m_d3dContext->DrawIndexed(6, 0, 0);
 	}
+}
+
+g2d::Mesh* RenderSystem::CreateMesh(unsigned int vertexCount, unsigned int indexCount)
+{
+	return new Mesh(vertexCount, indexCount);
+}
+
+void RenderSystem::RenderMesh(g2d::Mesh* m)
+{
+	m_geometry.UploadVertices(m->GetRawVertices());
+	m_geometry.UploadIndices(m->GetRawIndices());
+	auto shader = shaderlib->GetShaderByName("simple.color");
+	if (shader)
+	{
+		m_d3dContext->IASetInputLayout(shader->GetInputLayout());
+		m_d3dContext->VSSetShader(shader->GetVertexShader(), NULL, 0);
+		m_d3dContext->PSSetShader(shader->GetPixelShader(), NULL, 0);
+
+		unsigned int stride = sizeof(g2d::GeometryVertex);
+		unsigned int offset = 0;
+		m_d3dContext->IASetVertexBuffers(0, 1, &(m_geometry.m_vertexBuffer), &stride, &offset);
+		m_d3dContext->IASetIndexBuffer(m_geometry.m_indexBuffer, DXGI_FORMAT_R32_UINT, 0);
+		m_d3dContext->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+		m_d3dContext->DrawIndexed(6, 0, 0);
+	}
+}
+
+void RenderSystem::BeginRender()
+{
+	//render
+	Clear();
+}
+void RenderSystem::EndRender()
+{
+
+	Render();
+	Present();
 }

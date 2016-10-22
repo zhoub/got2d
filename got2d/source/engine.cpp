@@ -2,38 +2,52 @@
 
 g2d::Engine::~Engine() { }
 
-g2d::Engine* g2d::CreateEngine(const EngineConfig& config)
+bool g2d::InitEngine(const EngineConfig& config)
 {
-	auto rst = new ::Engine();
-	if (rst)
+	auto& inst = ::Engine::Instance;
+
+	if (inst) return false;
+	inst = new ::Engine();
+	if (!inst) return false;
+
+	do
 	{
-		do
+		if (!inst->CreateRenderSystem(config.nativeWindow))
 		{
-			if (!rst->CreateRenderSystem(config.nativeWindow))
-			{
-				break;
-			}
-			
-			return rst;
-		} while (false);
-		delete rst;
+			break;
+		}
+		return true;
+	} while (false);
+
+	delete inst;
+	inst = nullptr;
+	return false;
+}
+
+void g2d::UninitEngine()
+{
+	if (::Engine::Instance)
+	{
+		delete ::Engine::Instance;
+		::Engine::Instance = nullptr;
 	}
-	return nullptr;
+}
+
+g2d::Engine* g2d::GetEngine()
+{
+	return ::Engine::Instance;
+}
+
+Engine* Engine::Instance = nullptr;
+
+Engine::~Engine()
+{
+	m_renderSystem.Destroy();
 }
 
 bool Engine::Update(unsigned long elapsedTime)
 {
-	//render
-	m_renderSystem.Clear();
-	m_renderSystem.Render();
-	m_renderSystem.Present();
 	return true;
-}
-
-void Engine::Release()
-{
-	m_renderSystem.Destroy();
-	delete this;
 }
 
 bool Engine::CreateRenderSystem(void* nativeWindow)

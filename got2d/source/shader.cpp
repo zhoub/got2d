@@ -2,7 +2,7 @@
 #include <d3dcompiler.h>
 #pragma comment(lib,"d3dcompiler.lib")
 
-bool Shader::Create(ID3D11Device* device, const char* vsCode, const char* psCode)
+bool Shader::Create(const char* vsCode, const char* psCode)
 {
 	auto vsCodeLength = strlen(vsCode) + 1;
 	auto psCodeLength = strlen(psCode) + 1;
@@ -45,7 +45,7 @@ bool Shader::Create(ID3D11Device* device, const char* vsCode, const char* psCode
 		}
 
 		// create shader
-		ret = device->CreateVertexShader(
+		ret = GetRenderSystem()->GetDevice()->CreateVertexShader(
 			vsBlob->GetBufferPointer(),
 			vsBlob->GetBufferSize(),
 			NULL,
@@ -54,7 +54,7 @@ bool Shader::Create(ID3D11Device* device, const char* vsCode, const char* psCode
 		if (S_OK != ret)
 			break;
 
-		ret = device->CreatePixelShader(
+		ret = GetRenderSystem()->GetDevice()->CreatePixelShader(
 			psBlob->GetBufferPointer(),
 			psBlob->GetBufferSize(),
 			NULL,
@@ -81,7 +81,7 @@ bool Shader::Create(ID3D11Device* device, const char* vsCode, const char* psCode
 		layoutDesc[2].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
 		layoutDesc[2].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
 
-		ret = device->CreateInputLayout(
+		ret = GetRenderSystem()->GetDevice()->CreateInputLayout(
 			layoutDesc, sizeof(layoutDesc) / sizeof(layoutDesc[0]),
 			vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(),
 			&m_shaderLayout);
@@ -253,10 +253,8 @@ class DefaultShader : public ShaderSource
 };
 
 
-ShaderLib::ShaderLib(ID3D11Device* device)
+ShaderLib::ShaderLib()
 {
-	m_device = device;
-
 	ShaderSource* p = new DefaultShader();
 	m_sources[p->GetShaderName()] = p;
 
@@ -288,7 +286,7 @@ bool ShaderLib::BuildShader(const std::string& name)
 	}
 	ShaderSource* shaderRes = m_sources[name];
 	Shader* shader = new Shader();
-	if (shader->Create(m_device, shaderRes->GetVertexShaderCode(), shaderRes->GetPixelShaderCode()))
+	if (shader->Create(shaderRes->GetVertexShaderCode(), shaderRes->GetPixelShaderCode()))
 	{
 		m_shaders[name] = shader;
 		return true;

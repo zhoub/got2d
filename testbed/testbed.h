@@ -1,10 +1,14 @@
 #pragma once
 #include <string>
 #include <windows.h>
-#include <g2dengine.h>
 
 extern HINSTANCE hInst;
 extern HWND hWnd;
+
+namespace g2d
+{
+	class Mesh;
+}
 
 class Testbed
 {
@@ -33,5 +37,5 @@ private:
 	unsigned long m_tickInterval;
 	bool m_running = true;
 
-	g2d::Engine* m_engine;
+	g2d::Mesh* m_meshs[4];
 };

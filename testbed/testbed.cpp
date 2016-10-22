@@ -1,7 +1,8 @@
 #include "stdafx.h"
 #include "testbed.h"
 #include <timeapi.h>
-#pragma comment(lib, "winmm.lib")
+#include <g2dengine.h>
+#include <g2drender.h>
 
 const std::wstring& Testbed::GetWindowClassName()
 {
@@ -21,20 +22,45 @@ bool Testbed::InitApp()
 
 	g2d::EngineConfig ecfg;
 	ecfg.nativeWindow = hWnd;
-	m_engine = g2d::CreateEngine(ecfg);
-	if (m_engine == nullptr)
+	if (!g2d::InitEngine(ecfg))
 		return false;
+
+
+
+	unsigned int indices[] = { 0, 1, 2, 0, 2, 3 };
+	for (auto& m : m_meshs)
+	{
+		m = g2d::GetEngine()->GetRenderSystem()->CreateMesh(4, 6);
+		auto idx = m->GetRawIndices();
+
+		for (int i = 0; i < 6; i++)
+		{
+			idx[i] = indices[i];
+		}
+
+		static int mi = 0;
+		g2d::GeometryVertex* vertices = m->GetRawVertices();
+		float offset = -0.5f + (mi++) * 0.2f;
+		vertices[0].position.set(-0.5f + offset, -0.5f);
+		vertices[1].position.set(-0.5f + offset, +0.5f);
+		vertices[2].position.set(-0.5f + offset + 0.1f, +0.5f);
+		vertices[3].position.set(-0.5f + offset + 0.1f, -0.5f);
+
+		vertices[0].vtxcolor = gml::color4::red();
+		vertices[1].vtxcolor = gml::color4::red();
+		vertices[2].vtxcolor = gml::color4::red();
+		vertices[3].vtxcolor = gml::color4::red();
+	}
+
+
+
 	return true;
 }
 
 void Testbed::DestroyApp()
 {
 	End();
-	if (m_engine)
-	{
-		m_engine->Release();
-		m_engine = nullptr;
-	}
+	g2d::UninitEngine();
 }
 
 void Testbed::FirstTick()
@@ -85,5 +111,15 @@ void Testbed::End()
 
 bool Testbed::Update(unsigned long elapsedTime)
 {
-	return m_engine->Update(elapsedTime);
+	if (!g2d::GetEngine()->Update(elapsedTime))
+		return false;
+
+	g2d::GetEngine()->GetRenderSystem()->BeginRender();
+	for (auto& m : m_meshs)
+	{
+		g2d::GetEngine()->GetRenderSystem()->RenderMesh(m);
+	}
+	g2d::GetEngine()->GetRenderSystem()->EndRender();
+	return true;
+
 }
