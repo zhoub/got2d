@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../include/g2drender.h"
+#include <map>
 #include <windows.h>
 #include <d3d11.h>
 #include <gmlcolor.h>
@@ -23,6 +24,16 @@ public:
 	unsigned int m_indexCount = 0;
 };
 
+class ShaderSource
+{
+public:
+	virtual const char* GetShaderName() = 0;
+	virtual const char* GetVertexShaderCode() = 0;
+	virtual const char* GetPixelShaderCode() = 0;
+};
+
+
+
 class Shader
 {
 public:
@@ -36,6 +47,20 @@ private:
 	ID3D11VertexShader* m_vertexShader = nullptr;
 	ID3D11PixelShader* m_pixelShader = nullptr;
 	ID3D11InputLayout* m_shaderLayout = nullptr;
+};
+
+class ShaderLib
+{
+public:
+	ShaderLib(ID3D11Device* device);
+	Shader* GetShaderByName(const char* name);
+
+private:
+	bool BuildShader(const std::string& name);
+	
+	std::map<std::string, ShaderSource*> m_sources;
+	std::map<std::string, Shader*> m_shaders;
+	ID3D11Device* m_device;
 };
 
 class RenderSystem
@@ -65,5 +90,5 @@ private:
 
 	Geometry m_geometry;
 
-	Shader m_shader;
+	ShaderLib* shaderlib = nullptr;
 };

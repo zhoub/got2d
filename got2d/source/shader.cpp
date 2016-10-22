@@ -109,3 +109,192 @@ void Shader::Destroy()
 ID3D11VertexShader* Shader::GetVertexShader() { return m_vertexShader; }
 ID3D11PixelShader* Shader::GetPixelShader() { return m_pixelShader; }
 ID3D11InputLayout* Shader::GetInputLayout() { return m_shaderLayout; }
+
+class SimpleColorShader : public ShaderSource
+{
+	const char* GetShaderName() override
+	{
+		return "simple.color";
+	}
+	const char* GetVertexShaderCode() override
+	{
+		return R"(
+			struct GeometryVertex
+			{
+				float2 position : POSITION;
+				float2 texcoord : TEXCOORD0;
+				float4 vtxcolor : COLOR;
+			};
+			struct VertexOutput
+			{
+				float4 position : SV_POSITION;
+				float4 vtxcolor : COLOR;
+			};
+			VertexOutput VSMain(GeometryVertex input)
+			{
+				VertexOutput output;
+				output.position = float4(input.position, 0, 1);
+				output.vtxcolor = input.vtxcolor;
+				return output;
+			}
+		)";
+	}
+	const char* GetPixelShaderCode() override
+	{
+		return R"(
+			struct VertexInput
+			{
+				float4 position : SV_POSITION;
+				float4 vtxcolor : COLOR;
+			};
+			float4 PSMain(VertexInput input):SV_TARGET
+			{
+				return input.vtxcolor;
+			}
+		)";
+	}
+};
+
+class SimpleTextureShader : public ShaderSource
+{
+	const char* GetShaderName() override
+	{
+		return "simple.texture";
+	}
+	const char* GetVertexShaderCode() override
+	{
+		return R"(
+			struct GeometryVertex
+			{
+				float2 position : POSITION;
+				float2 texcoord : TEXCOORD0;
+				float4 vtxcolor : COLOR;
+			};
+			struct VertexOutput
+			{
+				float4 position : SV_POSITION;
+				float2 texcoord : TEXCOORD0;
+			};
+			VertexOutput VSMain(GeometryVertex input)
+			{
+				VertexOutput output;
+				output.position = float4(input.position, 0, 1);
+				output.texcoord = input.texcoord;
+				return output;
+			}
+		)";
+	}
+	const char* GetPixelShaderCode() override
+	{
+		return R"(
+			Texture2D Tex;
+			SamplerState State;
+			struct VertexInput
+			{
+				float2 texcoord : TEXCOORD0;
+				float2 texcoord : TEXCOORD0;
+			};
+			float4 PSMain(VertexInput input):SV_TARGET
+			{
+				return Tex.Sample(State, input.texcoord);
+			}
+		)";
+	}
+};
+
+class DefaultShader : public ShaderSource
+{
+	const char* GetShaderName() override
+	{
+		return "default";
+	}
+	const char* GetVertexShaderCode() override
+	{
+		return R"(
+			struct GeometryVertex
+			{
+				float2 position : POSITION;
+				float2 texcoord : TEXCOORD0;
+				float4 vtxcolor : COLOR;
+			};
+			struct VertexOutput
+			{
+				float4 position : SV_POSITION;
+				float2 texcoord : TEXCOORD0;
+				float4 vtxcolor : COLOR;
+			};
+			VertexOutput VSMain(GeometryVertex input)
+			{
+				VertexOutput output;
+				output.position = float4(input.position, 0, 1);
+				output.texcoord = input.texcoord;
+				output.vtxcolor = input.vtxcolor;
+				return output;
+			}
+		)";
+	}
+	const char* GetPixelShaderCode() override
+	{
+		return R"(
+			Texture2D Tex;
+			SamplerState State;
+			struct VertexInput
+			{
+				float4 position : SV_POSITION;
+				float2 texcoord : TEXCOORD0;
+				float4 vtxcolor : COLOR;
+			};
+			float4 PSMain(VertexInput input):SV_TARGET
+			{
+				return input.vtxcolor * Tex.Sample(State, input.texcoord);
+			}
+		)";
+	}
+};
+
+
+ShaderLib::ShaderLib(ID3D11Device* device)
+{
+	m_device = device;
+
+	ShaderSource* p = new DefaultShader();
+	m_sources[p->GetShaderName()] = p;
+
+	p = new SimpleTextureShader();
+	m_sources[p->GetShaderName()] = p;
+
+	p = new SimpleColorShader();
+	m_sources[p->GetShaderName()] = p;
+}
+
+Shader* ShaderLib::GetShaderByName(const char* name)
+{
+	std::string nameStr = name;
+	if (!m_shaders.count(nameStr))
+	{
+		if (!BuildShader(nameStr))
+		{
+			return false;
+		}
+	}
+	return m_shaders[nameStr];
+}
+
+bool ShaderLib::BuildShader(const std::string& name)
+{
+	if (!m_sources.count(name))
+	{
+		return false;
+	}
+	ShaderSource* shaderRes = m_sources[name];
+	Shader* shader = new Shader();
+	if (shader->Create(m_device, shaderRes->GetVertexShaderCode(), shaderRes->GetPixelShaderCode()))
+	{
+		m_shaders[name] = shader;
+		return true;
+	}
+	delete shader;
+	m_sources.erase(name);
+
+	return false;
+}

@@ -1,44 +1,6 @@
 #include "render_system.h"
 
 #include <string>
-namespace
-{
-	const std::string vsCode = R"(
-		struct GeometryVertex
-		{
-			float2 position : POSITION;
-			float2 texcoord : TEXCOORD0;
-			float4 vtxcolor : COLOR;
-		};
-		struct VertexOutput
-		{
-			float4 position : SV_POSITION;
-			float2 texcoord : TEXCOORD0;
-			float4 vtxcolor : COLOR;
-		};
-		VertexOutput VSMain(GeometryVertex input)
-		{
-			VertexOutput output;
-			output.position = float4(input.position, 0, 1);
-			output.texcoord = input.texcoord;
-			output.vtxcolor = input.vtxcolor;
-			return output;
-		}
-	)";
-
-	const std::string psCode = R"(
-		struct VertexInput
-		{
-			float4 position : SV_POSITION;
-			float2 texcoord : TEXCOORD0;
-			float4 vtxcolor : COLOR;
-		};
-		float4 PSMain(VertexInput input):SV_TARGET
-		{
-			return input.vtxcolor;
-		}
-	)";
-}
 
 bool Geometry::Create(ID3D11Device* device, unsigned int vertexCount, unsigned int indexCount)
 {
@@ -254,10 +216,7 @@ bool RenderSystem::Create(void* nativeWindow)
 		m_geometry.UploadVertices(m_d3dContext, vertices);
 		m_geometry.UploadIndices(m_d3dContext, indices);
 
-		if (!m_shader.Create(m_d3dDevice, vsCode.c_str(), psCode.c_str()))
-		{
-			break;
-		}
+		shaderlib = new ShaderLib(m_d3dDevice);
 		return true;
 	} while (false);
 
@@ -269,7 +228,11 @@ bool RenderSystem::Create(void* nativeWindow)
 
 void RenderSystem::Destroy()
 {
-	m_shader.Destroy();
+	if (shaderlib)
+	{
+		delete shaderlib;
+		shaderlib = nullptr;
+	}
 	SR(m_colorTexture);
 	SR(m_rtView);
 	SR(m_bbView);
@@ -290,15 +253,19 @@ void RenderSystem::Present()
 
 void RenderSystem::Render()
 {
-	unsigned int stride = sizeof(g2d::GeometryVertex);
-	unsigned int offset = 0;
-	m_d3dContext->IASetVertexBuffers(0, 1, &(m_geometry.m_vertexBuffer), &stride, &offset);
-	m_d3dContext->IASetIndexBuffer(m_geometry.m_indexBuffer, DXGI_FORMAT_R32_UINT, 0);
-	m_d3dContext->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	auto shader = shaderlib->GetShaderByName("simple.color");
+	if (shader)
+	{
+		m_d3dContext->IASetInputLayout(shader->GetInputLayout());
+		m_d3dContext->VSSetShader(shader->GetVertexShader(), NULL, 0);
+		m_d3dContext->PSSetShader(shader->GetPixelShader(), NULL, 0);
 
-	m_d3dContext->IASetInputLayout(m_shader.GetInputLayout());
-	m_d3dContext->VSSetShader(m_shader.GetVertexShader(), NULL, 0);
-	m_d3dContext->PSSetShader(m_shader.GetPixelShader(), NULL, 0);
+		unsigned int stride = sizeof(g2d::GeometryVertex);
+		unsigned int offset = 0;
+		m_d3dContext->IASetVertexBuffers(0, 1, &(m_geometry.m_vertexBuffer), &stride, &offset);
+		m_d3dContext->IASetIndexBuffer(m_geometry.m_indexBuffer, DXGI_FORMAT_R32_UINT, 0);
+		m_d3dContext->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
-	m_d3dContext->DrawIndexed(6, 0, 0);
+		m_d3dContext->DrawIndexed(6, 0, 0);
+	}
 }
