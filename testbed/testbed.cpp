@@ -3,7 +3,7 @@
 #include <timeapi.h>
 #include <g2dengine.h>
 #include <g2drender.h>
-
+#include <time.h>
 const std::wstring& Testbed::GetWindowClassName()
 {
 	static const std::wstring name = L"got2d_window_class";
@@ -17,6 +17,7 @@ const std::wstring& Testbed::GetWindowTitle()
 
 bool Testbed::InitApp()
 {
+	srand( static_cast<unsigned int>( time(0) ) );
 	m_elapsedTime = 0;
 	m_tickInterval = 1000 / 60;
 
@@ -46,10 +47,10 @@ bool Testbed::InitApp()
 		vertices[2].position.set(-0.5f + offset + 0.1f, +0.5f);
 		vertices[3].position.set(-0.5f + offset + 0.1f, -0.5f);
 
-		vertices[0].vtxcolor = gml::color4::red();
-		vertices[1].vtxcolor = gml::color4::red();
-		vertices[2].vtxcolor = gml::color4::red();
-		vertices[3].vtxcolor = gml::color4::red();
+		vertices[0].vtxcolor = gml::color4::random();
+		vertices[1].vtxcolor = gml::color4::random();
+		vertices[2].vtxcolor = gml::color4::random();
+		vertices[3].vtxcolor = gml::color4::random();
 	}
 
 
