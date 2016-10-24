@@ -27,7 +27,11 @@ bool Testbed::InitApp()
 	if (!g2d::InitEngine(ecfg))
 		return false;
 
-	g2d::GetEngine()->GetCurrentScene()->CreateQuadNode();
+	for (int i = 0; i < 4; i++)
+	{
+		float x = i * 0.2f;
+		g2d::GetEngine()->GetCurrentScene()->CreateQuadNode()->SetPosition(gml::vec2(x, 0));
+	}
 	return true;
 }
 

@@ -4,6 +4,8 @@ g2d::SceneNode::~SceneNode() { }
 
 g2d::Scene::~Scene() { }
 
+::SceneNode::SceneNode() : m_matrixLocal(gml::mat32::I()) {}
+
 ::SceneNode::~SceneNode()
 {
 	for (auto& child : m_children)
@@ -80,7 +82,7 @@ QuatNode::~QuatNode()
 }
 void QuatNode::Render()
 {
-	g2d::GetEngine()->GetRenderSystem()->RenderMesh(m_mesh);
+	g2d::GetEngine()->GetRenderSystem()->RenderMesh(m_mesh, GetLocalMatrix());
 }
 
 ::Scene::Scene()

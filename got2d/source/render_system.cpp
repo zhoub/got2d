@@ -333,15 +333,18 @@ g2d::Mesh* RenderSystem::CreateMesh(unsigned int vertexCount, unsigned int index
 	return new Mesh(vertexCount, indexCount);
 }
 
-void RenderSystem::RenderMesh(g2d::Mesh* m)
+void RenderSystem::RenderMesh(g2d::Mesh* m, const gml::mat32& transform)
 {
-	if (m_mesh.Merge(m))
+	if (m_mesh.Merge(m, transform))
 	{
 		return;
 	}
 
 	FlushBatch();
+
 	m_mesh.Clear();
+	//de factor, no need to Merge when there is only ONE MESH each drawcall.
+	m_mesh.Merge(m, transform);
 }
 
 void RenderSystem::BeginRender()

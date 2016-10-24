@@ -2,6 +2,7 @@
 
 #include <g2dconfig.h>
 #include <gmlvector.h>
+#include <gmlmatrix.h>
 #include <gmlcolor.h>
 
 namespace g2d
@@ -33,6 +34,6 @@ namespace g2d
 		virtual void BeginRender() = 0;
 		virtual void EndRender() = 0;
 		virtual Mesh* CreateMesh(unsigned int vertexCount, unsigned int indexCount) = 0;
-		virtual void RenderMesh(Mesh*) = 0;
+		virtual void RenderMesh(Mesh*, const gml::mat32&) = 0;
 	};
 }

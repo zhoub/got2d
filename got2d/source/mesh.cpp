@@ -8,7 +8,7 @@ Mesh::Mesh(unsigned int vertexCount, unsigned int indexCount)
 
 }
 
-bool Mesh::Merge(g2d::Mesh* other)
+bool Mesh::Merge(g2d::Mesh* other, const gml::mat32& transform)
 {
 	constexpr const int NUM_VERTEX_LIMITED = 32768;
 	auto numVertex = GetVertexCount();
@@ -21,6 +21,8 @@ bool Mesh::Merge(g2d::Mesh* other)
 	for (int i = 0, n = other->GetVertexCount(); i < n; i++)
 	{
 		m_vertices.push_back(vertices[i]);
+		auto& p = m_vertices.back().position;
+		p = gml::transform_point(transform, p);
 	}
 	auto indices = other->GetRawIndices();
 	for (int i = 0, n = other->GetIndexCount(); i < n; i++)

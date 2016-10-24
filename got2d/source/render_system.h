@@ -66,7 +66,7 @@ class Mesh : public g2d::Mesh
 {
 public:
 	Mesh(unsigned int vertexCount, unsigned int indexCount);
-	bool Merge(g2d::Mesh* other);
+	bool Merge(g2d::Mesh* other, const gml::mat32& transform);
 	void Clear();
 
 	virtual g2d::GeometryVertex* GetRawVertices() override;
@@ -102,7 +102,7 @@ public:
 	virtual void BeginRender() override;
 	virtual void EndRender() override;
 	virtual g2d::Mesh* CreateMesh(unsigned int vertexCount, unsigned int indexCount) override;
-	virtual void RenderMesh(g2d::Mesh*) override;
+	virtual void RenderMesh(g2d::Mesh*, const gml::mat32&) override;
 
 private:
 	void FlushBatch();

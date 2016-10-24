@@ -5,6 +5,7 @@
 class SceneNode : public g2d::SceneNode
 {
 public:
+	SceneNode();
 	~SceneNode();
 
 	const gml::mat32& GetLocalMatrix();
