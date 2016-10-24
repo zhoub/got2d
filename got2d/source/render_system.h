@@ -13,14 +13,16 @@ class Geometry
 {
 public:
 	bool Create(unsigned int vertexCount, unsigned int indexCount);
-	void UploadVertices(g2d::GeometryVertex*);
-	void UploadIndices(unsigned int*);
+	bool MakeEnoughVertexArray(unsigned int numVertices);
+	bool MakeEnoughIndexArray(unsigned int numIndices);
+	void UploadVertices(unsigned int offset, g2d::GeometryVertex*, unsigned int count);
+	void UploadIndices(unsigned int offset, unsigned int*, unsigned int count);
 	void Destroy();
 
 	ID3D11Buffer* m_vertexBuffer = nullptr;
 	ID3D11Buffer* m_indexBuffer = nullptr;
-	unsigned int m_vertexCount = 0;
-	unsigned int m_indexCount = 0;
+	unsigned int m_numVertices = 0;
+	unsigned int m_numIndices = 0;
 };
 
 class ShaderSource
@@ -64,6 +66,8 @@ class Mesh : public g2d::Mesh
 {
 public:
 	Mesh(unsigned int vertexCount, unsigned int indexCount);
+	bool Merge(g2d::Mesh* other);
+	void Clear();
 
 	virtual g2d::GeometryVertex* GetRawVertices() override;
 	virtual unsigned int* GetRawIndices() override;
@@ -76,6 +80,7 @@ private:
 	std::vector<g2d::GeometryVertex> m_vertices;
 	std::vector<unsigned int> m_indices;
 };
+
 class RenderSystem : public g2d::RenderSystem
 {
 public:
@@ -100,6 +105,8 @@ public:
 	virtual void RenderMesh(g2d::Mesh*) override;
 
 private:
+	void FlushBatch();
+
 	IDXGISwapChain* m_swapChain = nullptr;
 	ID3D11Device* m_d3dDevice = nullptr;
 	ID3D11DeviceContext* m_d3dContext = nullptr;
@@ -108,9 +115,9 @@ private:
 	ID3D11RenderTargetView* m_bbView = nullptr;
 	D3D11_VIEWPORT m_viewport;
 
-	gml::color4 m_bkColor;
+	gml::color4 m_bkColor = gml::color4::blue();
 
-
+	Mesh m_mesh;
 	Geometry m_geometry;
 
 	ShaderLib* shaderlib = nullptr;

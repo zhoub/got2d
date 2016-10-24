@@ -8,6 +8,34 @@ Mesh::Mesh(unsigned int vertexCount, unsigned int indexCount)
 
 }
 
+bool Mesh::Merge(g2d::Mesh* other)
+{
+	constexpr const int NUM_VERTEX_LIMITED = 32768;
+	auto numVertex = GetVertexCount();
+	if (numVertex + other->GetVertexCount() > NUM_VERTEX_LIMITED)
+	{
+		return false;
+	}
+
+	auto vertices = other->GetRawVertices();
+	for (int i = 0, n = other->GetVertexCount(); i < n; i++)
+	{
+		m_vertices.push_back(vertices[i]);
+	}
+	auto indices = other->GetRawIndices();
+	for (int i = 0, n = other->GetIndexCount(); i < n; i++)
+	{
+		m_indices.push_back(indices[i] + numVertex);
+	}
+	return true;
+}
+
+void Mesh::Clear()
+{
+	m_vertices.clear();
+	m_indices.clear();
+}
+
 g2d::GeometryVertex* Mesh::GetRawVertices()
 {
 	return &(m_vertices[0]);

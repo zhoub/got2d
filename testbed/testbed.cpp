@@ -17,7 +17,7 @@ const std::wstring& Testbed::GetWindowTitle()
 
 bool Testbed::InitApp()
 {
-	srand( static_cast<unsigned int>( time(0) ) );
+	srand(static_cast<unsigned int>(time(0)));
 	m_elapsedTime = 0;
 	m_tickInterval = 1000 / 60;
 
