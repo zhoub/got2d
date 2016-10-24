@@ -30,6 +30,12 @@
     <ClInclude Include="include\g2drender.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="include\g2dscene.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="source\scene.h">
+      <Filter>源文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="source\engine.cpp">
@@ -42,6 +48,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="source\mesh.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="source\scene.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

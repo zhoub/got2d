@@ -16,6 +16,8 @@ bool g2d::InitEngine(const EngineConfig& config)
 		{
 			break;
 		}
+
+		inst->CreateNewScene();
 		return true;
 	} while (false);
 
@@ -42,12 +44,18 @@ Engine* Engine::Instance = nullptr;
 
 Engine::~Engine()
 {
+	SD(m_currentScene);
 	m_renderSystem.Destroy();
 }
 
 bool Engine::Update(unsigned long elapsedTime)
 {
+	m_currentScene->Update(elapsedTime);
 	return true;
+}
+void Engine::Render()
+{
+	m_currentScene->Render();
 }
 
 bool Engine::CreateRenderSystem(void* nativeWindow)
@@ -57,4 +65,10 @@ bool Engine::CreateRenderSystem(void* nativeWindow)
 		return false;
 	}
 	return true;
+}
+
+void Engine::CreateNewScene()
+{
+	SD(m_currentScene);
+	m_currentScene = new Scene();
 }

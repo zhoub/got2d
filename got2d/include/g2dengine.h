@@ -1,17 +1,18 @@
 #pragma once
-
 #include <g2dconfig.h>
-//#include <g2drender.h>
 
 namespace g2d
 {
 	class RenderSystem;
+	class Scene;
 	class G2DAPI Engine
 	{
 	public:
 		virtual ~Engine();
 		virtual bool Update(unsigned long elapsedTime) = 0;
+		virtual void Render() = 0;
 		virtual RenderSystem* GetRenderSystem() = 0;
+		virtual Scene* GetCurrentScene() = 0;
 	};
 
 	struct G2DAPI EngineConfig

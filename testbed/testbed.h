@@ -36,6 +36,4 @@ private:
 	unsigned long m_lastTimeStamp;
 	unsigned long m_tickInterval;
 	bool m_running = true;
-
-	g2d::Mesh* m_meshs[4];
 };
