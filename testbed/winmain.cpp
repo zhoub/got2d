@@ -128,6 +128,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	case WM_DESTROY:
 		PostQuitMessage(0);
 		break;
+	case WM_SIZE:
+	{
+		RECT rect;
+		::GetClientRect(hWnd, &rect);
+		testbed.OnResize(rect.right - rect.left, rect.bottom - rect.top);
+	}
+	break;
 	default:
 		return DefWindowProc(hWnd, message, wParam, lParam);
 	}

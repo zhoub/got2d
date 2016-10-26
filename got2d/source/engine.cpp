@@ -63,14 +63,13 @@ void Engine::Render()
 
 g2d::Texture* Engine::LoadTexture(const char* path)
 {
-
-
 	std::string resourcePath = m_resourceRoot + path;
 	return m_renderSystem.CreateTextureFromFile(resourcePath.c_str());
 }
 
 bool Engine::CreateRenderSystem(void* nativeWindow)
 {
+	nativeWindow = nativeWindow;
 	if (!m_renderSystem.Create(nativeWindow))
 	{
 		return false;

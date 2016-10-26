@@ -128,12 +128,14 @@ public:
 	RenderSystem();
 
 	bool Create(void* nativeWindow);
-	bool OnResize(int width, int height);
+
 	void Destroy();
 
 	void Clear();
 	void Render();
 	void Present();
+
+	const gml::mat44& GetProjectionMatrix();
 
 	Texture* CreateTextureFromFile(const char* resPath);
 
@@ -141,6 +143,7 @@ public:
 	inline ID3D11DeviceContext* GetContext() { return m_d3dContext; }
 
 public:
+	virtual bool OnResize(long width, long height) override;
 	virtual void BeginRender() override;
 	virtual void EndRender() override;
 	virtual g2d::Mesh* CreateMesh(unsigned int vertexCount, unsigned int indexCount) override;
@@ -161,10 +164,16 @@ private:
 
 	Mesh m_mesh;
 	std::string m_texture;
+	ID3D11Buffer* m_bufferMatrix = nullptr;
 	Geometry m_geometry;
 	TexturePool m_texPool;
 
 	ShaderLib* shaderlib = nullptr;
+
+	gml::mat44 m_matProj;
+	bool m_matrixProjDirty = true;
+	long m_windowWidth = 0;
+	long m_windowHeight = 0;
 };
 
 

@@ -34,7 +34,7 @@ bool Testbed::InitApp()
 
 	for (int i = 0; i < 4; i++)
 	{
-		float x = i * 0.2f;
+		float x = i * 150.0f;
 		g2d::GetEngine()->GetCurrentScene()->CreateQuadNode()->SetPosition(gml::vec2(x, 0));
 	}
 	return true;
@@ -50,6 +50,15 @@ void Testbed::FirstTick()
 {
 	m_lastTimeStamp = timeGetTime();
 	Start();
+}
+
+void Testbed::OnResize(long width, long height)
+{
+	//要在初始化之后再做这件事情
+	if (g2d::GetEngine())
+	{
+		g2d::GetEngine()->GetRenderSystem()->OnResize(width, height);
+	}
 }
 
 //return false表示关闭窗口退出。

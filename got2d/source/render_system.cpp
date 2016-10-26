@@ -8,7 +8,7 @@ RenderSystem::RenderSystem() :m_bkColor(gml::color4::blue()), m_mesh(0, 0)
 {
 }
 
-bool RenderSystem::OnResize(int width, int height)
+bool RenderSystem::OnResize(long width, long height)
 {
 	//though we create an individual render target
 	//we do not use it for rendering, for now.
@@ -50,6 +50,17 @@ bool RenderSystem::OnResize(int width, int height)
 	{
 		return false;
 	}
+
+	m_matrixProjDirty = true;
+	m_windowWidth = width;
+	m_windowHeight = height;
+
+	D3D11_MAPPED_SUBRESOURCE mappedData;
+	if (S_OK == m_d3dContext->Map(m_bufferMatrix, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData))
+	{
+		memcpy(mappedData.pData, GetProjectionMatrix().transposed().m, sizeof(gml::mat44));
+		m_d3dContext->Unmap(m_bufferMatrix, 0);
+	}
 	return true;
 }
 
@@ -59,9 +70,6 @@ bool RenderSystem::Create(void* nativeWindow)
 	{
 		return Instance == this;
 	}
-
-	int windowWidth = 0;
-	int windowHeight = 0;
 
 	do
 	{
@@ -84,8 +92,8 @@ bool RenderSystem::Create(void* nativeWindow)
 
 		DXGI_SWAP_CHAIN_DESC scDesc;
 		scDesc.BufferDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
-		scDesc.BufferDesc.Width = windowWidth;
-		scDesc.BufferDesc.Height = windowHeight;
+		scDesc.BufferDesc.Width = m_windowWidth;
+		scDesc.BufferDesc.Height = m_windowHeight;
 		scDesc.BufferDesc.RefreshRate.Numerator = 60;
 		scDesc.BufferDesc.RefreshRate.Denominator = 1;
 		scDesc.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
@@ -109,10 +117,26 @@ bool RenderSystem::Create(void* nativeWindow)
 		}
 
 		m_swapChain->GetDesc(&scDesc);
-		windowWidth = scDesc.BufferDesc.Width;
-		windowHeight = scDesc.BufferDesc.Height;
+		m_windowWidth = scDesc.BufferDesc.Width;
+		m_windowHeight = scDesc.BufferDesc.Height;
 
-		if (!OnResize(windowWidth, windowHeight))
+		D3D11_BUFFER_DESC bufferDesc =
+		{
+			sizeof(gml::mat44) + sizeof(gml::mat32),	//UINT ByteWidth;
+			D3D11_USAGE_DYNAMIC,						//D3D11_USAGE Usage;
+			D3D11_BIND_CONSTANT_BUFFER,					//UINT BindFlags;
+			D3D11_CPU_ACCESS_WRITE,						//UINT CPUAccessFlags;
+			0,											//UINT MiscFlags;
+			0											//UINT StructureByteStride;
+		};
+
+		if (S_OK != m_d3dDevice->CreateBuffer(&bufferDesc, NULL, &m_bufferMatrix))
+		{
+			break;
+		}
+
+
+		if (!OnResize(m_windowWidth, m_windowHeight))
 		{
 			break;
 		}
@@ -121,14 +145,13 @@ bool RenderSystem::Create(void* nativeWindow)
 		{
 			0.0f,//FLOAT TopLeftX;
 			0.0f,//FLOAT TopLeftY;
-			(FLOAT)windowWidth,//FLOAT Width;
-			(FLOAT)windowHeight,//FLOAT Height;
+			(FLOAT)m_windowWidth,//FLOAT Width;
+			(FLOAT)m_windowHeight,//FLOAT Height;
 			0.0f,//FLOAT MinDepth;
 			1.0f,//FLOAT MaxDepth;
 		};
 
 
-		//m_d3dContext->OMSetRenderTargets(1, &m_rtView, nullptr);
 		m_d3dContext->OMSetRenderTargets(1, &m_bbView, nullptr);
 		m_d3dContext->RSSetViewports(1, &m_viewport);
 		Instance = this;
@@ -154,6 +177,7 @@ void RenderSystem::Destroy()
 		delete shaderlib;
 		shaderlib = nullptr;
 	}
+	SR(m_bufferMatrix);
 	SR(m_colorTexture);
 	SR(m_rtView);
 	SR(m_bbView);
@@ -165,6 +189,17 @@ void RenderSystem::Destroy()
 	{
 		Instance = nullptr;
 	}
+}
+
+const gml::mat44& RenderSystem::GetProjectionMatrix()
+{
+	if (m_matrixProjDirty)
+	{
+		m_matrixProjDirty = false;
+		//m_matProj = gml::mat44::center_ortho_lh(static_cast<float>(m_windowWidth), static_cast<float>(m_windowHeight), 0.5f, 1000.0f);
+		m_matProj = gml::mat44::ortho2d_lh(static_cast<float>(m_windowWidth), static_cast<float>(m_windowHeight), 0.5f, 1000.0f);
+	}
+	return m_matProj;
 }
 
 void RenderSystem::Clear()
@@ -202,6 +237,7 @@ void RenderSystem::FlushBatch()
 		m_d3dContext->IASetInputLayout(shader->GetInputLayout());
 
 		m_d3dContext->VSSetShader(shader->GetVertexShader(), NULL, 0);
+		m_d3dContext->VSSetConstantBuffers(0, 1, &m_bufferMatrix);
 		m_d3dContext->PSSetShader(shader->GetPixelShader(), NULL, 0);
 		m_d3dContext->PSSetShaderResources(0, 1, &(texture->m_shaderView));
 		ID3D11SamplerState* a = nullptr;

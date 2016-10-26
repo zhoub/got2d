@@ -19,6 +19,7 @@ public:
 	bool InitApp();
 	void DestroyApp();
 	void FirstTick();
+	void OnResize(long width, long height);
 	bool MainLoop();//return false表示关闭窗口退出。
 
 protected:

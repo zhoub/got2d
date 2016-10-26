@@ -66,10 +66,10 @@ QuatNode::QuatNode()
 	}
 
 	g2d::GeometryVertex* vertices = m_mesh->GetRawVertices();
-	vertices[0].position.set(-0.5f, -0.5f);
-	vertices[1].position.set(-0.5f, +0.5f);
-	vertices[2].position.set(-0.5f + 0.18f, +0.5f);
-	vertices[3].position.set(-0.5f + 0.18f, -0.5f);
+	vertices[0].position.set(0, 0);
+	vertices[1].position.set(0, 100.0f);
+	vertices[2].position.set(100.0f, 100.0f);
+	vertices[3].position.set(100.0f, 0);
 
 	vertices[0].texcoord.set(0, 0);
 	vertices[1].texcoord.set(0, 1);

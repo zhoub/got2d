@@ -122,6 +122,11 @@ class SimpleColorShader : public ShaderSource
 	const char* GetVertexShaderCode() override
 	{
 		return R"(
+			cbuffer scene
+			{
+				float4x4 matrixProj;
+				float4x4 matrixWorld;
+			}
 			struct GeometryVertex
 			{
 				float2 position : POSITION;
@@ -136,7 +141,7 @@ class SimpleColorShader : public ShaderSource
 			VertexOutput VSMain(GeometryVertex input)
 			{
 				VertexOutput output;
-				output.position = float4(input.position, 0, 1);
+				output.position = mul(float4(input.position, 0, 1), matrixProj);
 				output.vtxcolor = input.vtxcolor;
 				return output;
 			}
@@ -167,6 +172,11 @@ class SimpleTextureShader : public ShaderSource
 	const char* GetVertexShaderCode() override
 	{
 		return R"(
+			cbuffer scene
+			{
+				float4x4 matrixProj;
+				float4x4 matrixWorld;
+			}
 			struct GeometryVertex
 			{
 				float2 position : POSITION;
@@ -181,7 +191,7 @@ class SimpleTextureShader : public ShaderSource
 			VertexOutput VSMain(GeometryVertex input)
 			{
 				VertexOutput output;
-				output.position = float4(input.position, 0, 1);
+				output.position = mul(float4(input.position, 0, 1), matrixProj);
 				output.texcoord = input.texcoord;
 				return output;
 			}
@@ -214,6 +224,11 @@ class DefaultShader : public ShaderSource
 	const char* GetVertexShaderCode() override
 	{
 		return R"(
+			cbuffer scene
+			{
+				float4x4 matrixProj;
+				float4x4 matrixWorld;
+			}
 			struct GeometryVertex
 			{
 				float2 position : POSITION;
@@ -229,7 +244,7 @@ class DefaultShader : public ShaderSource
 			VertexOutput VSMain(GeometryVertex input)
 			{
 				VertexOutput output;
-				output.position = float4(input.position, 0, 1);
+				output.position = mul(float4(input.position, 0, 1), matrixProj);
 				output.texcoord = input.texcoord;
 				output.vtxcolor = input.vtxcolor;
 				return output;

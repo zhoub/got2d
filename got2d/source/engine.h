@@ -20,6 +20,7 @@ public:
 	inline virtual g2d::Scene* GetCurrentScene() override { return m_currentScene; }
 	virtual g2d::Texture* LoadTexture(const char* path);
 private:
+	void* nativeWindow = nullptr;
 	RenderSystem m_renderSystem;
 	Scene* m_currentScene;
 	std::string m_resourceRoot;

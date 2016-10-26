@@ -38,6 +38,7 @@ namespace g2d
 	{
 	public:
 		~RenderSystem();
+		virtual bool OnResize(long width, long height) = 0;
 		virtual void BeginRender() = 0;
 		virtual void EndRender() = 0;
 		virtual Mesh* CreateMesh(unsigned int vertexCount, unsigned int indexCount) = 0;
