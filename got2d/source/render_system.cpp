@@ -58,7 +58,7 @@ bool RenderSystem::OnResize(long width, long height)
 	D3D11_MAPPED_SUBRESOURCE mappedData;
 	if (S_OK == m_d3dContext->Map(m_bufferMatrix, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData))
 	{
-		memcpy(mappedData.pData, GetProjectionMatrix().transposed().m, sizeof(gml::mat44));
+		memcpy(mappedData.pData, GetProjectionMatrix().m, sizeof(gml::mat44));
 		m_d3dContext->Unmap(m_bufferMatrix, 0);
 	}
 	return true;
