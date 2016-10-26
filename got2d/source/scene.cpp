@@ -68,8 +68,8 @@ QuatNode::QuatNode()
 	g2d::GeometryVertex* vertices = m_mesh->GetRawVertices();
 	vertices[0].position.set(-0.5f, -0.5f);
 	vertices[1].position.set(-0.5f, +0.5f);
-	vertices[2].position.set(-0.5f + 0.1f, +0.5f);
-	vertices[3].position.set(-0.5f + 0.1f, -0.5f);
+	vertices[2].position.set(-0.5f + 0.18f, +0.5f);
+	vertices[3].position.set(-0.5f + 0.18f, -0.5f);
 
 	vertices[0].texcoord.set(0, 0);
 	vertices[1].texcoord.set(0, 1);
@@ -80,6 +80,8 @@ QuatNode::QuatNode()
 	vertices[1].vtxcolor = gml::color4::random();
 	vertices[2].vtxcolor = gml::color4::random();
 	vertices[3].vtxcolor = gml::color4::random();
+
+	m_tex = g2d::GetEngine()->LoadTexture("test_alpha.png");
 }
 QuatNode::~QuatNode()
 {
@@ -87,7 +89,7 @@ QuatNode::~QuatNode()
 }
 void QuatNode::Render()
 {
-	g2d::GetEngine()->GetRenderSystem()->RenderMesh(m_mesh, nullptr, GetLocalMatrix());
+	g2d::GetEngine()->GetRenderSystem()->RenderMesh(m_mesh, m_tex, GetLocalMatrix());
 }
 
 ::Scene::Scene()

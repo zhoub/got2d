@@ -25,6 +25,37 @@ public:
 	unsigned int m_numIndices = 0;
 };
 
+class Mesh : public g2d::Mesh
+{
+public:
+	Mesh(unsigned int vertexCount, unsigned int indexCount);
+	bool Merge(g2d::Mesh* other, const gml::mat32& transform);
+	void Clear();
+
+	virtual g2d::GeometryVertex* GetRawVertices() override;
+	virtual unsigned int* GetRawIndices() override;
+	virtual unsigned int GetVertexCount() override;
+	virtual unsigned int GetIndexCount() override;
+	virtual void ResizeVertexArray(unsigned int vertexCount) override;
+	virtual void ResizeIndexArray(unsigned int indexCount) override;
+	virtual void Release() override;
+private:
+	std::vector<g2d::GeometryVertex> m_vertices;
+	std::vector<unsigned int> m_indices;
+};
+
+class Texture : public g2d::Texture
+{
+public:
+	Texture(const char* resPath);
+	inline const std::string& GetResourceName() { return m_resPath; }
+
+public:
+	virtual void Release() override;
+private:
+	std::string m_resPath;
+};
+
 class Texture2D
 {
 public:
@@ -36,6 +67,21 @@ public:
 	ID3D11ShaderResourceView* m_shaderView = nullptr;
 	unsigned int m_width = 0;
 	unsigned int m_height = 0;
+};
+
+class TexturePool
+{
+public:
+	bool CreateDefaultTexture();
+	void Destroy();
+	Texture2D* GetTexture(const std::string& resource);
+	inline Texture2D* GetDefaultTexture() { return &m_defaultTexture; }
+
+private:
+	bool LoadTextureFromFile(std::string resourcePath);
+
+	std::map<std::string, Texture2D*> m_textures;
+	Texture2D m_defaultTexture;
 };
 
 class ShaderSource
@@ -73,37 +119,6 @@ private:
 
 	std::map<std::string, ShaderSource*> m_sources;
 	std::map<std::string, Shader*> m_shaders;
-};
-
-class Mesh : public g2d::Mesh
-{
-public:
-	Mesh(unsigned int vertexCount, unsigned int indexCount);
-	bool Merge(g2d::Mesh* other, const gml::mat32& transform);
-	void Clear();
-
-	virtual g2d::GeometryVertex* GetRawVertices() override;
-	virtual unsigned int* GetRawIndices() override;
-	virtual unsigned int GetVertexCount() override;
-	virtual unsigned int GetIndexCount() override;
-	virtual void ResizeVertexArray(unsigned int vertexCount) override;
-	virtual void ResizeIndexArray(unsigned int indexCount) override;
-	virtual void Release() override;
-private:
-	std::vector<g2d::GeometryVertex> m_vertices;
-	std::vector<unsigned int> m_indices;
-};
-
-class Texture : public g2d::Texture
-{
-public:
-	Texture(const char* resPath);
-	inline const std::string& GetResourceName() { return m_resPath; }
-
-public:
-	virtual void Release() override;
-private:
-	std::string m_resPath;
 };
 
 class RenderSystem : public g2d::RenderSystem
@@ -147,7 +162,7 @@ private:
 	Mesh m_mesh;
 	std::string m_texture;
 	Geometry m_geometry;
-	Texture2D m_defaultTex;
+	TexturePool m_texPool;
 
 	ShaderLib* shaderlib = nullptr;
 };

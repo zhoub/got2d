@@ -1,221 +1,8 @@
 #include "render_system.h"
-#include "engine.h"
 #include <string>
-#include "file_data.h"
-#include "img_data.h"
 
 g2d::RenderSystem::~RenderSystem() { }
 RenderSystem* RenderSystem::Instance = nullptr;
-
-bool Geometry::Create(unsigned int vertexCount, unsigned int indexCount)
-{
-	if (vertexCount == 0 || indexCount == 0)
-		return false;
-
-	m_numVertices = vertexCount;
-	m_numIndices = indexCount;
-
-	do
-	{
-		if (!MakeEnoughVertexArray(vertexCount))
-		{
-			break;
-		}
-
-		if (!MakeEnoughIndexArray(indexCount))
-		{
-			break;
-		}
-
-		return true;
-	} while (false);
-	Destroy();
-	return false;
-}
-
-bool Geometry::MakeEnoughVertexArray(unsigned int numVertices)
-{
-	if (m_numVertices >= numVertices)
-	{
-		return true;
-	}
-
-
-	D3D11_BUFFER_DESC bufferDesc =
-	{
-		sizeof(g2d::GeometryVertex) * numVertices,//UINT ByteWidth;
-		D3D11_USAGE_DYNAMIC,						//D3D11_USAGE Usage;
-		D3D11_BIND_VERTEX_BUFFER,					//UINT BindFlags;
-		D3D11_CPU_ACCESS_WRITE,						//UINT CPUAccessFlags;
-		0,											//UINT MiscFlags;
-		0											//UINT StructureByteStride;
-	};
-
-	ID3D11Buffer* vertexBuffer;
-	if (S_OK != GetRenderSystem()->GetDevice()->CreateBuffer(&bufferDesc, NULL, &vertexBuffer))
-	{
-		return  false;
-	}
-
-	m_numVertices = numVertices;
-	SR(m_vertexBuffer);
-	m_vertexBuffer = vertexBuffer;
-	return true;
-}
-
-bool Geometry::MakeEnoughIndexArray(unsigned int numIndices)
-{
-	if (m_numIndices >= numIndices)
-	{
-		return true;
-	}
-
-	D3D11_BUFFER_DESC bufferDesc =
-	{
-		sizeof(unsigned int) * numIndices,//UINT ByteWidth;
-		D3D11_USAGE_DYNAMIC,						//D3D11_USAGE Usage;
-		D3D11_BIND_INDEX_BUFFER,					//UINT BindFlags;
-		D3D11_CPU_ACCESS_WRITE,						//UINT CPUAccessFlags;
-		0,											//UINT MiscFlags;
-		0											//UINT StructureByteStride;
-	};
-
-	ID3D11Buffer* indexBuffer;
-	if (S_OK != GetRenderSystem()->GetDevice()->CreateBuffer(&bufferDesc, NULL, &indexBuffer))
-	{
-		return false;
-	}
-	m_numIndices = numIndices;
-	SR(m_indexBuffer);
-	m_indexBuffer = indexBuffer;
-	return true;
-}
-
-void Geometry::UploadVertices(unsigned int offset, g2d::GeometryVertex* vertices, unsigned int count)
-{
-	if (vertices == nullptr || m_vertexBuffer == nullptr)
-	{
-		return;
-	}
-
-	D3D11_MAPPED_SUBRESOURCE mappedResource;
-	if (S_OK == GetRenderSystem()->GetContext()->Map(m_vertexBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource))
-	{
-		count = __min(m_numVertices - offset, count);
-		g2d::GeometryVertex* data = reinterpret_cast<g2d::GeometryVertex*>(mappedResource.pData);
-		memcpy(data + offset, vertices, sizeof(g2d::GeometryVertex) * count);
-		GetRenderSystem()->GetContext()->Unmap(m_vertexBuffer, 0);
-	}
-}
-
-void Geometry::UploadIndices(unsigned int offset, unsigned int* indices, unsigned int count)
-{
-	if (indices == nullptr || m_indexBuffer == nullptr)
-	{
-		return;
-	}
-
-	D3D11_MAPPED_SUBRESOURCE mappedResource;
-	if (S_OK == GetRenderSystem()->GetContext()->Map(m_indexBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource))
-	{
-		count = __min(m_numIndices - offset, count);
-		unsigned int* data = reinterpret_cast<unsigned int*>(mappedResource.pData);
-		memcpy(data + offset, indices, sizeof(unsigned int) * count);
-		GetRenderSystem()->GetContext()->Unmap(m_indexBuffer, 0);
-	}
-}
-
-void Geometry::Destroy()
-{
-	SR(m_vertexBuffer);
-	SR(m_indexBuffer);
-	m_numVertices = 0;
-	m_numIndices = 0;
-}
-
-bool Texture2D::Create(unsigned int width, unsigned int height)
-{
-	if (width == 0 || height == 0)
-		return false;
-
-	D3D11_TEXTURE2D_DESC texDesc;
-
-	texDesc.Width = width;
-	texDesc.Height = height;
-	texDesc.MipLevels = 1;
-	texDesc.ArraySize = 1;
-	texDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	texDesc.SampleDesc.Count = 1;
-	texDesc.SampleDesc.Quality = 0;
-	texDesc.Usage = D3D11_USAGE_DYNAMIC;
-	texDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
-	texDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-	texDesc.MiscFlags = 0;
-	if (S_OK != GetRenderSystem()->GetDevice()->CreateTexture2D(&texDesc, nullptr, &m_texture))
-	{
-		return false;
-	}
-
-	D3D11_SHADER_RESOURCE_VIEW_DESC viewDesc;
-	::ZeroMemory(&viewDesc, sizeof(viewDesc));
-	viewDesc.Format = texDesc.Format;
-	viewDesc.ViewDimension = D3D_SRV_DIMENSION_TEXTURE2D;
-	viewDesc.Texture2D.MipLevels = -1;
-	viewDesc.Texture2D.MostDetailedMip = 0;
-	if (S_OK != GetRenderSystem()->GetDevice()->CreateShaderResourceView(m_texture, &viewDesc, &m_shaderView))
-	{
-		Destroy();
-		return false;
-	}
-
-	m_width = width;
-	m_height = height;
-	return true;
-}
-
-void Texture2D::UploadImage(unsigned char* data, bool hasAlpha)
-{
-	D3D11_MAPPED_SUBRESOURCE mappedRes;
-	if (S_OK == GetRenderSystem()->GetContext()->Map(m_texture, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedRes))
-	{
-		unsigned char* colorBuffer = static_cast<unsigned char*>(mappedRes.pData);
-		if (hasAlpha)
-		{
-			int srcPitch = m_width * 4;
-			for (unsigned int i = 0; i < m_height; i++)
-			{
-				auto dstPtr = colorBuffer + i * mappedRes.RowPitch;
-				auto srcPtr = data + i * srcPitch;
-				memcpy(dstPtr, srcPtr, srcPitch);
-			}
-		}
-		else
-		{
-			int srcPitch = m_width * 3;
-			for (unsigned int i = 0; i < m_height; i++)
-			{
-				auto dstPtr = colorBuffer + i * mappedRes.RowPitch;
-				auto srcPtr = data + i * srcPitch;
-				for (unsigned int j = 0; j < m_width; j++)
-				{
-					memcpy(dstPtr + j * 4, srcPtr + j * 3, 3);
-				}
-			}
-		}
-
-		GetRenderSystem()->GetContext()->Unmap(m_texture, 0);
-		GetRenderSystem()->GetContext()->GenerateMips(m_shaderView);
-	}
-
-}
-
-void Texture2D::Destroy()
-{
-	SR(m_texture);
-	SR(m_shaderView);
-	m_width = 0;
-	m_height = 0;
-}
 
 RenderSystem::RenderSystem() :m_bkColor(gml::color4::blue()), m_mesh(0, 0)
 {
@@ -346,29 +133,8 @@ bool RenderSystem::Create(void* nativeWindow)
 		m_d3dContext->RSSetViewports(1, &m_viewport);
 		Instance = this;
 
-		std::string res = ::GetEngine()->GetResourceRoot() + "test_alpha.bmp";
-		file_data f;
-		if (!load_file(res.c_str(), f))
+		if (!m_texPool.CreateDefaultTexture())
 			break;
-
-		img_data img;
-		if (!read_bmp(f.buffer, img))
-		{
-			destroy_file_data(f);
-			break;
-		}
-
-		destroy_file_data(f);
-
-		if (!m_defaultTex.Create(img.width, img.height))
-		{
-			destroy_img_data(img);
-			break;
-		}
-
-		m_defaultTex.UploadImage(img.raw_data, img.has_alpha);
-		destroy_img_data(img);
-
 		shaderlib = new ShaderLib();
 		return true;
 	} while (false);
@@ -382,7 +148,7 @@ bool RenderSystem::Create(void* nativeWindow)
 void RenderSystem::Destroy()
 {
 	m_geometry.Destroy();
-	m_defaultTex.Destroy();
+	m_texPool.Destroy();
 	if (shaderlib)
 	{
 		delete shaderlib;
@@ -423,6 +189,7 @@ void RenderSystem::FlushBatch()
 	m_geometry.UploadVertices(0, m_mesh.GetRawVertices(), m_mesh.GetVertexCount());
 	m_geometry.UploadIndices(0, m_mesh.GetRawIndices(), m_mesh.GetIndexCount());
 
+	Texture2D* texture = m_texPool.GetTexture(m_texture);
 	auto shader = shaderlib->GetShaderByName("simple.texture");
 	if (shader)
 	{
@@ -436,7 +203,7 @@ void RenderSystem::FlushBatch()
 
 		m_d3dContext->VSSetShader(shader->GetVertexShader(), NULL, 0);
 		m_d3dContext->PSSetShader(shader->GetPixelShader(), NULL, 0);
-		m_d3dContext->PSSetShaderResources(0, 1, &(m_defaultTex.m_shaderView));
+		m_d3dContext->PSSetShaderResources(0, 1, &(texture->m_shaderView));
 		ID3D11SamplerState* a = nullptr;
 		m_d3dContext->PSSetSamplers(0, 1, &a);
 
@@ -460,7 +227,7 @@ g2d::Mesh* RenderSystem::CreateMesh(unsigned int vertexCount, unsigned int index
 void RenderSystem::RenderMesh(g2d::Mesh* m, g2d::Texture* t, const gml::mat32& transform)
 {
 	::Texture* timpl = dynamic_cast<::Texture*>(t);
-	//m_texture = (timpl == nullptr) ? "default" : timpl->GetResourceName();
+	m_texture = (timpl == nullptr) ? "" : timpl->GetResourceName();
 
 	if (m_mesh.Merge(m, transform))
 	{

@@ -33,6 +33,7 @@ public:
 	~QuatNode();
 	virtual void Render() override;
 	g2d::Mesh* m_mesh;
+	g2d::Texture* m_tex;
 };
 
 class Scene : public g2d::Scene

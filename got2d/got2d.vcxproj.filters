@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="源文件\render">
+      <UniqueIdentifier>{a5b0682e-9e2b-4a70-8cfe-2b18918c02c8}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\g2dengine.h">
@@ -24,9 +27,6 @@
     <ClInclude Include="source\engine.h">
       <Filter>源文件</Filter>
     </ClInclude>
-    <ClInclude Include="source\render_system.h">
-      <Filter>源文件</Filter>
-    </ClInclude>
     <ClInclude Include="include\g2drender.h">
       <Filter>头文件</Filter>
     </ClInclude>
@@ -36,25 +36,28 @@
     <ClInclude Include="source\scene.h">
       <Filter>源文件</Filter>
     </ClInclude>
+    <ClInclude Include="source\render_system.h">
+      <Filter>源文件\render</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="source\engine.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="source\render_system.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="source\shader.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="source\mesh.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="source\scene.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="source\render_system.cpp">
+      <Filter>源文件\render</Filter>
+    </ClCompile>
+    <ClCompile Include="source\mesh.cpp">
+      <Filter>源文件\render</Filter>
+    </ClCompile>
+    <ClCompile Include="source\shader.cpp">
+      <Filter>源文件\render</Filter>
+    </ClCompile>
     <ClCompile Include="source\texture.cpp">
-      <Filter>源文件</Filter>
+      <Filter>源文件\render</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>
