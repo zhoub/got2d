@@ -227,15 +227,20 @@ g2d::Mesh* RenderSystem::CreateMesh(unsigned int vertexCount, unsigned int index
 void RenderSystem::RenderMesh(g2d::Mesh* m, g2d::Texture* t, const gml::mat32& transform)
 {
 	::Texture* timpl = dynamic_cast<::Texture*>(t);
-	m_texture = (timpl == nullptr) ? "" : timpl->GetResourceName();
+	std::string textureName = (timpl == nullptr) ? "" : timpl->GetResourceName();
+	if (m_mesh.GetVertexCount() != 0 && textureName != m_texture)
+	{
+		FlushBatch();
+		m_mesh.Clear();
+	}
 
+	m_texture = textureName;
 	if (m_mesh.Merge(m, transform))
 	{
 		return;
 	}
 
 	FlushBatch();
-
 	m_mesh.Clear();
 	//de factor, no need to Merge when there is only ONE MESH each drawcall.
 	m_mesh.Merge(m, transform);

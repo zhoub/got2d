@@ -81,7 +81,7 @@ QuatNode::QuatNode()
 	vertices[2].vtxcolor = gml::color4::random();
 	vertices[3].vtxcolor = gml::color4::random();
 
-	m_tex = g2d::GetEngine()->LoadTexture("test_alpha.png");
+	m_tex = g2d::GetEngine()->LoadTexture((rand() % 2) ? "test_alpha.bmp" : "test_alpha.png");
 }
 QuatNode::~QuatNode()
 {
