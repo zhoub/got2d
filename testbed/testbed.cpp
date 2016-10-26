@@ -22,8 +22,13 @@ bool Testbed::InitApp()
 	m_elapsedTime = 0;
 	m_tickInterval = 1000 / 60;
 
+	char path[MAX_PATH];
+	::GetCurrentDirectoryA(MAX_PATH, path);
+	std::string p = path;
+	p += "/../extern/res/win32_test/";
 	g2d::EngineConfig ecfg;
 	ecfg.nativeWindow = hWnd;
+	ecfg.resourceFolderPath = p.c_str();
 	if (!g2d::InitEngine(ecfg))
 		return false;
 

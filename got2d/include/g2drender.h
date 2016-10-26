@@ -27,6 +27,13 @@ namespace g2d
 		virtual void Release() = 0;
 	};
 
+	class Texture
+	{
+	public:
+		~Texture();
+		virtual void Release() = 0;
+	};
+
 	class RenderSystem
 	{
 	public:
@@ -34,6 +41,6 @@ namespace g2d
 		virtual void BeginRender() = 0;
 		virtual void EndRender() = 0;
 		virtual Mesh* CreateMesh(unsigned int vertexCount, unsigned int indexCount) = 0;
-		virtual void RenderMesh(Mesh*, const gml::mat32&) = 0;
+		virtual void RenderMesh(Mesh*, Texture*, const gml::mat32&) = 0;
 	};
 }

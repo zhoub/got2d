@@ -71,6 +71,11 @@ QuatNode::QuatNode()
 	vertices[2].position.set(-0.5f + 0.1f, +0.5f);
 	vertices[3].position.set(-0.5f + 0.1f, -0.5f);
 
+	vertices[0].texcoord.set(0, 0);
+	vertices[1].texcoord.set(0, 1);
+	vertices[2].texcoord.set(1, 1);
+	vertices[3].texcoord.set(1, 0);
+
 	vertices[0].vtxcolor = gml::color4::random();
 	vertices[1].vtxcolor = gml::color4::random();
 	vertices[2].vtxcolor = gml::color4::random();
@@ -82,7 +87,7 @@ QuatNode::~QuatNode()
 }
 void QuatNode::Render()
 {
-	g2d::GetEngine()->GetRenderSystem()->RenderMesh(m_mesh, GetLocalMatrix());
+	g2d::GetEngine()->GetRenderSystem()->RenderMesh(m_mesh, nullptr, GetLocalMatrix());
 }
 
 ::Scene::Scene()

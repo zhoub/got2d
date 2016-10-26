@@ -180,6 +180,7 @@
     <ClCompile Include="source\render_system.cpp" />
     <ClCompile Include="source\scene.cpp" />
     <ClCompile Include="source\shader.cpp" />
+    <ClCompile Include="source\texture.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

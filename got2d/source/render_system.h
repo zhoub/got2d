@@ -25,6 +25,19 @@ public:
 	unsigned int m_numIndices = 0;
 };
 
+class Texture2D
+{
+public:
+	bool Create(unsigned int width, unsigned int height);
+	void UploadImage(unsigned char* data, bool hasAlpha);
+	void Destroy();
+
+	ID3D11Texture2D* m_texture = nullptr;
+	ID3D11ShaderResourceView* m_shaderView = nullptr;
+	unsigned int m_width = 0;
+	unsigned int m_height = 0;
+};
+
 class ShaderSource
 {
 public:
@@ -81,6 +94,18 @@ private:
 	std::vector<unsigned int> m_indices;
 };
 
+class Texture : public g2d::Texture
+{
+public:
+	Texture(const char* resPath);
+	inline const std::string& GetResourceName() { return m_resPath; }
+
+public:
+	virtual void Release() override;
+private:
+	std::string m_resPath;
+};
+
 class RenderSystem : public g2d::RenderSystem
 {
 public:
@@ -95,6 +120,8 @@ public:
 	void Render();
 	void Present();
 
+	Texture* CreateTextureFromFile(const char* resPath);
+
 	inline ID3D11Device* GetDevice() { return m_d3dDevice; }
 	inline ID3D11DeviceContext* GetContext() { return m_d3dContext; }
 
@@ -102,7 +129,7 @@ public:
 	virtual void BeginRender() override;
 	virtual void EndRender() override;
 	virtual g2d::Mesh* CreateMesh(unsigned int vertexCount, unsigned int indexCount) override;
-	virtual void RenderMesh(g2d::Mesh*, const gml::mat32&) override;
+	virtual void RenderMesh(g2d::Mesh*, g2d::Texture*, const gml::mat32&) override;
 
 private:
 	void FlushBatch();
@@ -118,7 +145,9 @@ private:
 	gml::color4 m_bkColor = gml::color4::blue();
 
 	Mesh m_mesh;
+	std::string m_texture;
 	Geometry m_geometry;
+	Texture2D m_defaultTex;
 
 	ShaderLib* shaderlib = nullptr;
 };

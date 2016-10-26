@@ -12,12 +12,15 @@ bool g2d::InitEngine(const EngineConfig& config)
 
 	do
 	{
+		inst->SetResourceRoot(config.resourceFolderPath);
+
 		if (!inst->CreateRenderSystem(config.nativeWindow))
 		{
 			break;
 		}
 
 		inst->CreateNewScene();
+
 		return true;
 	} while (false);
 
@@ -58,6 +61,14 @@ void Engine::Render()
 	m_currentScene->Render();
 }
 
+g2d::Texture* Engine::LoadTexture(const char* path)
+{
+
+
+	std::string resourcePath = m_resourceRoot + path;
+	return m_renderSystem.CreateTextureFromFile(resourcePath.c_str());
+}
+
 bool Engine::CreateRenderSystem(void* nativeWindow)
 {
 	if (!m_renderSystem.Create(nativeWindow))
@@ -71,4 +82,17 @@ void Engine::CreateNewScene()
 {
 	SD(m_currentScene);
 	m_currentScene = new Scene();
+}
+
+void Engine::SetResourceRoot(const char* resPath)
+{
+	if (resPath == nullptr || strlen(resPath) == 0)
+		return;
+
+	m_resourceRoot = resPath;
+	char endWith = m_resourceRoot[m_resourceRoot.length() - 1];
+	if (endWith != '/' && endWith != '\\')
+	{
+		m_resourceRoot += '\\';
+	}
 }

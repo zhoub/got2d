@@ -1,5 +1,6 @@
 #include "render_system.h"
 #include <d3dcompiler.h>
+#include <assert.h>
 #pragma comment(lib,"d3dcompiler.lib")
 
 bool Shader::Create(const char* vsCode, const char* psCode)
@@ -23,7 +24,8 @@ bool Shader::Create(const char* vsCode, const char* psCode)
 
 		if (S_OK != ret)
 		{
-			//errorBlob->GetBufferPointer();
+			const char* reason = (const char*)errorBlob->GetBufferPointer();
+			assert(0);
 			errorBlob->Release();
 			errorBlob = nullptr;
 			break;
@@ -38,7 +40,8 @@ bool Shader::Create(const char* vsCode, const char* psCode)
 
 		if (S_OK != ret)
 		{
-			//errorBlob->GetBufferPointer();
+			const char* reason = (const char*)errorBlob->GetBufferPointer();
+			assert(0);
 			errorBlob->Release();
 			errorBlob = nullptr;
 			break;
@@ -191,7 +194,7 @@ class SimpleTextureShader : public ShaderSource
 			SamplerState State;
 			struct VertexInput
 			{
-				float2 texcoord : TEXCOORD0;
+				float4 position : SV_POSITION;
 				float2 texcoord : TEXCOORD0;
 			};
 			float4 PSMain(VertexInput input):SV_TARGET

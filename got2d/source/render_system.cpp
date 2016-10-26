@@ -1,6 +1,8 @@
 #include "render_system.h"
-
+#include "engine.h"
 #include <string>
+#include "file_data.h"
+#include "img_data.h"
 
 g2d::RenderSystem::~RenderSystem() { }
 RenderSystem* RenderSystem::Instance = nullptr;
@@ -60,6 +62,7 @@ bool Geometry::MakeEnoughVertexArray(unsigned int numVertices)
 	m_vertexBuffer = vertexBuffer;
 	return true;
 }
+
 bool Geometry::MakeEnoughIndexArray(unsigned int numIndices)
 {
 	if (m_numIndices >= numIndices)
@@ -104,6 +107,7 @@ void Geometry::UploadVertices(unsigned int offset, g2d::GeometryVertex* vertices
 		GetRenderSystem()->GetContext()->Unmap(m_vertexBuffer, 0);
 	}
 }
+
 void Geometry::UploadIndices(unsigned int offset, unsigned int* indices, unsigned int count)
 {
 	if (indices == nullptr || m_indexBuffer == nullptr)
@@ -127,6 +131,90 @@ void Geometry::Destroy()
 	SR(m_indexBuffer);
 	m_numVertices = 0;
 	m_numIndices = 0;
+}
+
+bool Texture2D::Create(unsigned int width, unsigned int height)
+{
+	if (width == 0 || height == 0)
+		return false;
+
+	D3D11_TEXTURE2D_DESC texDesc;
+
+	texDesc.Width = width;
+	texDesc.Height = height;
+	texDesc.MipLevels = 1;
+	texDesc.ArraySize = 1;
+	texDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	texDesc.SampleDesc.Count = 1;
+	texDesc.SampleDesc.Quality = 0;
+	texDesc.Usage = D3D11_USAGE_DYNAMIC;
+	texDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+	texDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+	texDesc.MiscFlags = 0;
+	if (S_OK != GetRenderSystem()->GetDevice()->CreateTexture2D(&texDesc, nullptr, &m_texture))
+	{
+		return false;
+	}
+
+	D3D11_SHADER_RESOURCE_VIEW_DESC viewDesc;
+	::ZeroMemory(&viewDesc, sizeof(viewDesc));
+	viewDesc.Format = texDesc.Format;
+	viewDesc.ViewDimension = D3D_SRV_DIMENSION_TEXTURE2D;
+	viewDesc.Texture2D.MipLevels = -1;
+	viewDesc.Texture2D.MostDetailedMip = 0;
+	if (S_OK != GetRenderSystem()->GetDevice()->CreateShaderResourceView(m_texture, &viewDesc, &m_shaderView))
+	{
+		Destroy();
+		return false;
+	}
+
+	m_width = width;
+	m_height = height;
+	return true;
+}
+
+void Texture2D::UploadImage(unsigned char* data, bool hasAlpha)
+{
+	D3D11_MAPPED_SUBRESOURCE mappedRes;
+	if (S_OK == GetRenderSystem()->GetContext()->Map(m_texture, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedRes))
+	{
+		unsigned char* colorBuffer = static_cast<unsigned char*>(mappedRes.pData);
+		if (hasAlpha)
+		{
+			int srcPitch = m_width * 4;
+			for (unsigned int i = 0; i < m_height; i++)
+			{
+				auto dstPtr = colorBuffer + i * mappedRes.RowPitch;
+				auto srcPtr = data + i * srcPitch;
+				memcpy(dstPtr, srcPtr, srcPitch);
+			}
+		}
+		else
+		{
+			int srcPitch = m_width * 3;
+			for (unsigned int i = 0; i < m_height; i++)
+			{
+				auto dstPtr = colorBuffer + i * mappedRes.RowPitch;
+				auto srcPtr = data + i * srcPitch;
+				for (unsigned int j = 0; j < m_width; j++)
+				{
+					memcpy(dstPtr + j * 4, srcPtr + j * 3, 3);
+				}
+			}
+		}
+
+		GetRenderSystem()->GetContext()->Unmap(m_texture, 0);
+		GetRenderSystem()->GetContext()->GenerateMips(m_shaderView);
+	}
+
+}
+
+void Texture2D::Destroy()
+{
+	SR(m_texture);
+	SR(m_shaderView);
+	m_width = 0;
+	m_height = 0;
 }
 
 RenderSystem::RenderSystem() :m_bkColor(gml::color4::blue()), m_mesh(0, 0)
@@ -252,10 +340,34 @@ bool RenderSystem::Create(void* nativeWindow)
 			1.0f,//FLOAT MaxDepth;
 		};
 
+
 		//m_d3dContext->OMSetRenderTargets(1, &m_rtView, nullptr);
 		m_d3dContext->OMSetRenderTargets(1, &m_bbView, nullptr);
 		m_d3dContext->RSSetViewports(1, &m_viewport);
 		Instance = this;
+
+		std::string res = ::GetEngine()->GetResourceRoot() + "test_alpha.bmp";
+		file_data f;
+		if (!load_file(res.c_str(), f))
+			break;
+
+		img_data img;
+		if (!read_bmp(f.buffer, img))
+		{
+			destroy_file_data(f);
+			break;
+		}
+
+		destroy_file_data(f);
+
+		if (!m_defaultTex.Create(img.width, img.height))
+		{
+			destroy_img_data(img);
+			break;
+		}
+
+		m_defaultTex.UploadImage(img.raw_data, img.has_alpha);
+		destroy_img_data(img);
 
 		shaderlib = new ShaderLib();
 		return true;
@@ -269,6 +381,8 @@ bool RenderSystem::Create(void* nativeWindow)
 
 void RenderSystem::Destroy()
 {
+	m_geometry.Destroy();
+	m_defaultTex.Destroy();
 	if (shaderlib)
 	{
 		delete shaderlib;
@@ -297,6 +411,11 @@ void RenderSystem::Present()
 	m_swapChain->Present(0, 0);
 }
 
+Texture* RenderSystem::CreateTextureFromFile(const char* resPath)
+{
+	return new Texture(resPath);
+}
+
 void RenderSystem::FlushBatch()
 {
 	m_geometry.MakeEnoughVertexArray(m_mesh.GetVertexCount());
@@ -304,22 +423,27 @@ void RenderSystem::FlushBatch()
 	m_geometry.UploadVertices(0, m_mesh.GetRawVertices(), m_mesh.GetVertexCount());
 	m_geometry.UploadIndices(0, m_mesh.GetRawIndices(), m_mesh.GetIndexCount());
 
-	auto shader = shaderlib->GetShaderByName("simple.color");
+	auto shader = shaderlib->GetShaderByName("simple.texture");
 	if (shader)
 	{
-		m_d3dContext->IASetInputLayout(shader->GetInputLayout());
-		m_d3dContext->VSSetShader(shader->GetVertexShader(), NULL, 0);
-		m_d3dContext->PSSetShader(shader->GetPixelShader(), NULL, 0);
-
 		unsigned int stride = sizeof(g2d::GeometryVertex);
 		unsigned int offset = 0;
 		m_d3dContext->IASetVertexBuffers(0, 1, &(m_geometry.m_vertexBuffer), &stride, &offset);
 		m_d3dContext->IASetIndexBuffer(m_geometry.m_indexBuffer, DXGI_FORMAT_R32_UINT, 0);
 		m_d3dContext->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
+		m_d3dContext->IASetInputLayout(shader->GetInputLayout());
+
+		m_d3dContext->VSSetShader(shader->GetVertexShader(), NULL, 0);
+		m_d3dContext->PSSetShader(shader->GetPixelShader(), NULL, 0);
+		m_d3dContext->PSSetShaderResources(0, 1, &(m_defaultTex.m_shaderView));
+		ID3D11SamplerState* a = nullptr;
+		m_d3dContext->PSSetSamplers(0, 1, &a);
+
 		m_d3dContext->DrawIndexed(m_mesh.GetIndexCount(), 0, 0);
 	}
 }
+
 void RenderSystem::Render()
 {
 	if (m_mesh.GetIndexCount() > 0)
@@ -333,8 +457,11 @@ g2d::Mesh* RenderSystem::CreateMesh(unsigned int vertexCount, unsigned int index
 	return new Mesh(vertexCount, indexCount);
 }
 
-void RenderSystem::RenderMesh(g2d::Mesh* m, const gml::mat32& transform)
+void RenderSystem::RenderMesh(g2d::Mesh* m, g2d::Texture* t, const gml::mat32& transform)
 {
+	::Texture* timpl = dynamic_cast<::Texture*>(t);
+	//m_texture = (timpl == nullptr) ? "default" : timpl->GetResourceName();
+
 	if (m_mesh.Merge(m, transform))
 	{
 		return;
