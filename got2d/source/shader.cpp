@@ -141,7 +141,7 @@ class SimpleColorShader : public ShaderSource
 			VertexOutput VSMain(GeometryVertex input)
 			{
 				VertexOutput output;
-				output.position = mul(float4(input.position, 0, 1), matrixProj);
+				output.position = mul(matrixProj, float4(input.position, 0, 1) );
 				output.vtxcolor = input.vtxcolor;
 				return output;
 			}
@@ -191,7 +191,7 @@ class SimpleTextureShader : public ShaderSource
 			VertexOutput VSMain(GeometryVertex input)
 			{
 				VertexOutput output;
-				output.position = mul(float4(input.position, 0, 1), matrixProj);
+				output.position = mul(matrixProj, float4(input.position, 0, 1) );
 				output.texcoord = input.texcoord;
 				return output;
 			}
@@ -244,7 +244,7 @@ class DefaultShader : public ShaderSource
 			VertexOutput VSMain(GeometryVertex input)
 			{
 				VertexOutput output;
-				output.position = mul(float4(input.position, 0, 1), matrixProj);
+				output.position = mul(matrixProj, float4(input.position, 0, 1) );
 				output.texcoord = input.texcoord;
 				output.vtxcolor = input.vtxcolor;
 				return output;

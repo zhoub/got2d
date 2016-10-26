@@ -67,14 +67,14 @@ QuatNode::QuatNode()
 
 	g2d::GeometryVertex* vertices = m_mesh->GetRawVertices();
 	vertices[0].position.set(0, 0);
-	vertices[1].position.set(0, 100.0f);
+	vertices[3].position.set(0, 100.0f);
 	vertices[2].position.set(100.0f, 100.0f);
-	vertices[3].position.set(100.0f, 0);
+	vertices[1].position.set(100.0f, 0);
 
-	vertices[0].texcoord.set(0, 0);
-	vertices[1].texcoord.set(0, 1);
-	vertices[2].texcoord.set(1, 1);
-	vertices[3].texcoord.set(1, 0);
+	vertices[0].texcoord.set(0, 1);
+	vertices[3].texcoord.set(0, 0);
+	vertices[2].texcoord.set(1, 0);
+	vertices[1].texcoord.set(1, 1);
 
 	vertices[0].vtxcolor = gml::color4::random();
 	vertices[1].vtxcolor = gml::color4::random();

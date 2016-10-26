@@ -196,8 +196,9 @@ const gml::mat44& RenderSystem::GetProjectionMatrix()
 	if (m_matrixProjDirty)
 	{
 		m_matrixProjDirty = false;
-		//m_matProj = gml::mat44::center_ortho_lh(static_cast<float>(m_windowWidth), static_cast<float>(m_windowHeight), 0.5f, 1000.0f);
-		m_matProj = gml::mat44::ortho2d_lh(static_cast<float>(m_windowWidth), static_cast<float>(m_windowHeight), 0.5f, 1000.0f);
+		float znear = -0.5f;
+		m_matProj = gml::mat44::center_ortho_lh(static_cast<float>(m_windowWidth), static_cast<float>(m_windowHeight), znear, 1000.0f);
+		m_matProj = gml::mat44::ortho2d_lh(static_cast<float>(m_windowWidth), static_cast<float>(m_windowHeight), znear, 1000.0f);
 	}
 	return m_matProj;
 }
@@ -233,7 +234,6 @@ void RenderSystem::FlushBatch()
 		m_d3dContext->IASetVertexBuffers(0, 1, &(m_geometry.m_vertexBuffer), &stride, &offset);
 		m_d3dContext->IASetIndexBuffer(m_geometry.m_indexBuffer, DXGI_FORMAT_R32_UINT, 0);
 		m_d3dContext->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-
 		m_d3dContext->IASetInputLayout(shader->GetInputLayout());
 
 		m_d3dContext->VSSetShader(shader->GetVertexShader(), NULL, 0);
