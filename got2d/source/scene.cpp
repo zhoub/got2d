@@ -4,7 +4,7 @@ g2d::SceneNode::~SceneNode() { }
 
 g2d::Scene::~Scene() { }
 
-::SceneNode::SceneNode(SceneNode* parent)
+SceneNode::SceneNode(SceneNode* parent)
 	: m_parent(parent)
 	, m_matrixLocal(gml::mat32::I())
 	, m_position(gml::vec2::zero())
@@ -15,7 +15,7 @@ g2d::Scene::~Scene() { }
 
 }
 
-::SceneNode::~SceneNode()
+SceneNode::~SceneNode()
 {
 	for (auto& child : m_children)
 	{
@@ -28,14 +28,42 @@ const gml::mat32& SceneNode::GetLocalMatrix()
 {
 	if (m_matrixLocalDirty)
 	{
-		//m_matrixLocal = gml::mat32::trps(m_position, m_rotationRadian, m_pivot, m_scale);
 		m_matrixLocal = gml::mat32::trsp(m_position, m_rotationRadian, m_scale, m_pivot);
 		m_matrixLocalDirty = false;
 	}
 	return m_matrixLocal;
 }
+
+const gml::mat32& SceneNode::GetWorldMatrix()
+{
+	if (m_parent == nullptr)//get rid of transform of ROOT.
+	{
+		return GetLocalMatrix();
+	}
+
+	if (m_matrixWorldDirty)
+	{
+		auto matParent = m_parent->GetWorldMatrix();
+		m_matrixWorld = matParent * GetLocalMatrix();
+		m_matrixWorldDirty = false;
+	}
+	return m_matrixWorld;
+
+}
+
+void SceneNode::SetLocalMatrixDirty()
+{
+	m_matrixLocalDirty = true;
+	for (auto& child : m_children)
+	{
+		m_matrixWorldDirty = true;
+		child->m_matrixWorldDirty = true;
+	}
+}
+
 void SceneNode::Update(unsigned int elpasedTime)
 {
+	OnUpdate();
 	for (auto& child : m_children)
 	{
 		child->Update(elpasedTime);
@@ -44,43 +72,49 @@ void SceneNode::Update(unsigned int elpasedTime)
 
 void SceneNode::Render()
 {
+	OnRender();
 	for (auto& child : m_children)
 	{
 		child->Render();
 	}
 }
 
-g2d::SceneNode* SceneNode::CreateQuadNode()
+QuadNode* SceneNode::_CreateQuadNode()
 {
-	auto rst = new QuatNode(this);
+	auto rst = new QuadNode(this);
 	m_children.push_back(rst);
 	return rst;
 }
 
-void SceneNode::SetPivot(const gml::vec2& pivot)
+SceneNode* SceneNode::_SetPivot(const gml::vec2& pivot)
 {
-	m_matrixLocalDirty = true;
+	SetLocalMatrixDirty();
 	m_pivot = pivot;
+	return this;
 }
-void SceneNode::SetScale(const gml::vec2& scale)
+SceneNode* SceneNode::_SetScale(const gml::vec2& scale)
 {
-	m_matrixLocalDirty = true;
+	SetLocalMatrixDirty();
 	m_scale = scale;
+	return this;
 }
-void SceneNode::SetPosition(const gml::vec2& position)
+
+SceneNode* SceneNode::_SetPosition(const gml::vec2& position)
 {
-	m_matrixLocalDirty = true;
+	SetLocalMatrixDirty();
 	m_position = position;
+	return this;
 }
-void SceneNode::SetRotation(float radian)
+SceneNode* SceneNode::_SetRotation(float radian)
 {
-	m_matrixLocalDirty = true;
+	SetLocalMatrixDirty();
 	m_rotationRadian = radian;
+	return this;
 }
 
 #include <g2dengine.h>
-QuatNode::QuatNode(SceneNode* parent)
-	:SceneNode(parent)
+QuadNode::QuadNode(::SceneNode* parent)
+	: ::SceneNode(parent)
 {
 	unsigned int indices[] = { 0, 1, 2, 0, 2, 3 };
 	m_mesh = g2d::GetEngine()->GetRenderSystem()->CreateMesh(4, 6);
@@ -110,22 +144,31 @@ QuatNode::QuatNode(SceneNode* parent)
 	m_tex = g2d::GetEngine()->LoadTexture((rand() % 2) ? "test_alpha.bmp" : "test_alpha.png");
 
 	SetPivot(gml::vec2(-0.5f, -0.5f));
-	SetScale(gml::vec2(100, 120));
 }
-QuatNode::~QuatNode()
+
+QuadNode::~QuadNode()
 {
 	m_mesh->Release();
 }
-void QuatNode::Render()
+void QuadNode::OnRender()
 {
-	g2d::GetEngine()->GetRenderSystem()->RenderMesh(m_mesh, m_tex, GetLocalMatrix());
+	g2d::GetEngine()->GetRenderSystem()->RenderMesh(m_mesh, m_tex, GetWorldMatrix());
+}
+g2d::QuadNode* QuadNode::SetSize(const gml::vec2& size)
+{
+	g2d::GeometryVertex* vertices = m_mesh->GetRawVertices();
+	vertices[0].position.set(-0.5f, -0.5f) *= size;
+	vertices[3].position.set(-0.5f, +0.5f) *= size;
+	vertices[2].position.set(+0.5f, +0.5f) *= size;
+	vertices[1].position.set(+0.5f, -0.5f) *= size;
+	return this;
 }
 
-::Scene::Scene()
+Scene::Scene()
 {
 	m_root = new ::SceneNode(nullptr);
 }
-::Scene::~Scene()
+Scene::~Scene()
 {
 	delete m_root;
 }

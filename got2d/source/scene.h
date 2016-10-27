@@ -2,30 +2,36 @@
 #include "../include/g2dscene.h"
 #include <gmlmatrix.h>
 #include <vector>
-class SceneNode : public g2d::SceneNode
+
+class QuadNode;
+class SceneNode
 {
 public:
 	SceneNode(SceneNode* parent);
-	~SceneNode();
-
+	virtual ~SceneNode();
 	const gml::mat32& GetLocalMatrix();
-	virtual void Update(unsigned int elpasedTime);
-	virtual void Render();
+	const gml::mat32& GetWorldMatrix();
+	void Update(unsigned int elpasedTime);
+	void Render();
 
 public:
-	virtual g2d::SceneNode* CreateQuadNode() override;
+	virtual void OnUpdate() {}
+	virtual void OnRender() {}
 
-	virtual void SetPosition(const gml::vec2& position) override;
-	virtual void SetPivot(const gml::vec2& pivot) override;
-	virtual void SetScale(const gml::vec2& scale) override;
-	virtual void SetRotation(float radian) override;
-	inline virtual const gml::vec2& GetPosition()  const override { return m_position; }
-	inline virtual const gml::vec2& GetPivot() const override { return m_pivot; }
-	inline virtual const gml::vec2& GetScale() const override { return m_scale; }
-	inline virtual float GetRotation() const override { return m_rotationRadian; }
+public:
+	QuadNode* _CreateQuadNode();
+	SceneNode* _SetPosition(const gml::vec2& position);
+	SceneNode* _SetPivot(const gml::vec2& pivot);
+	SceneNode* _SetScale(const gml::vec2& scale);
+	SceneNode* _SetRotation(float radian);
+	inline const gml::vec2& _GetPosition()  const { return m_position; }
+	inline const gml::vec2& _GetPivot() const { return m_pivot; }
+	inline const gml::vec2& _GetScale() const { return m_scale; }
+	inline float _GetRotation() const { return m_rotationRadian; }
 
 private:
-	SceneNode* m_parent = nullptr;
+	void SetLocalMatrixDirty();
+	::SceneNode* m_parent = nullptr;
 	std::vector<::SceneNode*> m_children;
 
 	gml::vec2 m_position;
@@ -34,18 +40,40 @@ private:
 	float m_rotationRadian;
 
 	bool m_matrixLocalDirty = false;
+	bool m_matrixWorldDirty = true;
 	gml::mat32 m_matrixLocal;
+	gml::mat32 m_matrixWorld;
 };
 
+#define IMPL_SCENE_NODE(member) \
+	inline virtual g2d::QuadNode* CreateQuadNode() override { return member->_CreateQuadNode(); } \
+	inline virtual g2d::SceneNode* SetPosition(const gml::vec2& position) override { member->_SetPosition(position); return this;} \
+	inline virtual g2d::SceneNode* SetPivot(const gml::vec2& pivot) override { member->_SetPivot(pivot); return this; } \
+	inline virtual g2d::SceneNode* SetScale(const gml::vec2& scale) override { member->_SetScale(scale); return this; } \
+	inline virtual g2d::SceneNode* SetRotation(float radian) override { member->_SetRotation(radian); return this; } \
+	inline virtual const gml::vec2& GetPosition()  const override { return member->_GetPosition(); } \
+	inline virtual const gml::vec2& GetPivot() const override { return member->_GetPivot(); } \
+	inline virtual const gml::vec2& GetScale() const override { return member->_GetScale(); } \
+	inline virtual float GetRotation() const override { return member->_GetRotation(); } \
+
 #include<g2drender.h>
-class QuatNode : public SceneNode
+class QuadNode : public g2d::QuadNode, public ::SceneNode
 {
 public:
-	QuatNode(SceneNode* parent);
-	~QuatNode();
-	virtual void Render() override;
+	QuadNode(::SceneNode* parent);
+	~QuadNode();
+	virtual void OnRender() override;
+
+public:
+	inline virtual g2d::QuadNode* SetSize(const gml::vec2& size) override;
+	inline virtual const gml::vec2& GetSize() const override { return m_size; }
+
+public:
+	IMPL_SCENE_NODE(this);
+
 	g2d::Mesh* m_mesh;
 	g2d::Texture* m_tex;
+	gml::vec2 m_size;
 };
 
 class Scene : public g2d::Scene
@@ -59,16 +87,7 @@ public:
 	inline void Render() { return m_root->Render(); }
 
 public:
-	inline virtual g2d::SceneNode* CreateQuadNode() override { return m_root->CreateQuadNode(); }
-
-	inline virtual void SetPosition(const gml::vec2& position) override { m_root->SetPosition(position); }
-	inline virtual void SetPivot(const gml::vec2& pivot) override { m_root->SetPivot(pivot); };
-	inline virtual void SetScale(const gml::vec2& scale) override { m_root->SetScale(scale); };
-	inline virtual void SetRotation(float radian) override { m_root->SetRotation(radian); };
-	inline virtual const gml::vec2& GetPosition()  const override { return m_root->GetPosition(); };
-	inline virtual const gml::vec2& GetPivot() const override { return m_root->GetPivot(); };
-	inline virtual const gml::vec2& GetScale() const override { return m_root->GetScale(); };
-	inline virtual float GetRotation() const override { return m_root->GetRotation(); };
+	IMPL_SCENE_NODE(m_root);
 
 private:
 	::SceneNode* m_root;
