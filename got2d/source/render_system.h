@@ -53,8 +53,11 @@ public:
 	inline const std::string& GetResourceName() { return m_resPath; }
 
 public:
+	virtual bool IsSame(g2d::Texture* other) const override;
+	virtual void AddRef() override;
 	virtual void Release() override;
 private:
+	int m_refCount = 1;
 	std::string m_resPath;
 };
 
@@ -136,22 +139,15 @@ public:
 	virtual void SetTexture(unsigned int index, g2d::Texture*, bool autoRelease) override;
 	virtual void SetVSConstant(unsigned int index, float* data, unsigned int size, unsigned int count) override;
 	virtual void SetPSConstant(unsigned int index, float* data, unsigned int size, unsigned int count) override;
-	virtual g2d::Texture* GetTexture(unsigned int index) const override { return m_textures[index].texture; }
+	virtual g2d::Texture* GetTexture(unsigned int index) const override { return m_textures[index]; }
 	virtual const float* GetVSConstant() const override { return reinterpret_cast<const float*>(&(m_vsConstants[0])); }
 	virtual const float* GetPSConstant() const override { return reinterpret_cast<const float*>(&(m_psConstants[0])); }
 	inline virtual void Release() override { delete this; }
-
-	inline g2d::Texture* GetTextures(unsigned int index) { return m_textures[index].texture; }
 	inline unsigned int GetTextureCount() { return static_cast<unsigned int>(m_textures.size()); }
 
 private:
 	std::string m_effectName;
-	struct MaterialTexture
-	{
-		bool autoRelease;
-		g2d::Texture* texture;
-	};
-	std::vector<MaterialTexture> m_textures;
+	std::vector<g2d::Texture*> m_textures;
 	std::vector<gml::vec4> m_vsConstants;
 	std::vector<gml::vec4> m_psConstants;
 };

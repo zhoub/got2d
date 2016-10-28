@@ -267,7 +267,7 @@ void RenderSystem::RenderMesh(g2d::Mesh* m, g2d::Material* material, const gml::
 {
 	//::Texture* timpl = dynamic_cast<::Texture*>(t);
 	::Pass* p = dynamic_cast<::Pass*>(material->GetPass(0));
-	::Texture* timpl = dynamic_cast<::Texture*>(p->GetTextures(0));
+	::Texture* timpl = dynamic_cast<::Texture*>(p->GetTexture(0));
 
 	if (m_lastMaterial)
 	{

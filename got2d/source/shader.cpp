@@ -327,9 +327,8 @@ Pass::Pass(const Pass& other)
 {
 	for (unsigned int i = 0, n = m_textures.size(); i < n; i++)
 	{
-		//dangerous.
-		m_textures[i].autoRelease = false;
-		m_textures[i].texture = other.m_textures[i].texture;
+		m_textures[i] = other.m_textures[i];
+		m_textures[i]->AddRef();
 	}
 
 	if (m_vsConstants.size() > 0)
@@ -346,10 +345,7 @@ Pass::~Pass()
 {
 	for (auto& t : m_textures)
 	{
-		if (t.texture && t.autoRelease)
-		{
-			t.texture->Release();
-		}
+		t->Release();
 	}
 	m_textures.clear();
 }
@@ -377,7 +373,7 @@ bool Pass::IsSame(g2d::Pass* other) const
 
 	for (unsigned int i = 0, n = m_textures.size(); i < n; i++)
 	{
-		if (m_textures[i].texture != p->m_textures[i].texture)
+		if (m_textures[i]->IsSame(p->m_textures[i]))
 		{
 			return false;
 		}
@@ -407,17 +403,19 @@ void Pass::SetTexture(unsigned int index, g2d::Texture* tex, bool autoRelease)
 		m_textures.resize(index + 1);
 		for (unsigned int i = size; i < index; i++)
 		{
-			m_textures[i].texture = nullptr;
-			m_textures[i].autoRelease = false;
+			m_textures[i] = nullptr;
 		}
 	}
 
-	if (m_textures[index].texture && m_textures[index].autoRelease)
+	if (m_textures[index])
 	{
-		m_textures[index].texture->Release();
+		m_textures[index]->Release();
 	}
-	m_textures[index].autoRelease = autoRelease;
-	m_textures[index].texture = tex;
+	m_textures[index] = tex;
+	if (!autoRelease)
+	{
+		m_textures[index]->AddRef();
+	}
 }
 void Pass::SetVSConstant(unsigned int index, float* data, unsigned int size, unsigned int count)
 {

@@ -6,9 +6,25 @@ Texture::Texture(const char* resPath) : m_resPath(resPath)
 {
 
 }
+bool Texture::IsSame(g2d::Texture* other) const
+{
+	Texture* timpl = dynamic_cast<Texture*>(other);
+	if (timpl == nullptr)
+		return false;
+	return timpl->m_resPath == m_resPath;
+}
+
+void Texture::AddRef()
+{
+	m_refCount++;
+}
+
 void Texture::Release()
 {
-	delete this;
+	if (--m_refCount == 0)
+	{
+		delete this;
+	}
 }
 
 

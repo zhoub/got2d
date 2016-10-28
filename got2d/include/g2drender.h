@@ -31,6 +31,8 @@ namespace g2d
 	{
 	public:
 		virtual ~Texture();
+		virtual bool IsSame(Texture* other) const = 0;
+		virtual void AddRef() = 0;
 		virtual void Release() = 0;
 	};
 
