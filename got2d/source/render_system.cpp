@@ -281,7 +281,6 @@ void RenderSystem::Render()
 
 void RenderSystem::RenderMesh(g2d::Mesh* m, g2d::Material* material, const gml::mat32& transform)
 {
-	::Pass* p = dynamic_cast<::Pass*>(material->GetPass(0));
 	if (m_lastMaterial)
 	{
 		if (!m_lastMaterial->IsSame(material) && m_mesh.GetVertexCount() != 0)

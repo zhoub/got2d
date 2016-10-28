@@ -32,10 +32,12 @@ bool Testbed::InitApp()
 	if (!g2d::InitEngine(ecfg))
 		return false;
 
-	auto* node = g2d::GetEngine()->GetCurrentScene()->CreateQuadNode()->SetSize(gml::vec2(100, 120))->SetPosition(gml::vec2(100, 100));
+	g2d::Entity* quad = g2d::GetEngine()->GetCurrentScene()->CreateQuadEntity()->SetSize(gml::vec2(100, 120));
+	auto* node = g2d::GetEngine()->GetCurrentScene()->CreateSceneNode(quad, true)->SetPosition(gml::vec2(100, 100));
 	for (int i = 0; i < 4; i++)
 	{
-		auto child = node->CreateQuadNode()->SetSize(gml::vec2(100, 120))->SetPosition(gml::vec2(50, 50));
+		g2d::Entity* quad = g2d::GetEngine()->GetCurrentScene()->CreateQuadEntity()->SetSize(gml::vec2(100, 120));
+		auto* child = node->CreateSceneNode(quad, true)->SetPosition(gml::vec2(50, 50));
 		node = child;
 	}
 	return true;
