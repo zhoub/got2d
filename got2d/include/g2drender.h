@@ -17,7 +17,7 @@ namespace g2d
 	class Mesh
 	{
 	public:
-		~Mesh();
+		virtual ~Mesh();
 		virtual GeometryVertex* GetRawVertices() = 0;
 		virtual unsigned int* GetRawIndices() = 0;
 		virtual unsigned int GetVertexCount() = 0;
@@ -30,14 +30,14 @@ namespace g2d
 	class Texture
 	{
 	public:
-		~Texture();
+		virtual ~Texture();
 		virtual void Release() = 0;
 	};
 
 	class RenderSystem
 	{
 	public:
-		~RenderSystem();
+		virtual ~RenderSystem();
 		virtual bool OnResize(long width, long height) = 0;
 		virtual void BeginRender() = 0;
 		virtual void EndRender() = 0;

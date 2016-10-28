@@ -7,7 +7,7 @@ namespace g2d
 	class G2DAPI SceneNode
 	{
 	public:
-		~SceneNode();
+		virtual ~SceneNode();
 
 		virtual QuadNode* CreateQuadNode() = 0;
 		virtual SceneNode* SetPosition(const gml::vec2& position) = 0;
@@ -30,6 +30,6 @@ namespace g2d
 	class G2DAPI Scene : public SceneNode
 	{
 	public:
-		~Scene();
+		virtual ~Scene();
 	};
 }
