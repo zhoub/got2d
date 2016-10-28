@@ -1,6 +1,7 @@
 #pragma once
 #include "../include/g2drender.h"
 #include <map>
+#include <vector>
 #include <windows.h>
 #include <d3d11.h>
 #include <gmlcolor.h>
@@ -47,6 +48,7 @@ private:
 class Texture : public g2d::Texture
 {
 public:
+	static Texture* Default() { static Texture t(""); return &t; }
 	Texture(const char* resPath);
 	inline const std::string& GetResourceName() { return m_resPath; }
 
@@ -121,6 +123,44 @@ private:
 	std::map<std::string, Shader*> m_shaders;
 };
 
+class Pass : public g2d::Pass
+{
+public:
+	inline Pass(const char* name) : m_effectName(name) {}
+
+	inline virtual const char* GetEffectName() const override { return m_effectName.c_str(); }
+	virtual void SetTexture(unsigned int index, g2d::Texture*) override;
+	virtual void SetVSConstant(unsigned int index, float* data, unsigned int size, unsigned int count) override;
+	virtual void SetPSConstant(unsigned int index, float* data, unsigned int size, unsigned int count) override;
+	inline virtual void Release() override { delete this; }
+
+	inline g2d::Texture* GetTextures(unsigned int index) { return m_textures[index]; }
+	inline unsigned int GetTextureCount() { return static_cast<unsigned int>(m_textures.size()); }
+
+private:
+	std::string m_effectName;
+	std::vector<g2d::Texture*> m_textures;
+	std::vector<gml::vec4> m_vsConstants;
+	std::vector<gml::vec4> m_psConstants;
+};
+
+class Material : public g2d::Material
+{
+public:
+	Material(unsigned int passCount);
+	~Material();
+	void SetPass(unsigned int index, Pass* p);
+
+public:
+	virtual g2d::Pass* GetPass(unsigned int index) const override;
+	virtual unsigned int GetPassCount() const override;
+	virtual void Release()  override;
+
+private:
+	std::vector<Pass*> m_passes;
+
+};
+
 class RenderSystem : public g2d::RenderSystem
 {
 public:
@@ -146,8 +186,13 @@ public:
 	virtual bool OnResize(long width, long height) override;
 	virtual void BeginRender() override;
 	virtual void EndRender() override;
-	virtual g2d::Mesh* CreateMesh(unsigned int vertexCount, unsigned int indexCount) override;
 	virtual void RenderMesh(g2d::Mesh*, g2d::Texture*, const gml::mat32&) override;
+public:
+	virtual g2d::Mesh* CreateMesh(unsigned int vertexCount, unsigned int indexCount) override;
+	virtual g2d::Material* CreateDefaultMaterial() override;
+	virtual g2d::Material* CreateSimpleTextureMaterial() override;
+	virtual g2d::Material* CreateSimpleColorMaterial() override;
+
 
 private:
 	void FlushBatch();

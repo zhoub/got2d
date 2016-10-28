@@ -255,11 +255,6 @@ void RenderSystem::Render()
 	}
 }
 
-g2d::Mesh* RenderSystem::CreateMesh(unsigned int vertexCount, unsigned int indexCount)
-{
-	return new Mesh(vertexCount, indexCount);
-}
-
 void RenderSystem::RenderMesh(g2d::Mesh* m, g2d::Texture* t, const gml::mat32& transform)
 {
 	::Texture* timpl = dynamic_cast<::Texture*>(t);
@@ -293,4 +288,32 @@ void RenderSystem::EndRender()
 {
 	Render();
 	Present();
+}
+
+g2d::Mesh* RenderSystem::CreateMesh(unsigned int vertexCount, unsigned int indexCount)
+{
+	return new Mesh(vertexCount, indexCount);
+}
+
+g2d::Material* RenderSystem::CreateDefaultMaterial()
+{
+	auto mat = new ::Material(1);
+	mat->SetPass(0, new Pass("default"));
+	mat->GetPass(0)->SetTexture(0, Texture::Default());
+	return mat;
+}
+
+g2d::Material* RenderSystem::CreateSimpleTextureMaterial()
+{
+	auto mat = new ::Material(1);
+	mat->SetPass(0, new Pass("simple.texture"));
+	mat->GetPass(0)->SetTexture(0, Texture::Default());
+	return mat;
+}
+
+g2d::Material* RenderSystem::CreateSimpleColorMaterial()
+{
+	auto mat = new ::Material(1);
+	mat->SetPass(0, new Pass("simple.color"));
+	return mat;
 }

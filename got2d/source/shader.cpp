@@ -314,3 +314,86 @@ bool ShaderLib::BuildShader(const std::string& name)
 
 	return false;
 }
+
+g2d::Pass::~Pass() {}
+
+g2d::Material::~Material() {}
+
+
+void Pass::SetTexture(unsigned int index, g2d::Texture* tex)
+{
+	if (index >= m_textures.size())
+	{
+		m_textures.resize(index + 1);
+	}
+	m_textures[index] = tex;
+}
+void Pass::SetVSConstant(unsigned int index, float* data, unsigned int size, unsigned int count)
+{
+	if (count == 0)
+		return;
+
+	if (index + count > m_vsConstants.size())
+	{
+		m_vsConstants.resize(index + count);
+	}
+
+	for (unsigned int i = 0; i < count; i++)
+	{
+		memcpy(&(m_vsConstants[index + i]), data + i*size, size);
+	}
+}
+
+void Pass::SetPSConstant(unsigned int index, float* data, unsigned int size, unsigned int count)
+{
+	if (count == 0)
+		return;
+
+	if (index + count > m_vsConstants.size())
+	{
+		m_vsConstants.resize(index + count);
+	}
+
+	for (unsigned int i = 0; i < count; i++)
+	{
+		memcpy(&(m_vsConstants[index + i]), data + i*size, size);
+	}
+}
+
+Material::Material(unsigned int passCount)
+	: m_passes(passCount)
+{
+
+}
+
+void Material::SetPass(unsigned int index, Pass* p)
+{
+	assert(index < m_passes.size());
+	m_passes[index] = p;
+}
+
+Material::~Material()
+{
+	for (auto& p : m_passes)
+	{
+		p->Release();
+	}
+	m_passes.clear();
+}
+
+g2d::Pass* Material::GetPass(unsigned int index) const
+{
+	if (m_passes.size() <= index)
+		return nullptr;
+	return m_passes[index];
+}
+
+unsigned int Material::GetPassCount() const
+{
+	return static_cast<unsigned int>(m_passes.size());
+}
+
+void Material::Release()
+{
+	delete this;
+}
