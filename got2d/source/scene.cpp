@@ -141,10 +141,20 @@ QuadNode::QuadNode(::SceneNode* parent)
 	vertices[2].vtxcolor = gml::color4::random();
 	vertices[3].vtxcolor = gml::color4::random();
 
-	auto tex = g2d::GetEngine()->LoadTexture((rand() % 2) ? "test_alpha.bmp" : "test_alpha.png");
-	m_material = g2d::GetEngine()->GetRenderSystem()->CreateSimpleTextureMaterial();
-	m_material->GetPass(0)->SetTexture(0, tex, true);
-
+	switch ((rand() % 3))
+	{
+	case 0:
+		m_material = g2d::GetEngine()->GetRenderSystem()->CreateSimpleColorMaterial();
+		break;
+	case 1:
+		m_material = g2d::GetEngine()->GetRenderSystem()->CreateSimpleTextureMaterial();
+		m_material->GetPass(0)->SetTexture(0, g2d::GetEngine()->LoadTexture((rand() % 2) ? "test_alpha.bmp" : "test_alpha.png"), true);
+		break;
+	case 2:
+		m_material = g2d::GetEngine()->GetRenderSystem()->CreateDefaultMaterial();
+		m_material->GetPass(0)->SetTexture(0, g2d::GetEngine()->LoadTexture((rand() % 2) ? "test_alpha.bmp" : "test_alpha.png"), true);
+		break;
+	}
 	SetPivot(gml::vec2(-0.5f, -0.5f));
 }
 

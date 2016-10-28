@@ -140,8 +140,11 @@ public:
 	virtual void SetVSConstant(unsigned int index, float* data, unsigned int size, unsigned int count) override;
 	virtual void SetPSConstant(unsigned int index, float* data, unsigned int size, unsigned int count) override;
 	virtual g2d::Texture* GetTexture(unsigned int index) const override { return m_textures[index]; }
-	virtual const float* GetVSConstant() const override { return reinterpret_cast<const float*>(&(m_vsConstants[0])); }
-	virtual const float* GetPSConstant() const override { return reinterpret_cast<const float*>(&(m_psConstants[0])); }
+	inline virtual unsigned int GetTextureCount() const override { return m_textures.size(); }
+	inline virtual const float* GetVSConstant() const override { return reinterpret_cast<const float*>(&(m_vsConstants[0])); }
+	inline virtual unsigned int GetVSConstantLength() const override { return m_vsConstants.size() * 4; }
+	inline virtual const float* GetPSConstant() const override { return reinterpret_cast<const float*>(&(m_psConstants[0])); }
+	inline virtual unsigned int GetPSConstantLength() const override { return m_psConstants.size() * 4; }
 	inline virtual void Release() override { delete this; }
 	inline unsigned int GetTextureCount() { return static_cast<unsigned int>(m_textures.size()); }
 

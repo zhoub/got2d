@@ -226,7 +226,7 @@ void RenderSystem::FlushBatch()
 	m_geometry.UploadVertices(0, m_mesh.GetRawVertices(), m_mesh.GetVertexCount());
 	m_geometry.UploadIndices(0, m_mesh.GetRawIndices(), m_mesh.GetIndexCount());
 
-	for (int i = 0; i < m_lastMaterial->GetPassCount(); i++)
+	for (unsigned int i = 0; i < m_lastMaterial->GetPassCount(); i++)
 	{
 		auto pass = m_lastMaterial->GetPass(i);
 		auto shader = shaderlib->GetShaderByName(pass->GetEffectName());
@@ -243,12 +243,28 @@ void RenderSystem::FlushBatch()
 			m_d3dContext->VSSetConstantBuffers(0, 1, &m_bufferMatrix);
 			m_d3dContext->PSSetShader(shader->GetPixelShader(), NULL, 0);
 
-			Texture* timpl = dynamic_cast<Texture*>(pass->GetTexture(0));
-			std::string textureName = (timpl == nullptr) ? "" : timpl->GetResourceName();
-			Texture2D* texture = m_texPool.GetTexture(textureName);
-			m_d3dContext->PSSetShaderResources(0, 1, &(texture->m_shaderView));
-			ID3D11SamplerState* a = nullptr;
-			m_d3dContext->PSSetSamplers(0, 1, &a);
+			if (pass->GetTextureCount() > 0)
+			{
+				std::vector<ID3D11ShaderResourceView*> views(pass->GetTextureCount());
+				std::vector<ID3D11SamplerState*> samplerstates(pass->GetTextureCount());
+				for (unsigned int i = 0; i < pass->GetTextureCount(); i++)
+				{
+					::Texture* timpl = dynamic_cast<::Texture*>(pass->GetTexture(i));
+					std::string textureName = (timpl == nullptr) ? "" : timpl->GetResourceName();
+					Texture2D* texture = m_texPool.GetTexture(textureName);
+					if (texture)
+					{
+						views[i] = texture->m_shaderView;
+					}
+					else
+					{
+						views[i] = nullptr;
+					}
+					samplerstates[i] = nullptr;
+				}
+				m_d3dContext->PSSetShaderResources(0, views.size(), &(views[0]));
+				m_d3dContext->PSSetSamplers(0, views.size(), &(samplerstates[0]));
+			}
 
 			m_d3dContext->DrawIndexed(m_mesh.GetIndexCount(), 0, 0);
 		}
@@ -265,10 +281,7 @@ void RenderSystem::Render()
 
 void RenderSystem::RenderMesh(g2d::Mesh* m, g2d::Material* material, const gml::mat32& transform)
 {
-	//::Texture* timpl = dynamic_cast<::Texture*>(t);
 	::Pass* p = dynamic_cast<::Pass*>(material->GetPass(0));
-	::Texture* timpl = dynamic_cast<::Texture*>(p->GetTexture(0));
-
 	if (m_lastMaterial)
 	{
 		if (!m_lastMaterial->IsSame(material) && m_mesh.GetVertexCount() != 0)
