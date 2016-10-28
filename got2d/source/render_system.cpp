@@ -262,8 +262,9 @@ void RenderSystem::FlushBatch()
 					}
 					samplerstates[i] = nullptr;
 				}
-				m_d3dContext->PSSetShaderResources(0, views.size(), &(views[0]));
-				m_d3dContext->PSSetSamplers(0, views.size(), &(samplerstates[0]));
+				UINT numView = static_cast<UINT>(views.size());
+				m_d3dContext->PSSetShaderResources(0, numView, &(views[0]));
+				m_d3dContext->PSSetSamplers(0, numView, &(samplerstates[0]));
 			}
 
 			m_d3dContext->DrawIndexed(m_mesh.GetIndexCount(), 0, 0);

@@ -325,7 +325,7 @@ Pass::Pass(const Pass& other)
 	, m_vsConstants(other.m_vsConstants.size())
 	, m_psConstants(other.m_psConstants.size())
 {
-	for (unsigned int i = 0, n = m_textures.size(); i < n; i++)
+	for (size_t i = 0, n = m_textures.size(); i < n; i++)
 	{
 		m_textures[i] = other.m_textures[i];
 		m_textures[i]->AddRef();
@@ -371,7 +371,7 @@ bool Pass::IsSame(g2d::Pass* other) const
 		return false;
 	}
 
-	for (unsigned int i = 0, n = m_textures.size(); i < n; i++)
+	for (size_t i = 0, n = m_textures.size(); i < n; i++)
 	{
 		if (m_textures[i]->IsSame(p->m_textures[i]))
 		{
@@ -397,11 +397,11 @@ bool Pass::IsSame(g2d::Pass* other) const
 
 void Pass::SetTexture(unsigned int index, g2d::Texture* tex, bool autoRelease)
 {
-	unsigned int size = m_textures.size();
+	size_t size = m_textures.size();
 	if (index >= size)
 	{
 		m_textures.resize(index + 1);
-		for (unsigned int i = size; i < index; i++)
+		for (size_t i = size; i < index; i++)
 		{
 			m_textures[i] = nullptr;
 		}
@@ -458,7 +458,7 @@ Material::Material(unsigned int passCount)
 Material::Material(const Material& other)
 	: m_passes(other.m_passes.size())
 {
-	for (unsigned int i = 0, n = m_passes.size(); i < n; i++)
+	for (size_t i = 0, n = m_passes.size(); i < n; i++)
 	{
 		m_passes[i] = other.m_passes[i]->Clone();
 	}
