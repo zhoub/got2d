@@ -42,9 +42,13 @@ namespace g2d
 	public:
 		virtual ~Pass();
 		virtual const char* GetEffectName() const = 0;
+		virtual bool IsSame(Pass* other) const = 0;
 		virtual void SetTexture(unsigned int index, Texture*, bool autoRelease) = 0;
 		virtual void SetVSConstant(unsigned int index, float* data, unsigned int size, unsigned int count) = 0;
 		virtual void SetPSConstant(unsigned int index, float* data, unsigned int size, unsigned int count) = 0;
+		virtual Texture* GetTexture(unsigned int index) const = 0;
+		virtual const float* GetVSConstant() const = 0;
+		virtual const float* GetPSConstant() const = 0;
 		virtual void Release() = 0;
 	};
 
@@ -54,6 +58,8 @@ namespace g2d
 		virtual ~Material();
 		virtual Pass* GetPass(unsigned int index) const = 0;
 		virtual unsigned int GetPassCount() const = 0;
+		virtual bool IsSame(Material* other) const = 0;
+		virtual Material* Clone() const = 0;
 		virtual void Release() = 0;
 	};
 

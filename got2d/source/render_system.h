@@ -127,12 +127,18 @@ class Pass : public g2d::Pass
 {
 public:
 	inline Pass(const char* name) : m_effectName(name) {}
+	Pass(const Pass& other);
 	~Pass();
+	Pass* Clone();
 
 	inline virtual const char* GetEffectName() const override { return m_effectName.c_str(); }
+	virtual bool IsSame(g2d::Pass* other) const override;
 	virtual void SetTexture(unsigned int index, g2d::Texture*, bool autoRelease) override;
 	virtual void SetVSConstant(unsigned int index, float* data, unsigned int size, unsigned int count) override;
 	virtual void SetPSConstant(unsigned int index, float* data, unsigned int size, unsigned int count) override;
+	virtual g2d::Texture* GetTexture(unsigned int index) const override { return m_textures[index].texture; }
+	virtual const float* GetVSConstant() const override { return reinterpret_cast<const float*>(&(m_vsConstants[0])); }
+	virtual const float* GetPSConstant() const override { return reinterpret_cast<const float*>(&(m_psConstants[0])); }
 	inline virtual void Release() override { delete this; }
 
 	inline g2d::Texture* GetTextures(unsigned int index) { return m_textures[index].texture; }
@@ -154,16 +160,19 @@ class Material : public g2d::Material
 {
 public:
 	Material(unsigned int passCount);
+	Material(const Material& other);
 	~Material();
 	void SetPass(unsigned int index, Pass* p);
 
 public:
 	virtual g2d::Pass* GetPass(unsigned int index) const override;
 	virtual unsigned int GetPassCount() const override;
+	virtual bool IsSame(g2d::Material* other) const override;
+	virtual g2d::Material* Clone() const override;
 	virtual void Release()  override;
 
 private:
-	std::vector<Pass*> m_passes;
+	std::vector<::Pass*> m_passes;
 
 };
 
@@ -214,7 +223,7 @@ private:
 	gml::color4 m_bkColor = gml::color4::blue();
 
 	Mesh m_mesh;
-	std::string m_texture;
+	g2d::Material* m_lastMaterial = nullptr;
 	ID3D11Buffer* m_bufferMatrix = nullptr;
 	Geometry m_geometry;
 	TexturePool m_texPool;

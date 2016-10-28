@@ -170,6 +170,7 @@ bool RenderSystem::Create(void* nativeWindow)
 
 void RenderSystem::Destroy()
 {
+	SR(m_lastMaterial);
 	m_geometry.Destroy();
 	m_texPool.Destroy();
 	if (shaderlib)
@@ -225,25 +226,32 @@ void RenderSystem::FlushBatch()
 	m_geometry.UploadVertices(0, m_mesh.GetRawVertices(), m_mesh.GetVertexCount());
 	m_geometry.UploadIndices(0, m_mesh.GetRawIndices(), m_mesh.GetIndexCount());
 
-	Texture2D* texture = m_texPool.GetTexture(m_texture);
-	auto shader = shaderlib->GetShaderByName("simple.texture");
-	if (shader)
+	for (int i = 0; i < m_lastMaterial->GetPassCount(); i++)
 	{
-		unsigned int stride = sizeof(g2d::GeometryVertex);
-		unsigned int offset = 0;
-		m_d3dContext->IASetVertexBuffers(0, 1, &(m_geometry.m_vertexBuffer), &stride, &offset);
-		m_d3dContext->IASetIndexBuffer(m_geometry.m_indexBuffer, DXGI_FORMAT_R32_UINT, 0);
-		m_d3dContext->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-		m_d3dContext->IASetInputLayout(shader->GetInputLayout());
+		auto pass = m_lastMaterial->GetPass(i);
+		auto shader = shaderlib->GetShaderByName(pass->GetEffectName());
+		if (shader)
+		{
+			unsigned int stride = sizeof(g2d::GeometryVertex);
+			unsigned int offset = 0;
+			m_d3dContext->IASetVertexBuffers(0, 1, &(m_geometry.m_vertexBuffer), &stride, &offset);
+			m_d3dContext->IASetIndexBuffer(m_geometry.m_indexBuffer, DXGI_FORMAT_R32_UINT, 0);
+			m_d3dContext->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+			m_d3dContext->IASetInputLayout(shader->GetInputLayout());
 
-		m_d3dContext->VSSetShader(shader->GetVertexShader(), NULL, 0);
-		m_d3dContext->VSSetConstantBuffers(0, 1, &m_bufferMatrix);
-		m_d3dContext->PSSetShader(shader->GetPixelShader(), NULL, 0);
-		m_d3dContext->PSSetShaderResources(0, 1, &(texture->m_shaderView));
-		ID3D11SamplerState* a = nullptr;
-		m_d3dContext->PSSetSamplers(0, 1, &a);
+			m_d3dContext->VSSetShader(shader->GetVertexShader(), NULL, 0);
+			m_d3dContext->VSSetConstantBuffers(0, 1, &m_bufferMatrix);
+			m_d3dContext->PSSetShader(shader->GetPixelShader(), NULL, 0);
 
-		m_d3dContext->DrawIndexed(m_mesh.GetIndexCount(), 0, 0);
+			Texture* timpl = dynamic_cast<Texture*>(pass->GetTexture(0));
+			std::string textureName = (timpl == nullptr) ? "" : timpl->GetResourceName();
+			Texture2D* texture = m_texPool.GetTexture(textureName);
+			m_d3dContext->PSSetShaderResources(0, 1, &(texture->m_shaderView));
+			ID3D11SamplerState* a = nullptr;
+			m_d3dContext->PSSetSamplers(0, 1, &a);
+
+			m_d3dContext->DrawIndexed(m_mesh.GetIndexCount(), 0, 0);
+		}
 	}
 }
 
@@ -260,14 +268,18 @@ void RenderSystem::RenderMesh(g2d::Mesh* m, g2d::Material* material, const gml::
 	//::Texture* timpl = dynamic_cast<::Texture*>(t);
 	::Pass* p = dynamic_cast<::Pass*>(material->GetPass(0));
 	::Texture* timpl = dynamic_cast<::Texture*>(p->GetTextures(0));
-	std::string textureName = (timpl == nullptr) ? "" : timpl->GetResourceName();
-	if (m_mesh.GetVertexCount() != 0 && textureName != m_texture)
+
+	if (m_lastMaterial)
 	{
-		FlushBatch();
-		m_mesh.Clear();
+		if (!m_lastMaterial->IsSame(material) && m_mesh.GetVertexCount() != 0)
+		{
+			FlushBatch();
+			m_mesh.Clear();
+		}
+		m_lastMaterial->Release();
 	}
 
-	m_texture = textureName;
+	m_lastMaterial = material->Clone();
 	if (m_mesh.Merge(m, transform))
 	{
 		return;
