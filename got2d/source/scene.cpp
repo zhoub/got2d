@@ -141,7 +141,9 @@ QuadNode::QuadNode(::SceneNode* parent)
 	vertices[2].vtxcolor = gml::color4::random();
 	vertices[3].vtxcolor = gml::color4::random();
 
-	m_tex = g2d::GetEngine()->LoadTexture((rand() % 2) ? "test_alpha.bmp" : "test_alpha.png");
+	auto tex = g2d::GetEngine()->LoadTexture((rand() % 2) ? "test_alpha.bmp" : "test_alpha.png");
+	m_material = g2d::GetEngine()->GetRenderSystem()->CreateSimpleTextureMaterial();
+	m_material->GetPass(0)->SetTexture(0, tex, true);
 
 	SetPivot(gml::vec2(-0.5f, -0.5f));
 }
@@ -149,10 +151,11 @@ QuadNode::QuadNode(::SceneNode* parent)
 QuadNode::~QuadNode()
 {
 	m_mesh->Release();
+	m_material->Release();
 }
 void QuadNode::OnRender()
 {
-	g2d::GetEngine()->GetRenderSystem()->RenderMesh(m_mesh, m_tex, GetWorldMatrix());
+	g2d::GetEngine()->GetRenderSystem()->RenderMesh(m_mesh, m_material, GetWorldMatrix());
 }
 g2d::QuadNode* QuadNode::SetSize(const gml::vec2& size)
 {

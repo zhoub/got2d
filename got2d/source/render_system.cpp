@@ -255,9 +255,11 @@ void RenderSystem::Render()
 	}
 }
 
-void RenderSystem::RenderMesh(g2d::Mesh* m, g2d::Texture* t, const gml::mat32& transform)
+void RenderSystem::RenderMesh(g2d::Mesh* m, g2d::Material* material, const gml::mat32& transform)
 {
-	::Texture* timpl = dynamic_cast<::Texture*>(t);
+	//::Texture* timpl = dynamic_cast<::Texture*>(t);
+	::Pass* p = dynamic_cast<::Pass*>(material->GetPass(0));
+	::Texture* timpl = dynamic_cast<::Texture*>(p->GetTextures(0));
 	std::string textureName = (timpl == nullptr) ? "" : timpl->GetResourceName();
 	if (m_mesh.GetVertexCount() != 0 && textureName != m_texture)
 	{
@@ -299,7 +301,7 @@ g2d::Material* RenderSystem::CreateDefaultMaterial()
 {
 	auto mat = new ::Material(1);
 	mat->SetPass(0, new Pass("default"));
-	mat->GetPass(0)->SetTexture(0, Texture::Default());
+	mat->GetPass(0)->SetTexture(0, Texture::Default(), false);
 	return mat;
 }
 
@@ -307,7 +309,7 @@ g2d::Material* RenderSystem::CreateSimpleTextureMaterial()
 {
 	auto mat = new ::Material(1);
 	mat->SetPass(0, new Pass("simple.texture"));
-	mat->GetPass(0)->SetTexture(0, Texture::Default());
+	mat->GetPass(0)->SetTexture(0, Texture::Default(), false);
 	return mat;
 }
 

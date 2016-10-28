@@ -72,7 +72,7 @@ public:
 	IMPL_SCENE_NODE(this);
 
 	g2d::Mesh* m_mesh;
-	g2d::Texture* m_tex;
+	g2d::Material* m_material;
 	gml::vec2 m_size;
 };
 

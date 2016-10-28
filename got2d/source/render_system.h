@@ -127,19 +127,25 @@ class Pass : public g2d::Pass
 {
 public:
 	inline Pass(const char* name) : m_effectName(name) {}
+	~Pass();
 
 	inline virtual const char* GetEffectName() const override { return m_effectName.c_str(); }
-	virtual void SetTexture(unsigned int index, g2d::Texture*) override;
+	virtual void SetTexture(unsigned int index, g2d::Texture*, bool autoRelease) override;
 	virtual void SetVSConstant(unsigned int index, float* data, unsigned int size, unsigned int count) override;
 	virtual void SetPSConstant(unsigned int index, float* data, unsigned int size, unsigned int count) override;
 	inline virtual void Release() override { delete this; }
 
-	inline g2d::Texture* GetTextures(unsigned int index) { return m_textures[index]; }
+	inline g2d::Texture* GetTextures(unsigned int index) { return m_textures[index].texture; }
 	inline unsigned int GetTextureCount() { return static_cast<unsigned int>(m_textures.size()); }
 
 private:
 	std::string m_effectName;
-	std::vector<g2d::Texture*> m_textures;
+	struct MaterialTexture
+	{
+		bool autoRelease;
+		g2d::Texture* texture;
+	};
+	std::vector<MaterialTexture> m_textures;
 	std::vector<gml::vec4> m_vsConstants;
 	std::vector<gml::vec4> m_psConstants;
 };
@@ -186,7 +192,7 @@ public:
 	virtual bool OnResize(long width, long height) override;
 	virtual void BeginRender() override;
 	virtual void EndRender() override;
-	virtual void RenderMesh(g2d::Mesh*, g2d::Texture*, const gml::mat32&) override;
+	virtual void RenderMesh(g2d::Mesh*, g2d::Material*, const gml::mat32&) override;
 public:
 	virtual g2d::Mesh* CreateMesh(unsigned int vertexCount, unsigned int indexCount) override;
 	virtual g2d::Material* CreateDefaultMaterial() override;

@@ -320,13 +320,37 @@ g2d::Pass::~Pass() {}
 g2d::Material::~Material() {}
 
 
-void Pass::SetTexture(unsigned int index, g2d::Texture* tex)
+Pass::~Pass()
 {
-	if (index >= m_textures.size())
+	for (auto& t : m_textures)
+	{
+		if (t.texture && t.autoRelease)
+		{
+			t.texture->Release();
+		}
+	}
+	m_textures.clear();
+}
+
+void Pass::SetTexture(unsigned int index, g2d::Texture* tex, bool autoRelease)
+{
+	unsigned int size = m_textures.size();
+	if (index >= size)
 	{
 		m_textures.resize(index + 1);
+		for (int i = size; i < index; i++)
+		{
+			m_textures[i].texture = nullptr;
+			m_textures[i].autoRelease = false;
+		}
 	}
-	m_textures[index] = tex;
+
+	if (m_textures[index].texture && m_textures[index].autoRelease)
+	{
+		m_textures[index].texture->Release();
+	}
+	m_textures[index].autoRelease = autoRelease;
+	m_textures[index].texture = tex;
 }
 void Pass::SetVSConstant(unsigned int index, float* data, unsigned int size, unsigned int count)
 {
