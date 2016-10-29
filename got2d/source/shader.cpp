@@ -113,13 +113,11 @@ ID3D11VertexShader* Shader::GetVertexShader() { return m_vertexShader; }
 ID3D11PixelShader* Shader::GetPixelShader() { return m_pixelShader; }
 ID3D11InputLayout* Shader::GetInputLayout() { return m_shaderLayout; }
 
-class SimpleColorShader : public ShaderSource
+class DefaultVSData : public VSData
 {
-	const char* GetShaderName() override
-	{
-		return "simple.color";
-	}
-	const char* GetVertexShaderCode() override
+public:
+	virtual const char* GetName() override { return "default"; }
+	virtual const char* GetCode() override
 	{
 		return R"(
 			cbuffer scene
@@ -136,23 +134,31 @@ class SimpleColorShader : public ShaderSource
 			struct VertexOutput
 			{
 				float4 position : SV_POSITION;
+				float2 texcoord : TEXCOORD0;
 				float4 vtxcolor : COLOR;
 			};
 			VertexOutput VSMain(GeometryVertex input)
 			{
 				VertexOutput output;
 				output.position = mul(float4(input.position, 0, 1), matrixProj);
+				output.texcoord = input.texcoord;
 				output.vtxcolor = input.vtxcolor;
 				return output;
 			}
 		)";
 	}
-	const char* GetPixelShaderCode() override
+};
+
+class SimpleColorPSData : public PSData
+{
+	const char* GetName() override { return "simple.color"; }
+	const char* GetCode() override
 	{
 		return R"(
 			struct VertexInput
 			{
 				float4 position : SV_POSITION;
+				float2 texcoord : TEXCOORD0;
 				float4 vtxcolor : COLOR;
 			};
 			float4 PSMain(VertexInput input):SV_TARGET
@@ -163,41 +169,10 @@ class SimpleColorShader : public ShaderSource
 	}
 };
 
-class SimpleTextureShader : public ShaderSource
+class SimpleTexturePSData : public PSData
 {
-	const char* GetShaderName() override
-	{
-		return "simple.texture";
-	}
-	const char* GetVertexShaderCode() override
-	{
-		return R"(
-			cbuffer scene
-			{
-				float4x4 matrixProj;
-				float4x4 matrixWorld;
-			}
-			struct GeometryVertex
-			{
-				float2 position : POSITION;
-				float2 texcoord : TEXCOORD0;
-				float4 vtxcolor : COLOR;
-			};
-			struct VertexOutput
-			{
-				float4 position : SV_POSITION;
-				float2 texcoord : TEXCOORD0;
-			};
-			VertexOutput VSMain(GeometryVertex input)
-			{
-				VertexOutput output;
-				output.position = mul(float4(input.position, 0, 1), matrixProj);
-				output.texcoord = input.texcoord;
-				return output;
-			}
-		)";
-	}
-	const char* GetPixelShaderCode() override
+	const char* GetName() override { return "simple.texture"; }
+	const char* GetCode() override
 	{
 		return R"(
 			Texture2D Tex;
@@ -206,6 +181,7 @@ class SimpleTextureShader : public ShaderSource
 			{
 				float4 position : SV_POSITION;
 				float2 texcoord : TEXCOORD0;
+				float4 vtxcolor : COLOR;
 			};
 			float4 PSMain(VertexInput input):SV_TARGET
 			{
@@ -215,43 +191,10 @@ class SimpleTextureShader : public ShaderSource
 	}
 };
 
-class DefaultShader : public ShaderSource
+class ColorTexturePSData : public PSData
 {
-	const char* GetShaderName() override
-	{
-		return "default";
-	}
-	const char* GetVertexShaderCode() override
-	{
-		return R"(
-			cbuffer scene
-			{
-				float4x4 matrixProj;
-				float4x4 matrixWorld;
-			}
-			struct GeometryVertex
-			{
-				float2 position : POSITION;
-				float2 texcoord : TEXCOORD0;
-				float4 vtxcolor : COLOR;
-			};
-			struct VertexOutput
-			{
-				float4 position : SV_POSITION;
-				float2 texcoord : TEXCOORD0;
-				float4 vtxcolor : COLOR;
-			};
-			VertexOutput VSMain(GeometryVertex input)
-			{
-				VertexOutput output;
-				output.position = mul(float4(input.position, 0, 1), matrixProj);
-				output.texcoord = input.texcoord;
-				output.vtxcolor = input.vtxcolor;
-				return output;
-			}
-		)";
-	}
-	const char* GetPixelShaderCode() override
+	const char* GetName() override { return "color.texture"; }
+	const char* GetCode() override
 	{
 		return R"(
 			Texture2D Tex;
@@ -270,17 +213,51 @@ class DefaultShader : public ShaderSource
 	}
 };
 
-
 ShaderLib::ShaderLib()
 {
-	ShaderSource* p = new DefaultShader();
-	m_sources[p->GetShaderName()] = p;
+	VSData* vsd = new DefaultVSData();
+	m_vsSources[vsd->GetName()] = vsd;
 
-	p = new SimpleTextureShader();
-	m_sources[p->GetShaderName()] = p;
+	PSData* psd;
+	psd = new SimpleColorPSData();
+	m_psSources[psd->GetName()] = psd;
 
-	p = new SimpleColorShader();
-	m_sources[p->GetShaderName()] = p;
+	psd = new SimpleTexturePSData();
+	m_psSources[psd->GetName()] = psd;
+
+	psd = new ColorTexturePSData();
+	m_psSources[psd->GetName()] = psd;
+
+	struct {
+		std::string name;
+		EffectDef define;
+	}
+	effectDefs[] =
+	{
+		{ "simple.color", { "default", "simple.color" } },
+		{ "simple.texture", { "default", "simple.texture" } },
+		{ "color.texture", { "default", "color.texture" } },
+	};
+
+	for (auto& ed : effectDefs)
+	{
+		m_effectDefine[ed.name] = ed.define;
+	}
+}
+
+ShaderLib::~ShaderLib()
+{
+	for (auto& psd : m_psSources)
+	{
+		delete psd.second;
+	}
+	m_psSources.clear();
+
+	for (auto& vsd : m_vsSources)
+	{
+		delete vsd.second;
+	}
+	m_vsSources.clear();
 }
 
 Shader* ShaderLib::GetShaderByName(const char* name)
@@ -298,20 +275,24 @@ Shader* ShaderLib::GetShaderByName(const char* name)
 
 bool ShaderLib::BuildShader(const std::string& name)
 {
-	if (!m_sources.count(name))
+	if (!m_effectDefine.count(name))
 	{
 		return false;
 	}
-	ShaderSource* shaderRes = m_sources[name];
+	auto& shaderDef = m_effectDefine[name];
+	auto vsData = m_vsSources[shaderDef.vsName];
+	auto psData = m_psSources[shaderDef.psName];
+	if (vsData == nullptr || psData == nullptr)
+		return false;
+
 	Shader* shader = new Shader();
-	if (shader->Create(shaderRes->GetVertexShaderCode(), shaderRes->GetPixelShaderCode()))
+	if (shader->Create(vsData->GetCode(), psData->GetCode()))
 	{
 		m_shaders[name] = shader;
 		return true;
 	}
 	delete shader;
-	m_sources.erase(name);
-
+	m_effectDefine.erase(name);
 	return false;
 }
 

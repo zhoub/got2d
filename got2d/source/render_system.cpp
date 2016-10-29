@@ -325,7 +325,7 @@ g2d::Mesh* RenderSystem::CreateMesh(unsigned int vertexCount, unsigned int index
 g2d::Material* RenderSystem::CreateDefaultMaterial()
 {
 	auto mat = new ::Material(1);
-	mat->SetPass(0, new Pass("default"));
+	mat->SetPass(0, new Pass("color.texture"));
 	mat->GetPass(0)->SetTexture(0, Texture::Default(), false);
 	return mat;
 }

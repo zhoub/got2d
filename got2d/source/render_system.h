@@ -89,12 +89,20 @@ private:
 	Texture2D m_defaultTexture;
 };
 
-class ShaderSource
+class VSData
 {
 public:
-	virtual const char* GetShaderName() = 0;
-	virtual const char* GetVertexShaderCode() = 0;
-	virtual const char* GetPixelShaderCode() = 0;
+	virtual ~VSData() {}
+	virtual const char* GetName() = 0;
+	virtual const char* GetCode() = 0;
+};
+
+class PSData
+{
+public:
+	virtual ~PSData() {}
+	virtual const char* GetName() = 0;
+	virtual const char* GetCode() = 0;
 };
 
 class Shader
@@ -117,12 +125,20 @@ class ShaderLib
 {
 public:
 	ShaderLib();
+	~ShaderLib();
 	Shader* GetShaderByName(const char* name);
 
 private:
 	bool BuildShader(const std::string& name);
 
-	std::map<std::string, ShaderSource*> m_sources;
+	struct EffectDef
+	{
+		std::string vsName;
+		std::string psName;
+	};
+	std::map<std::string, VSData*> m_vsSources;
+	std::map<std::string, PSData*>  m_psSources;
+	std::map<std::string, EffectDef> m_effectDefine;
 	std::map<std::string, Shader*> m_shaders;
 };
 
