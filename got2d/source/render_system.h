@@ -95,6 +95,7 @@ public:
 	virtual ~VSData() {}
 	virtual const char* GetName() = 0;
 	virtual const char* GetCode() = 0;
+	virtual unsigned int GetConstBufferLength() = 0;
 };
 
 class PSData
@@ -103,22 +104,31 @@ public:
 	virtual ~PSData() {}
 	virtual const char* GetName() = 0;
 	virtual const char* GetCode() = 0;
+	virtual unsigned int GetConstBufferLength() = 0;
 };
 
 class Shader
 {
 public:
-	bool Create(const char* vsCode, const char* psCode);
+	bool Create(const char* vsCode, unsigned int vcbLength, const char* psCode, unsigned int pcbLength);
 	void Destroy();
 
-	ID3D11VertexShader* GetVertexShader();
-	ID3D11PixelShader* GetPixelShader();
-	ID3D11InputLayout* GetInputLayout();
+	ID3D11VertexShader* GetVertexShader() { return m_vertexShader; }
+	ID3D11PixelShader* GetPixelShader() { return m_pixelShader; }
+	ID3D11InputLayout* GetInputLayout() { return m_shaderLayout; }
+	ID3D11Buffer* GetVertexConstBuffer() { return m_vertexConstBuffer; }
+	ID3D11Buffer* GetPixelConstBuffer() { return m_pixelConstBuffer; }
+	unsigned int GetVertexConstBufferLength() { return m_vertexConstBufferLength; }
+	unsigned int GetPixelConstBufferLength() { return m_pixelConstBufferLength; }
 
 private:
+	ID3D11InputLayout* m_shaderLayout = nullptr;
 	ID3D11VertexShader* m_vertexShader = nullptr;
 	ID3D11PixelShader* m_pixelShader = nullptr;
-	ID3D11InputLayout* m_shaderLayout = nullptr;
+	ID3D11Buffer* m_vertexConstBuffer = nullptr;
+	ID3D11Buffer* m_pixelConstBuffer = nullptr;
+	unsigned int m_vertexConstBufferLength = 0;
+	unsigned int m_pixelConstBufferLength = 0;
 };
 
 class ShaderLib
@@ -163,7 +173,7 @@ public:
 	inline virtual unsigned int GetPSConstantLength() const override { return static_cast<unsigned int>(m_psConstants.size()) * 4; }
 	inline virtual void Release() override { delete this; }
 	inline unsigned int GetTextureCount() { return static_cast<unsigned int>(m_textures.size()); }
-	
+
 private:
 	std::string m_effectName;
 	std::vector<g2d::Texture*> m_textures;

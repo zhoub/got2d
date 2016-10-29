@@ -3,7 +3,7 @@
 #include <assert.h>
 #pragma comment(lib,"d3dcompiler.lib")
 
-bool Shader::Create(const char* vsCode, const char* psCode)
+bool Shader::Create(const char* vsCode, unsigned int vcbLength, const char* psCode, unsigned int pcbLength)
 {
 	auto vsCodeLength = strlen(vsCode) + 1;
 	auto psCodeLength = strlen(psCode) + 1;
@@ -92,6 +92,29 @@ bool Shader::Create(const char* vsCode, const char* psCode)
 		if (S_OK != ret)
 			break;
 
+		D3D11_BUFFER_DESC cbDesc =
+		{
+			0,							//UINT ByteWidth;
+			D3D11_USAGE_DYNAMIC,		//D3D11_USAGE Usage;
+			D3D11_BIND_CONSTANT_BUFFER,	//UINT BindFlags;
+			D3D11_CPU_ACCESS_WRITE,		//UINT CPUAccessFlags;
+			0,							//UINT MiscFlags;
+			0							//UINT StructureByteStride;
+		};
+		if (vcbLength > 0)
+		{
+			cbDesc.ByteWidth = m_vertexConstBufferLength = vcbLength;
+			if (S_OK != GetRenderSystem()->GetDevice()->CreateBuffer(&cbDesc, NULL, &m_vertexConstBuffer))
+				break;
+		}
+
+		if (pcbLength > 0)
+		{
+			cbDesc.ByteWidth = m_pixelConstBufferLength = pcbLength;
+			if (S_OK != GetRenderSystem()->GetDevice()->CreateBuffer(&cbDesc, NULL, &m_pixelConstBuffer))
+				break;
+		}
+
 		SR(vsBlob);
 		SR(psBlob);
 		return true;
@@ -102,16 +125,17 @@ bool Shader::Create(const char* vsCode, const char* psCode)
 	Destroy();
 	return false;
 }
+
 void Shader::Destroy()
 {
 	SR(m_vertexShader);
 	SR(m_pixelShader);
 	SR(m_shaderLayout);
+	SR(m_vertexConstBuffer);
+	SR(m_pixelConstBuffer);
+	m_vertexConstBufferLength = 0;
+	m_pixelConstBufferLength = 0;
 }
-
-ID3D11VertexShader* Shader::GetVertexShader() { return m_vertexShader; }
-ID3D11PixelShader* Shader::GetPixelShader() { return m_pixelShader; }
-ID3D11InputLayout* Shader::GetInputLayout() { return m_shaderLayout; }
 
 class DefaultVSData : public VSData
 {
@@ -147,12 +171,13 @@ public:
 			}
 		)";
 	}
+	virtual unsigned int GetConstBufferLength() override { return 4 * sizeof(float); }
 };
 
 class SimpleColorPSData : public PSData
 {
-	const char* GetName() override { return "simple.color"; }
-	const char* GetCode() override
+	virtual const char* GetName() override { return "simple.color"; }
+	virtual const char* GetCode() override
 	{
 		return R"(
 			struct VertexInput
@@ -167,12 +192,13 @@ class SimpleColorPSData : public PSData
 			}
 		)";
 	}
+	virtual unsigned int GetConstBufferLength() override { return 0; }
 };
 
 class SimpleTexturePSData : public PSData
 {
-	const char* GetName() override { return "simple.texture"; }
-	const char* GetCode() override
+	virtual const char* GetName() override { return "simple.texture"; }
+	virtual const char* GetCode() override
 	{
 		return R"(
 			Texture2D Tex;
@@ -189,12 +215,13 @@ class SimpleTexturePSData : public PSData
 			}
 		)";
 	}
+	virtual unsigned int GetConstBufferLength() override { return 0; }
 };
 
 class ColorTexturePSData : public PSData
 {
-	const char* GetName() override { return "color.texture"; }
-	const char* GetCode() override
+	virtual const char* GetName() override { return "color.texture"; }
+	virtual const char* GetCode() override
 	{
 		return R"(
 			Texture2D Tex;
@@ -211,6 +238,7 @@ class ColorTexturePSData : public PSData
 			}
 		)";
 	}
+	virtual unsigned int GetConstBufferLength() override { return 0; }
 };
 
 ShaderLib::ShaderLib()
@@ -286,7 +314,9 @@ bool ShaderLib::BuildShader(const std::string& name)
 		return false;
 
 	Shader* shader = new Shader();
-	if (shader->Create(vsData->GetCode(), psData->GetCode()))
+	if (shader->Create(
+		vsData->GetCode(), vsData->GetConstBufferLength(),
+		psData->GetCode(), psData->GetConstBufferLength()))
 	{
 		m_shaders[name] = shader;
 		return true;
@@ -336,6 +366,7 @@ Pass* Pass::Clone()
 	Pass* p = new Pass(*this);
 	return p;
 }
+
 bool Pass::IsSame(g2d::Pass* other) const
 {
 	Pass* p = dynamic_cast<Pass*>(other);
@@ -398,6 +429,7 @@ void Pass::SetTexture(unsigned int index, g2d::Texture* tex, bool autoRelease)
 		m_textures[index]->AddRef();
 	}
 }
+
 void Pass::SetVSConstant(unsigned int index, float* data, unsigned int size, unsigned int count)
 {
 	if (count == 0)
@@ -450,7 +482,6 @@ void Material::SetPass(unsigned int index, Pass* p)
 	assert(index < m_passes.size());
 	m_passes[index] = p;
 }
-
 
 Material::~Material()
 {

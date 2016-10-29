@@ -240,8 +240,22 @@ void RenderSystem::FlushBatch()
 			m_d3dContext->IASetInputLayout(shader->GetInputLayout());
 
 			m_d3dContext->VSSetShader(shader->GetVertexShader(), NULL, 0);
-			m_d3dContext->VSSetConstantBuffers(0, 1, &m_bufferMatrix);
 			m_d3dContext->PSSetShader(shader->GetPixelShader(), NULL, 0);
+			m_d3dContext->VSSetConstantBuffers(0, 1, &m_bufferMatrix);
+
+			auto vcb = shader->GetVertexConstBuffer();
+			if (vcb)
+			{
+				//update vcb
+				m_d3dContext->VSSetConstantBuffers(1, 1, &vcb);
+			}
+
+			auto pcb = shader->GetPixelConstBuffer();
+			if (pcb)
+			{
+				//update pcb
+				m_d3dContext->PSSetConstantBuffers(0, 1, &pcb);
+			}
 
 			if (pass->GetTextureCount() > 0)
 			{
