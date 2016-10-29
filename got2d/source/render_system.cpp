@@ -74,21 +74,27 @@ bool RenderSystem::Create(void* nativeWindow)
 	do
 	{
 		//Create Device
-		IDXGIAdapter1* adapter = NULL; //default adapter
 		D3D_DRIVER_TYPE driverType = D3D_DRIVER_TYPE_HARDWARE;
 		D3D11_CREATE_DEVICE_FLAG deviceFlag = D3D11_CREATE_DEVICE_SINGLETHREADED;
 		D3D_FEATURE_LEVEL featureLevel = D3D_FEATURE_LEVEL_11_0;
-		if (S_OK != ::D3D11CreateDevice(adapter, driverType, NULL, deviceFlag, &featureLevel, 1, D3D11_SDK_VERSION, &m_d3dDevice, NULL, &m_d3dContext))
+		if (S_OK != ::D3D11CreateDevice(NULL, driverType, NULL, deviceFlag, &featureLevel, 1, D3D11_SDK_VERSION, &m_d3dDevice, NULL, &m_d3dContext))
 		{
 			break;
 		}
 
+        IDXGIDevice * dxgiDevice;
+        HRESULT hr = m_d3dDevice->QueryInterface(__uuidof(IDXGIDevice), (void **)&dxgiDevice);
+        if (S_OK != hr)
+        {
+            break;
+        }
+
+        IDXGIAdapter * adapter;
+        hr = dxgiDevice->GetParent(__uuidof(IDXGIAdapter), (void **)&adapter);
+
 		//CreateSwapChain
-		IDXGIFactory1* factory = nullptr;
-		if (S_OK != ::CreateDXGIFactory1(__uuidof(IDXGIFactory1), reinterpret_cast<void**>(&factory)))
-		{
-			break;
-		}
+		IDXGIFactory* factory = nullptr;
+        adapter->GetParent(__uuidof(IDXGIFactory), (void **)&factory);
 
 		DXGI_SWAP_CHAIN_DESC scDesc;
 		scDesc.BufferDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
@@ -109,9 +115,9 @@ bool RenderSystem::Create(void* nativeWindow)
 		scDesc.SampleDesc.Quality = 0;
 		scDesc.Flags = 0;
 
-		auto ret = factory->CreateSwapChain(m_d3dDevice, &scDesc, &m_swapChain);
+		hr = factory->CreateSwapChain(m_d3dDevice, &scDesc, &m_swapChain);
 		factory->Release();
-		if (S_OK != ret)
+		if (S_OK != hr)
 		{
 			break;
 		}
