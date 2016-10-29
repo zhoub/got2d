@@ -73,28 +73,39 @@ bool RenderSystem::Create(void* nativeWindow)
 
 	do
 	{
+		HRESULT hr;
+
 		//Create Device
 		D3D_DRIVER_TYPE driverType = D3D_DRIVER_TYPE_HARDWARE;
 		D3D11_CREATE_DEVICE_FLAG deviceFlag = D3D11_CREATE_DEVICE_SINGLETHREADED;
 		D3D_FEATURE_LEVEL featureLevel = D3D_FEATURE_LEVEL_11_0;
-		if (S_OK != ::D3D11CreateDevice(NULL, driverType, NULL, deviceFlag, &featureLevel, 1, D3D11_SDK_VERSION, &m_d3dDevice, NULL, &m_d3dContext))
+		hr = ::D3D11CreateDevice(NULL, driverType, NULL, deviceFlag, &featureLevel, 1, D3D11_SDK_VERSION, &m_d3dDevice, NULL, &m_d3dContext);
+		if (S_OK != hr)
 		{
 			break;
 		}
 
-        IDXGIDevice * dxgiDevice;
-        HRESULT hr = m_d3dDevice->QueryInterface(__uuidof(IDXGIDevice), (void **)&dxgiDevice);
-        if (S_OK != hr)
+        IDXGIDevice * dxgiDevice = nullptr;
+        hr = m_d3dDevice->QueryInterface(__uuidof(IDXGIDevice), (void **)&dxgiDevice);
+        if (S_OK != hr || dxgiDevice == nullptr)
         {
             break;
         }
 
-        IDXGIAdapter * adapter;
+        IDXGIAdapter * adapter = nullptr;
         hr = dxgiDevice->GetParent(__uuidof(IDXGIAdapter), (void **)&adapter);
+		if (S_OK != hr || adapter == nullptr)
+		{
+			break;
+		}
 
 		//CreateSwapChain
 		IDXGIFactory* factory = nullptr;
-        adapter->GetParent(__uuidof(IDXGIFactory), (void **)&factory);
+        hr = adapter->GetParent(__uuidof(IDXGIFactory), (void **)&factory);
+		if (S_OK != hr || factory == nullptr)
+		{
+			break;
+		}
 
 		DXGI_SWAP_CHAIN_DESC scDesc;
 		scDesc.BufferDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
@@ -136,7 +147,8 @@ bool RenderSystem::Create(void* nativeWindow)
 			0											//UINT StructureByteStride;
 		};
 
-		if (S_OK != m_d3dDevice->CreateBuffer(&bufferDesc, NULL, &m_bufferMatrix))
+		hr = m_d3dDevice->CreateBuffer(&bufferDesc, NULL, &m_bufferMatrix);
+		if (S_OK != hr)
 		{
 			break;
 		}
@@ -157,20 +169,20 @@ bool RenderSystem::Create(void* nativeWindow)
 			1.0f,//FLOAT MaxDepth;
 		};
 
-
 		m_d3dContext->OMSetRenderTargets(1, &m_bbView, nullptr);
 		m_d3dContext->RSSetViewports(1, &m_viewport);
 		Instance = this;
 
+		//all creation using RenderSystem should be start here.
 		if (!m_texPool.CreateDefaultTexture())
 			break;
+
 		shaderlib = new ShaderLib();
 		return true;
 	} while (false);
 
 
 	Destroy();
-
 	return false;
 }
 
