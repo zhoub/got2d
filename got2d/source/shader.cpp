@@ -171,7 +171,7 @@ public:
 			}
 		)";
 	}
-	virtual unsigned int GetConstBufferLength() override { return 4 * sizeof(float); }
+	virtual unsigned int GetConstBufferLength() override { return 0; }
 };
 
 class SimpleColorPSData : public PSData
@@ -342,13 +342,13 @@ Pass::Pass(const Pass& other)
 		m_textures[i]->AddRef();
 	}
 
-	if (m_vsConstants.size() > 0)
+	if (other.GetVSConstantLength() > 0)
 	{
-		memcpy(&(m_vsConstants[0]), &(other.m_vsConstants[0]), m_vsConstants.size() * sizeof(float));
+		memcpy(&(m_vsConstants[0]), &(other.m_vsConstants[0]), other.GetVSConstantLength());
 	}
-	if (m_psConstants.size() > 0)
+	if (other.GetPSConstantLength() > 0)
 	{
-		memcpy(&(m_psConstants[0]), &(other.m_psConstants[0]), m_psConstants.size() * sizeof(float));
+		memcpy(&(m_psConstants[0]), &(other.m_psConstants[0]), other.GetPSConstantLength());
 	}
 }
 
@@ -451,14 +451,14 @@ void Pass::SetPSConstant(unsigned int index, float* data, unsigned int size, uns
 	if (count == 0)
 		return;
 
-	if (index + count > m_vsConstants.size())
+	if (index + count > m_psConstants.size())
 	{
-		m_vsConstants.resize(index + count);
+		m_psConstants.resize(index + count);
 	}
 
 	for (unsigned int i = 0; i < count; i++)
 	{
-		memcpy(&(m_vsConstants[index + i]), data + i*size, size);
+		memcpy(&(m_psConstants[index + i]), data + i*size, size);
 	}
 }
 

@@ -213,12 +213,12 @@ Texture* RenderSystem::CreateTextureFromFile(const char* resPath)
 	return new Texture(resPath);
 }
 
-void RenderSystem::UpdateConstBuffer(ID3D11Buffer* cbuffer, unsigned int offset, const void* data, unsigned int length)
+void RenderSystem::UpdateConstBuffer(ID3D11Buffer* cbuffer, const void* data, unsigned int length)
 {
 	D3D11_MAPPED_SUBRESOURCE mappedData;
 	if (S_OK == m_d3dContext->Map(cbuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData))
 	{
-		unsigned char*  dstBuffre = reinterpret_cast<unsigned char*>(mappedData.pData) + offset;
+		unsigned char*  dstBuffre = reinterpret_cast<unsigned char*>(mappedData.pData);
 		memcpy(dstBuffre, data, length);
 		m_d3dContext->Unmap(cbuffer, 0);
 	}
@@ -274,7 +274,7 @@ void RenderSystem::FlushBatch()
 					: shader->GetVertexConstBufferLength();
 				if (length > 0)
 				{
-					UpdateConstBuffer(vcb, 0, pass->GetVSConstant(), length);
+					UpdateConstBuffer(vcb, pass->GetVSConstant(), length);
 					m_d3dContext->VSSetConstantBuffers(1, 1, &vcb);
 
 				}
@@ -288,7 +288,7 @@ void RenderSystem::FlushBatch()
 					: shader->GetPixelConstBufferLength();
 				if (length > 0)
 				{
-					UpdateConstBuffer(pcb, 0, pass->GetPSConstant(), length);
+					UpdateConstBuffer(pcb, pass->GetPSConstant(), length);
 					m_d3dContext->PSSetConstantBuffers(0, 1, &pcb);
 				}
 			}

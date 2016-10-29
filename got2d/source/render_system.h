@@ -168,9 +168,9 @@ public:
 	virtual g2d::Texture* GetTexture(unsigned int index) const override { return m_textures[index]; }
 	inline virtual unsigned int GetTextureCount() const override { return static_cast<unsigned int>(m_textures.size()); }
 	inline virtual const float* GetVSConstant() const override { return reinterpret_cast<const float*>(&(m_vsConstants[0])); }
-	inline virtual unsigned int GetVSConstantLength() const override { return static_cast<unsigned int>(m_vsConstants.size()) * 4; }
+	inline virtual unsigned int GetVSConstantLength() const override { return static_cast<unsigned int>(m_vsConstants.size()) * 4 * sizeof(float); }
 	inline virtual const float* GetPSConstant() const override { return reinterpret_cast<const float*>(&(m_psConstants[0])); }
-	inline virtual unsigned int GetPSConstantLength() const override { return static_cast<unsigned int>(m_psConstants.size()) * 4; }
+	inline virtual unsigned int GetPSConstantLength() const override { return static_cast<unsigned int>(m_psConstants.size()) * 4 * sizeof(float); }
 	inline virtual void Release() override { delete this; }
 	inline unsigned int GetTextureCount() { return static_cast<unsigned int>(m_textures.size()); }
 
@@ -233,7 +233,7 @@ public:
 
 private:
 	void FlushBatch();
-	void UpdateConstBuffer(ID3D11Buffer* cbuffer, unsigned int offset, const void* data, unsigned int length);
+	void UpdateConstBuffer(ID3D11Buffer* cbuffer, const void* data, unsigned int length);
 	void UpdateSceneConstBuffer(gml::mat32* matrixView);
 
 	IDXGISwapChain* m_swapChain = nullptr;
