@@ -54,8 +54,6 @@ bool RenderSystem::OnResize(long width, long height)
 	m_matrixProjDirty = true;
 	m_windowWidth = width;
 	m_windowHeight = height;
-
-	UpdateConstBuffer(m_bufferMatrix, (float*)GetProjectionMatrix().m, sizeof(gml::mat44));
 	return true;
 }
 
@@ -117,7 +115,7 @@ bool RenderSystem::Create(void* nativeWindow)
 
 		D3D11_BUFFER_DESC bufferDesc =
 		{
-			sizeof(gml::mat44) + sizeof(gml::mat32),	//UINT ByteWidth;
+			sizeof(gml::mat32) + sizeof(gml::mat44),	//UINT ByteWidth;
 			D3D11_USAGE_DYNAMIC,						//D3D11_USAGE Usage;
 			D3D11_BIND_CONSTANT_BUFFER,					//UINT BindFlags;
 			D3D11_CPU_ACCESS_WRITE,						//UINT CPUAccessFlags;
@@ -125,7 +123,7 @@ bool RenderSystem::Create(void* nativeWindow)
 			0											//UINT StructureByteStride;
 		};
 
-		if (S_OK != m_d3dDevice->CreateBuffer(&bufferDesc, NULL, &m_bufferMatrix))
+		if (S_OK != m_d3dDevice->CreateBuffer(&bufferDesc, NULL, &m_sceneConstBuffer))
 		{
 			break;
 		}
@@ -173,7 +171,7 @@ void RenderSystem::Destroy()
 		delete shaderlib;
 		shaderlib = nullptr;
 	}
-	SR(m_bufferMatrix);
+	SR(m_sceneConstBuffer);
 	SR(m_colorTexture);
 	SR(m_rtView);
 	SR(m_bbView);
@@ -193,8 +191,9 @@ const gml::mat44& RenderSystem::GetProjectionMatrix()
 	{
 		m_matrixProjDirty = false;
 		float znear = -0.5f;
-		m_matProj = gml::mat44::center_ortho_lh(static_cast<float>(m_windowWidth), static_cast<float>(m_windowHeight), znear, 1000.0f);
+		//m_matProj = gml::mat44::center_ortho_lh(static_cast<float>(m_windowWidth), static_cast<float>(m_windowHeight), znear, 1000.0f);
 		m_matProj = gml::mat44::ortho2d_lh(static_cast<float>(m_windowWidth), static_cast<float>(m_windowHeight), znear, 1000.0f);
+		m_matProjConstBufferDirty = true;
 	}
 	return m_matProj;
 }
@@ -214,13 +213,32 @@ Texture* RenderSystem::CreateTextureFromFile(const char* resPath)
 	return new Texture(resPath);
 }
 
-void RenderSystem::UpdateConstBuffer(ID3D11Buffer* cbuffer, const float* data, unsigned int length)
+void RenderSystem::UpdateConstBuffer(ID3D11Buffer* cbuffer, unsigned int offset, const void* data, unsigned int length)
 {
 	D3D11_MAPPED_SUBRESOURCE mappedData;
 	if (S_OK == m_d3dContext->Map(cbuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData))
 	{
-		memcpy(mappedData.pData, data, length);
+		unsigned char*  dstBuffre = reinterpret_cast<unsigned char*>(mappedData.pData) + offset;
+		memcpy(dstBuffre, data, length);
 		m_d3dContext->Unmap(cbuffer, 0);
+	}
+}
+void RenderSystem::UpdateSceneConstBuffer(gml::mat32* matrixView)
+{
+	if (matrixView == nullptr && !m_matProjConstBufferDirty && !m_matrixProjDirty)
+		return;
+
+	m_matProjConstBufferDirty = false;
+	D3D11_MAPPED_SUBRESOURCE mappedData;
+	if (S_OK == m_d3dContext->Map(m_sceneConstBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData))
+	{
+		unsigned char*  dstBuffer = reinterpret_cast<unsigned char*>(mappedData.pData);
+		if (matrixView)
+		{
+			memcpy(dstBuffer, matrixView->m, sizeof(gml::mat32));
+		}
+		memcpy(dstBuffer + sizeof(gml::mat32), GetProjectionMatrix().m, sizeof(gml::mat44));
+		m_d3dContext->Unmap(m_sceneConstBuffer, 0);
 	}
 }
 
@@ -243,10 +261,10 @@ void RenderSystem::FlushBatch()
 			m_d3dContext->IASetIndexBuffer(m_geometry.m_indexBuffer, DXGI_FORMAT_R32_UINT, 0);
 			m_d3dContext->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 			m_d3dContext->IASetInputLayout(shader->GetInputLayout());
-
 			m_d3dContext->VSSetShader(shader->GetVertexShader(), NULL, 0);
 			m_d3dContext->PSSetShader(shader->GetPixelShader(), NULL, 0);
-			m_d3dContext->VSSetConstantBuffers(0, 1, &m_bufferMatrix);
+			UpdateSceneConstBuffer(nullptr);
+			m_d3dContext->VSSetConstantBuffers(0, 1, &m_sceneConstBuffer);
 
 			auto vcb = shader->GetVertexConstBuffer();
 			if (vcb)
@@ -256,7 +274,7 @@ void RenderSystem::FlushBatch()
 					: shader->GetVertexConstBufferLength();
 				if (length > 0)
 				{
-					UpdateConstBuffer(vcb, pass->GetVSConstant(), length);
+					UpdateConstBuffer(vcb, 0, pass->GetVSConstant(), length);
 					m_d3dContext->VSSetConstantBuffers(1, 1, &vcb);
 
 				}
@@ -270,7 +288,7 @@ void RenderSystem::FlushBatch()
 					: shader->GetPixelConstBufferLength();
 				if (length > 0)
 				{
-					UpdateConstBuffer(pcb, pass->GetPSConstant(), length);
+					UpdateConstBuffer(pcb, 0, pass->GetPSConstant(), length);
 					m_d3dContext->PSSetConstantBuffers(0, 1, &pcb);
 				}
 			}

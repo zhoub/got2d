@@ -146,8 +146,8 @@ public:
 		return R"(
 			cbuffer scene
 			{
+				float4x2 matrixView;
 				float4x4 matrixProj;
-				float4x4 matrixWorld;
 			}
 			struct GeometryVertex
 			{

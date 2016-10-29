@@ -233,7 +233,8 @@ public:
 
 private:
 	void FlushBatch();
-	void UpdateConstBuffer(ID3D11Buffer* cbuffer, const float* data, unsigned int length);
+	void UpdateConstBuffer(ID3D11Buffer* cbuffer, unsigned int offset, const void* data, unsigned int length);
+	void UpdateSceneConstBuffer(gml::mat32* matrixView);
 
 	IDXGISwapChain* m_swapChain = nullptr;
 	ID3D11Device* m_d3dDevice = nullptr;
@@ -247,13 +248,14 @@ private:
 
 	Mesh m_mesh;
 	g2d::Material* m_lastMaterial = nullptr;
-	ID3D11Buffer* m_bufferMatrix = nullptr;
+	
 	Geometry m_geometry;
 	TexturePool m_texPool;
-
 	ShaderLib* shaderlib = nullptr;
-
+	ID3D11Buffer* m_sceneConstBuffer = nullptr;
 	gml::mat44 m_matProj;
+	
+	bool m_matProjConstBufferDirty = true;
 	bool m_matrixProjDirty = true;
 	long m_windowWidth = 0;
 	long m_windowHeight = 0;
