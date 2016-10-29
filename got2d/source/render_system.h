@@ -206,11 +206,8 @@ class RenderSystem : public g2d::RenderSystem
 public:
 	static RenderSystem* Instance;
 	RenderSystem();
-
 	bool Create(void* nativeWindow);
-
 	void Destroy();
-
 	void Clear();
 	void Render();
 	void Present();
@@ -236,6 +233,7 @@ public:
 
 private:
 	void FlushBatch();
+	void UpdateConstBuffer(ID3D11Buffer* cbuffer, const float* data, unsigned int length);
 
 	IDXGISwapChain* m_swapChain = nullptr;
 	ID3D11Device* m_d3dDevice = nullptr;

@@ -55,12 +55,7 @@ bool RenderSystem::OnResize(long width, long height)
 	m_windowWidth = width;
 	m_windowHeight = height;
 
-	D3D11_MAPPED_SUBRESOURCE mappedData;
-	if (S_OK == m_d3dContext->Map(m_bufferMatrix, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData))
-	{
-		memcpy(mappedData.pData, GetProjectionMatrix().m, sizeof(gml::mat44));
-		m_d3dContext->Unmap(m_bufferMatrix, 0);
-	}
+	UpdateConstBuffer(m_bufferMatrix, (float*)GetProjectionMatrix().m, sizeof(gml::mat44));
 	return true;
 }
 
@@ -219,6 +214,16 @@ Texture* RenderSystem::CreateTextureFromFile(const char* resPath)
 	return new Texture(resPath);
 }
 
+void RenderSystem::UpdateConstBuffer(ID3D11Buffer* cbuffer, const float* data, unsigned int length)
+{
+	D3D11_MAPPED_SUBRESOURCE mappedData;
+	if (S_OK == m_d3dContext->Map(cbuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData))
+	{
+		memcpy(mappedData.pData, data, length);
+		m_d3dContext->Unmap(cbuffer, 0);
+	}
+}
+
 void RenderSystem::FlushBatch()
 {
 	m_geometry.MakeEnoughVertexArray(m_mesh.GetVertexCount());
@@ -246,15 +251,28 @@ void RenderSystem::FlushBatch()
 			auto vcb = shader->GetVertexConstBuffer();
 			if (vcb)
 			{
-				//update vcb
-				m_d3dContext->VSSetConstantBuffers(1, 1, &vcb);
+				auto length = (shader->GetVertexConstBufferLength() > pass->GetVSConstantLength())
+					? pass->GetVSConstantLength()
+					: shader->GetVertexConstBufferLength();
+				if (length > 0)
+				{
+					UpdateConstBuffer(vcb, pass->GetVSConstant(), length);
+					m_d3dContext->VSSetConstantBuffers(1, 1, &vcb);
+
+				}
 			}
 
 			auto pcb = shader->GetPixelConstBuffer();
 			if (pcb)
 			{
-				//update pcb
-				m_d3dContext->PSSetConstantBuffers(0, 1, &pcb);
+				auto length = (shader->GetPixelConstBufferLength() > pass->GetPSConstantLength())
+					? pass->GetPSConstantLength()
+					: shader->GetPixelConstBufferLength();
+				if (length > 0)
+				{
+					UpdateConstBuffer(pcb, pass->GetPSConstant(), length);
+					m_d3dContext->PSSetConstantBuffers(0, 1, &pcb);
+				}
 			}
 
 			if (pass->GetTextureCount() > 0)
