@@ -226,7 +226,6 @@ public:
 	virtual g2d::Material* CreateSimpleTextureMaterial() override;
 	virtual g2d::Material* CreateSimpleColorMaterial() override;
 
-
 private:
 	void FlushBatch();
 	void UpdateConstBuffer(ID3D11Buffer* cbuffer, const void* data, unsigned int length);
@@ -242,15 +241,24 @@ private:
 
 	gml::color4 m_bkColor = gml::color4::blue();
 
+	//render request
+	struct RenderRequest {
+		g2d::Mesh* mesh;
+		g2d::Material* material;
+		gml::mat32 worldMatrix;
+	};
+
+	std::vector<RenderRequest> m_renderRequests;
+
 	Mesh m_mesh;
 	g2d::Material* m_lastMaterial = nullptr;
-	
+
 	Geometry m_geometry;
 	TexturePool m_texPool;
 	ShaderLib* shaderlib = nullptr;
 	ID3D11Buffer* m_sceneConstBuffer = nullptr;
 	gml::mat44 m_matProj;
-	
+
 	bool m_matProjConstBufferDirty = true;
 	bool m_matrixProjDirty = true;
 	long m_windowWidth = 0;
