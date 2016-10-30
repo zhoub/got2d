@@ -43,7 +43,8 @@ namespace g2d
 	{
 	public:
 		virtual ~Pass();
-		virtual const char* GetEffectName() const = 0;
+		virtual const char* GetVertexShaderName() const = 0;
+		virtual const char* GetPixelShaderName() const = 0;
 		virtual bool IsSame(Pass* other) const = 0;
 		virtual void SetTexture(unsigned int index, Texture*, bool autoRelease) = 0;
 		virtual void SetVSConstant(unsigned int index, float* data, unsigned int size, unsigned int count) = 0;
@@ -78,7 +79,7 @@ namespace g2d
 		virtual void RenderMesh(Mesh*, Material*, const gml::mat32&) = 0;
 	public:
 		virtual Mesh* CreateMesh(unsigned int vertexCount, unsigned int indexCount) = 0;
-		virtual Material* CreateDefaultMaterial() = 0;
+		virtual Material* CreateColorTextureMaterial() = 0;
 		virtual Material* CreateSimpleTextureMaterial() = 0;
 		virtual Material* CreateSimpleColorMaterial() = 0;
 	};

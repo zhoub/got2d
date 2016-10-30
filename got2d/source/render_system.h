@@ -136,31 +136,26 @@ class ShaderLib
 public:
 	ShaderLib();
 	~ShaderLib();
-	Shader* GetShaderByName(const char* name);
+	Shader* GetShaderByName(const std::string& vsName, const std::string& psName);
 
 private:
-	bool BuildShader(const std::string& name);
-
-	struct EffectDef
-	{
-		std::string vsName;
-		std::string psName;
-	};
+	bool BuildShader(const std::string& effectName, const std::string& vsName, const std::string& psName);
+	std::string GetEffectName(const std::string& vsName, const std::string& psName);
 	std::map<std::string, VSData*> m_vsSources;
 	std::map<std::string, PSData*>  m_psSources;
-	std::map<std::string, EffectDef> m_effectDefine;
 	std::map<std::string, Shader*> m_shaders;
 };
 
 class Pass : public g2d::Pass
 {
 public:
-	inline Pass(const char* name) : m_effectName(name) {}
+	inline Pass(const char* vsName, const char* psName) : m_vsName(vsName), m_psName(psName) {}
 	Pass(const Pass& other);
 	~Pass();
 	Pass* Clone();
 
-	inline virtual const char* GetEffectName() const override { return m_effectName.c_str(); }
+	inline virtual const char* GetVertexShaderName() const override { return m_vsName.c_str(); }
+	inline virtual const char* GetPixelShaderName() const override { return m_psName.c_str(); }
 	virtual bool IsSame(g2d::Pass* other) const override;
 	virtual void SetTexture(unsigned int index, g2d::Texture*, bool autoRelease) override;
 	virtual void SetVSConstant(unsigned int index, float* data, unsigned int size, unsigned int count) override;
@@ -175,7 +170,8 @@ public:
 	inline unsigned int GetTextureCount() { return static_cast<unsigned int>(m_textures.size()); }
 
 private:
-	std::string m_effectName;
+	std::string m_vsName;
+	std::string m_psName;
 	std::vector<g2d::Texture*> m_textures;
 	std::vector<gml::vec4> m_vsConstants;
 	std::vector<gml::vec4> m_psConstants;
@@ -226,7 +222,7 @@ public:
 	virtual void RenderMesh(g2d::Mesh*, g2d::Material*, const gml::mat32&) override;
 public:
 	virtual g2d::Mesh* CreateMesh(unsigned int vertexCount, unsigned int indexCount) override;
-	virtual g2d::Material* CreateDefaultMaterial() override;
+	virtual g2d::Material* CreateColorTextureMaterial() override;
 	virtual g2d::Material* CreateSimpleTextureMaterial() override;
 	virtual g2d::Material* CreateSimpleColorMaterial() override;
 

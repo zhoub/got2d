@@ -252,7 +252,7 @@ void RenderSystem::FlushBatch()
 	for (unsigned int i = 0; i < m_lastMaterial->GetPassCount(); i++)
 	{
 		auto pass = m_lastMaterial->GetPass(i);
-		auto shader = shaderlib->GetShaderByName(pass->GetEffectName());
+		auto shader = shaderlib->GetShaderByName(pass->GetVertexShaderName(), pass->GetPixelShaderName());
 		if (shader)
 		{
 			unsigned int stride = sizeof(g2d::GeometryVertex);
@@ -372,10 +372,10 @@ g2d::Mesh* RenderSystem::CreateMesh(unsigned int vertexCount, unsigned int index
 	return new Mesh(vertexCount, indexCount);
 }
 
-g2d::Material* RenderSystem::CreateDefaultMaterial()
+g2d::Material* RenderSystem::CreateColorTextureMaterial()
 {
 	auto mat = new ::Material(1);
-	mat->SetPass(0, new Pass("color.texture"));
+	mat->SetPass(0, new Pass("defualt","color.texture"));
 	mat->GetPass(0)->SetTexture(0, Texture::Default(), false);
 	return mat;
 }
@@ -383,7 +383,7 @@ g2d::Material* RenderSystem::CreateDefaultMaterial()
 g2d::Material* RenderSystem::CreateSimpleTextureMaterial()
 {
 	auto mat = new ::Material(1);
-	mat->SetPass(0, new Pass("simple.texture"));
+	mat->SetPass(0, new Pass("defualt", "simple.texture"));
 	mat->GetPass(0)->SetTexture(0, Texture::Default(), false);
 	return mat;
 }
@@ -391,6 +391,6 @@ g2d::Material* RenderSystem::CreateSimpleTextureMaterial()
 g2d::Material* RenderSystem::CreateSimpleColorMaterial()
 {
 	auto mat = new ::Material(1);
-	mat->SetPass(0, new Pass("simple.color"));
+	mat->SetPass(0, new Pass("defualt", "simple.color"));
 	return mat;
 }

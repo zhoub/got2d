@@ -180,7 +180,7 @@ QuadEntity::QuadEntity()
 		m_material->GetPass(0)->SetTexture(0, g2d::GetEngine()->LoadTexture((rand() % 2) ? "test_alpha.bmp" : "test_alpha.png"), true);
 		break;
 	case 2:
-		m_material = g2d::GetEngine()->GetRenderSystem()->CreateDefaultMaterial();
+		m_material = g2d::GetEngine()->GetRenderSystem()->CreateColorTextureMaterial();
 		m_material->GetPass(0)->SetTexture(0, g2d::GetEngine()->LoadTexture((rand() % 2) ? "test_alpha.bmp" : "test_alpha.png"), true);
 		break;
 	}

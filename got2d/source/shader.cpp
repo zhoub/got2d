@@ -255,22 +255,6 @@ ShaderLib::ShaderLib()
 
 	psd = new ColorTexturePSData();
 	m_psSources[psd->GetName()] = psd;
-
-	struct {
-		std::string name;
-		EffectDef define;
-	}
-	effectDefs[] =
-	{
-		{ "simple.color", { "default", "simple.color" } },
-		{ "simple.texture", { "default", "simple.texture" } },
-		{ "color.texture", { "default", "color.texture" } },
-	};
-
-	for (auto& ed : effectDefs)
-	{
-		m_effectDefine[ed.name] = ed.define;
-	}
 }
 
 ShaderLib::~ShaderLib()
@@ -288,28 +272,29 @@ ShaderLib::~ShaderLib()
 	m_vsSources.clear();
 }
 
-Shader* ShaderLib::GetShaderByName(const char* name)
+
+std::string ShaderLib::GetEffectName(const std::string& vsName, const std::string& psName)
 {
-	std::string nameStr = name;
-	if (!m_shaders.count(nameStr))
+	return std::move(vsName + psName);
+}
+
+Shader* ShaderLib::GetShaderByName(const std::string& vsName, const std::string& psName)
+{
+	std::string effectName = GetEffectName(vsName, psName);
+	if (!m_shaders.count(effectName))
 	{
-		if (!BuildShader(nameStr))
+		if (!BuildShader(effectName, vsName, psName))
 		{
 			return false;
 		}
 	}
-	return m_shaders[nameStr];
+	return m_shaders[effectName];
 }
 
-bool ShaderLib::BuildShader(const std::string& name)
+bool ShaderLib::BuildShader(const std::string& effectName, const std::string& vsName, const std::string& psName)
 {
-	if (!m_effectDefine.count(name))
-	{
-		return false;
-	}
-	auto& shaderDef = m_effectDefine[name];
-	auto vsData = m_vsSources[shaderDef.vsName];
-	auto psData = m_psSources[shaderDef.psName];
+	auto vsData = m_vsSources[vsName];
+	auto psData = m_psSources[psName];
 	if (vsData == nullptr || psData == nullptr)
 		return false;
 
@@ -318,11 +303,10 @@ bool ShaderLib::BuildShader(const std::string& name)
 		vsData->GetCode(), vsData->GetConstBufferLength(),
 		psData->GetCode(), psData->GetConstBufferLength()))
 	{
-		m_shaders[name] = shader;
+		m_shaders[effectName] = shader;
 		return true;
 	}
 	delete shader;
-	m_effectDefine.erase(name);
 	return false;
 }
 
@@ -331,7 +315,8 @@ g2d::Pass::~Pass() {}
 g2d::Material::~Material() {}
 
 Pass::Pass(const Pass& other)
-	: m_effectName(other.m_effectName)
+	: m_vsName(other.m_vsName)
+	, m_psName(other.m_psName)
 	, m_textures(other.m_textures.size())
 	, m_vsConstants(other.m_vsConstants.size())
 	, m_psConstants(other.m_psConstants.size())
@@ -373,7 +358,7 @@ bool Pass::IsSame(g2d::Pass* other) const
 	if (p == nullptr)
 		return false;
 
-	if (m_effectName != p->m_effectName)
+	if (m_vsName != m_vsName || m_psName != p->m_psName)
 		return false;
 
 	if (m_textures.size() != p->m_textures.size() ||
