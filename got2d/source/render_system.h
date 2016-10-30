@@ -89,52 +89,73 @@ private:
 	Texture2D m_defaultTexture;
 };
 
-class ShaderSource
+class VSData
 {
 public:
-	virtual const char* GetShaderName() = 0;
-	virtual const char* GetVertexShaderCode() = 0;
-	virtual const char* GetPixelShaderCode() = 0;
+	virtual ~VSData() {}
+	virtual const char* GetName() = 0;
+	virtual const char* GetCode() = 0;
+	virtual unsigned int GetConstBufferLength() = 0;
+};
+
+class PSData
+{
+public:
+	virtual ~PSData() {}
+	virtual const char* GetName() = 0;
+	virtual const char* GetCode() = 0;
+	virtual unsigned int GetConstBufferLength() = 0;
 };
 
 class Shader
 {
 public:
-	bool Create(const char* vsCode, const char* psCode);
+	bool Create(const char* vsCode, unsigned int vcbLength, const char* psCode, unsigned int pcbLength);
 	void Destroy();
 
-	ID3D11VertexShader* GetVertexShader();
-	ID3D11PixelShader* GetPixelShader();
-	ID3D11InputLayout* GetInputLayout();
+	ID3D11VertexShader* GetVertexShader() { return m_vertexShader; }
+	ID3D11PixelShader* GetPixelShader() { return m_pixelShader; }
+	ID3D11InputLayout* GetInputLayout() { return m_shaderLayout; }
+	ID3D11Buffer* GetVertexConstBuffer() { return m_vertexConstBuffer; }
+	ID3D11Buffer* GetPixelConstBuffer() { return m_pixelConstBuffer; }
+	unsigned int GetVertexConstBufferLength() { return m_vertexConstBufferLength; }
+	unsigned int GetPixelConstBufferLength() { return m_pixelConstBufferLength; }
 
 private:
+	ID3D11InputLayout* m_shaderLayout = nullptr;
 	ID3D11VertexShader* m_vertexShader = nullptr;
 	ID3D11PixelShader* m_pixelShader = nullptr;
-	ID3D11InputLayout* m_shaderLayout = nullptr;
+	ID3D11Buffer* m_vertexConstBuffer = nullptr;
+	ID3D11Buffer* m_pixelConstBuffer = nullptr;
+	unsigned int m_vertexConstBufferLength = 0;
+	unsigned int m_pixelConstBufferLength = 0;
 };
 
 class ShaderLib
 {
 public:
 	ShaderLib();
-	Shader* GetShaderByName(const char* name);
+	~ShaderLib();
+	Shader* GetShaderByName(const std::string& vsName, const std::string& psName);
 
 private:
-	bool BuildShader(const std::string& name);
-
-	std::map<std::string, ShaderSource*> m_sources;
+	bool BuildShader(const std::string& effectName, const std::string& vsName, const std::string& psName);
+	std::string GetEffectName(const std::string& vsName, const std::string& psName);
+	std::map<std::string, VSData*> m_vsSources;
+	std::map<std::string, PSData*>  m_psSources;
 	std::map<std::string, Shader*> m_shaders;
 };
 
 class Pass : public g2d::Pass
 {
 public:
-	inline Pass(const char* name) : m_effectName(name) {}
+	inline Pass(const char* vsName, const char* psName) : m_vsName(vsName), m_psName(psName) {}
 	Pass(const Pass& other);
 	~Pass();
 	Pass* Clone();
 
-	inline virtual const char* GetEffectName() const override { return m_effectName.c_str(); }
+	inline virtual const char* GetVertexShaderName() const override { return m_vsName.c_str(); }
+	inline virtual const char* GetPixelShaderName() const override { return m_psName.c_str(); }
 	virtual bool IsSame(g2d::Pass* other) const override;
 	virtual void SetTexture(unsigned int index, g2d::Texture*, bool autoRelease) override;
 	virtual void SetVSConstant(unsigned int index, float* data, unsigned int size, unsigned int count) override;
@@ -142,14 +163,15 @@ public:
 	virtual g2d::Texture* GetTexture(unsigned int index) const override { return m_textures[index]; }
 	inline virtual unsigned int GetTextureCount() const override { return static_cast<unsigned int>(m_textures.size()); }
 	inline virtual const float* GetVSConstant() const override { return reinterpret_cast<const float*>(&(m_vsConstants[0])); }
-	inline virtual unsigned int GetVSConstantLength() const override { return static_cast<unsigned int>(m_vsConstants.size()) * 4; }
+	inline virtual unsigned int GetVSConstantLength() const override { return static_cast<unsigned int>(m_vsConstants.size()) * 4 * sizeof(float); }
 	inline virtual const float* GetPSConstant() const override { return reinterpret_cast<const float*>(&(m_psConstants[0])); }
-	inline virtual unsigned int GetPSConstantLength() const override { return static_cast<unsigned int>(m_psConstants.size()) * 4; }
+	inline virtual unsigned int GetPSConstantLength() const override { return static_cast<unsigned int>(m_psConstants.size()) * 4 * sizeof(float); }
 	inline virtual void Release() override { delete this; }
 	inline unsigned int GetTextureCount() { return static_cast<unsigned int>(m_textures.size()); }
-	
+
 private:
-	std::string m_effectName;
+	std::string m_vsName;
+	std::string m_psName;
 	std::vector<g2d::Texture*> m_textures;
 	std::vector<gml::vec4> m_vsConstants;
 	std::vector<gml::vec4> m_psConstants;
@@ -180,11 +202,8 @@ class RenderSystem : public g2d::RenderSystem
 public:
 	static RenderSystem* Instance;
 	RenderSystem();
-
 	bool Create(void* nativeWindow);
-
 	void Destroy();
-
 	void Clear();
 	void Render();
 	void Present();
@@ -203,13 +222,15 @@ public:
 	virtual void RenderMesh(g2d::Mesh*, g2d::Material*, const gml::mat32&) override;
 public:
 	virtual g2d::Mesh* CreateMesh(unsigned int vertexCount, unsigned int indexCount) override;
-	virtual g2d::Material* CreateDefaultMaterial() override;
+	virtual g2d::Material* CreateColorTextureMaterial() override;
 	virtual g2d::Material* CreateSimpleTextureMaterial() override;
 	virtual g2d::Material* CreateSimpleColorMaterial() override;
 
 
 private:
 	void FlushBatch();
+	void UpdateConstBuffer(ID3D11Buffer* cbuffer, const void* data, unsigned int length);
+	void UpdateSceneConstBuffer(gml::mat32* matrixView);
 
 	IDXGISwapChain* m_swapChain = nullptr;
 	ID3D11Device* m_d3dDevice = nullptr;
@@ -223,13 +244,14 @@ private:
 
 	Mesh m_mesh;
 	g2d::Material* m_lastMaterial = nullptr;
-	ID3D11Buffer* m_bufferMatrix = nullptr;
+	
 	Geometry m_geometry;
 	TexturePool m_texPool;
-
 	ShaderLib* shaderlib = nullptr;
-
+	ID3D11Buffer* m_sceneConstBuffer = nullptr;
 	gml::mat44 m_matProj;
+	
+	bool m_matProjConstBufferDirty = true;
 	bool m_matrixProjDirty = true;
 	long m_windowWidth = 0;
 	long m_windowHeight = 0;

@@ -3,7 +3,7 @@
 #include <assert.h>
 #pragma comment(lib,"d3dcompiler.lib")
 
-bool Shader::Create(const char* vsCode, const char* psCode)
+bool Shader::Create(const char* vsCode, unsigned int vcbLength, const char* psCode, unsigned int pcbLength)
 {
 	auto vsCodeLength = strlen(vsCode) + 1;
 	auto psCodeLength = strlen(psCode) + 1;
@@ -92,6 +92,29 @@ bool Shader::Create(const char* vsCode, const char* psCode)
 		if (S_OK != ret)
 			break;
 
+		D3D11_BUFFER_DESC cbDesc =
+		{
+			0,							//UINT ByteWidth;
+			D3D11_USAGE_DYNAMIC,		//D3D11_USAGE Usage;
+			D3D11_BIND_CONSTANT_BUFFER,	//UINT BindFlags;
+			D3D11_CPU_ACCESS_WRITE,		//UINT CPUAccessFlags;
+			0,							//UINT MiscFlags;
+			0							//UINT StructureByteStride;
+		};
+		if (vcbLength > 0)
+		{
+			cbDesc.ByteWidth = m_vertexConstBufferLength = vcbLength;
+			if (S_OK != GetRenderSystem()->GetDevice()->CreateBuffer(&cbDesc, NULL, &m_vertexConstBuffer))
+				break;
+		}
+
+		if (pcbLength > 0)
+		{
+			cbDesc.ByteWidth = m_pixelConstBufferLength = pcbLength;
+			if (S_OK != GetRenderSystem()->GetDevice()->CreateBuffer(&cbDesc, NULL, &m_pixelConstBuffer))
+				break;
+		}
+
 		SR(vsBlob);
 		SR(psBlob);
 		return true;
@@ -102,30 +125,29 @@ bool Shader::Create(const char* vsCode, const char* psCode)
 	Destroy();
 	return false;
 }
+
 void Shader::Destroy()
 {
 	SR(m_vertexShader);
 	SR(m_pixelShader);
 	SR(m_shaderLayout);
+	SR(m_vertexConstBuffer);
+	SR(m_pixelConstBuffer);
+	m_vertexConstBufferLength = 0;
+	m_pixelConstBufferLength = 0;
 }
 
-ID3D11VertexShader* Shader::GetVertexShader() { return m_vertexShader; }
-ID3D11PixelShader* Shader::GetPixelShader() { return m_pixelShader; }
-ID3D11InputLayout* Shader::GetInputLayout() { return m_shaderLayout; }
-
-class SimpleColorShader : public ShaderSource
+class DefaultVSData : public VSData
 {
-	const char* GetShaderName() override
-	{
-		return "simple.color";
-	}
-	const char* GetVertexShaderCode() override
+public:
+	virtual const char* GetName() override { return "default"; }
+	virtual const char* GetCode() override
 	{
 		return R"(
 			cbuffer scene
 			{
+				float4x2 matrixView;
 				float4x4 matrixProj;
-				float4x4 matrixWorld;
 			}
 			struct GeometryVertex
 			{
@@ -136,23 +158,32 @@ class SimpleColorShader : public ShaderSource
 			struct VertexOutput
 			{
 				float4 position : SV_POSITION;
+				float2 texcoord : TEXCOORD0;
 				float4 vtxcolor : COLOR;
 			};
 			VertexOutput VSMain(GeometryVertex input)
 			{
 				VertexOutput output;
 				output.position = mul(float4(input.position, 0, 1), matrixProj);
+				output.texcoord = input.texcoord;
 				output.vtxcolor = input.vtxcolor;
 				return output;
 			}
 		)";
 	}
-	const char* GetPixelShaderCode() override
+	virtual unsigned int GetConstBufferLength() override { return 0; }
+};
+
+class SimpleColorPSData : public PSData
+{
+	virtual const char* GetName() override { return "simple.color"; }
+	virtual const char* GetCode() override
 	{
 		return R"(
 			struct VertexInput
 			{
 				float4 position : SV_POSITION;
+				float2 texcoord : TEXCOORD0;
 				float4 vtxcolor : COLOR;
 			};
 			float4 PSMain(VertexInput input):SV_TARGET
@@ -161,43 +192,13 @@ class SimpleColorShader : public ShaderSource
 			}
 		)";
 	}
+	virtual unsigned int GetConstBufferLength() override { return 0; }
 };
 
-class SimpleTextureShader : public ShaderSource
+class SimpleTexturePSData : public PSData
 {
-	const char* GetShaderName() override
-	{
-		return "simple.texture";
-	}
-	const char* GetVertexShaderCode() override
-	{
-		return R"(
-			cbuffer scene
-			{
-				float4x4 matrixProj;
-				float4x4 matrixWorld;
-			}
-			struct GeometryVertex
-			{
-				float2 position : POSITION;
-				float2 texcoord : TEXCOORD0;
-				float4 vtxcolor : COLOR;
-			};
-			struct VertexOutput
-			{
-				float4 position : SV_POSITION;
-				float2 texcoord : TEXCOORD0;
-			};
-			VertexOutput VSMain(GeometryVertex input)
-			{
-				VertexOutput output;
-				output.position = mul(float4(input.position, 0, 1), matrixProj);
-				output.texcoord = input.texcoord;
-				return output;
-			}
-		)";
-	}
-	const char* GetPixelShaderCode() override
+	virtual const char* GetName() override { return "simple.texture"; }
+	virtual const char* GetCode() override
 	{
 		return R"(
 			Texture2D Tex;
@@ -206,6 +207,7 @@ class SimpleTextureShader : public ShaderSource
 			{
 				float4 position : SV_POSITION;
 				float2 texcoord : TEXCOORD0;
+				float4 vtxcolor : COLOR;
 			};
 			float4 PSMain(VertexInput input):SV_TARGET
 			{
@@ -213,45 +215,13 @@ class SimpleTextureShader : public ShaderSource
 			}
 		)";
 	}
+	virtual unsigned int GetConstBufferLength() override { return 0; }
 };
 
-class DefaultShader : public ShaderSource
+class ColorTexturePSData : public PSData
 {
-	const char* GetShaderName() override
-	{
-		return "default";
-	}
-	const char* GetVertexShaderCode() override
-	{
-		return R"(
-			cbuffer scene
-			{
-				float4x4 matrixProj;
-				float4x4 matrixWorld;
-			}
-			struct GeometryVertex
-			{
-				float2 position : POSITION;
-				float2 texcoord : TEXCOORD0;
-				float4 vtxcolor : COLOR;
-			};
-			struct VertexOutput
-			{
-				float4 position : SV_POSITION;
-				float2 texcoord : TEXCOORD0;
-				float4 vtxcolor : COLOR;
-			};
-			VertexOutput VSMain(GeometryVertex input)
-			{
-				VertexOutput output;
-				output.position = mul(float4(input.position, 0, 1), matrixProj);
-				output.texcoord = input.texcoord;
-				output.vtxcolor = input.vtxcolor;
-				return output;
-			}
-		)";
-	}
-	const char* GetPixelShaderCode() override
+	virtual const char* GetName() override { return "color.texture"; }
+	virtual const char* GetCode() override
 	{
 		return R"(
 			Texture2D Tex;
@@ -268,50 +238,75 @@ class DefaultShader : public ShaderSource
 			}
 		)";
 	}
+	virtual unsigned int GetConstBufferLength() override { return 0; }
 };
-
 
 ShaderLib::ShaderLib()
 {
-	ShaderSource* p = new DefaultShader();
-	m_sources[p->GetShaderName()] = p;
+	VSData* vsd = new DefaultVSData();
+	m_vsSources[vsd->GetName()] = vsd;
 
-	p = new SimpleTextureShader();
-	m_sources[p->GetShaderName()] = p;
+	PSData* psd;
+	psd = new SimpleColorPSData();
+	m_psSources[psd->GetName()] = psd;
 
-	p = new SimpleColorShader();
-	m_sources[p->GetShaderName()] = p;
+	psd = new SimpleTexturePSData();
+	m_psSources[psd->GetName()] = psd;
+
+	psd = new ColorTexturePSData();
+	m_psSources[psd->GetName()] = psd;
 }
 
-Shader* ShaderLib::GetShaderByName(const char* name)
+ShaderLib::~ShaderLib()
 {
-	std::string nameStr = name;
-	if (!m_shaders.count(nameStr))
+	for (auto& psd : m_psSources)
 	{
-		if (!BuildShader(nameStr))
+		delete psd.second;
+	}
+	m_psSources.clear();
+
+	for (auto& vsd : m_vsSources)
+	{
+		delete vsd.second;
+	}
+	m_vsSources.clear();
+}
+
+
+std::string ShaderLib::GetEffectName(const std::string& vsName, const std::string& psName)
+{
+	return std::move(vsName + psName);
+}
+
+Shader* ShaderLib::GetShaderByName(const std::string& vsName, const std::string& psName)
+{
+	std::string effectName = GetEffectName(vsName, psName);
+	if (!m_shaders.count(effectName))
+	{
+		if (!BuildShader(effectName, vsName, psName))
 		{
 			return false;
 		}
 	}
-	return m_shaders[nameStr];
+	return m_shaders[effectName];
 }
 
-bool ShaderLib::BuildShader(const std::string& name)
+bool ShaderLib::BuildShader(const std::string& effectName, const std::string& vsName, const std::string& psName)
 {
-	if (!m_sources.count(name))
-	{
+	auto vsData = m_vsSources[vsName];
+	auto psData = m_psSources[psName];
+	if (vsData == nullptr || psData == nullptr)
 		return false;
-	}
-	ShaderSource* shaderRes = m_sources[name];
+
 	Shader* shader = new Shader();
-	if (shader->Create(shaderRes->GetVertexShaderCode(), shaderRes->GetPixelShaderCode()))
+	if (shader->Create(
+		vsData->GetCode(), vsData->GetConstBufferLength(),
+		psData->GetCode(), psData->GetConstBufferLength()))
 	{
-		m_shaders[name] = shader;
+		m_shaders[effectName] = shader;
 		return true;
 	}
 	delete shader;
-	m_sources.erase(name);
-
 	return false;
 }
 
@@ -320,7 +315,8 @@ g2d::Pass::~Pass() {}
 g2d::Material::~Material() {}
 
 Pass::Pass(const Pass& other)
-	: m_effectName(other.m_effectName)
+	: m_vsName(other.m_vsName)
+	, m_psName(other.m_psName)
 	, m_textures(other.m_textures.size())
 	, m_vsConstants(other.m_vsConstants.size())
 	, m_psConstants(other.m_psConstants.size())
@@ -331,13 +327,13 @@ Pass::Pass(const Pass& other)
 		m_textures[i]->AddRef();
 	}
 
-	if (m_vsConstants.size() > 0)
+	if (other.GetVSConstantLength() > 0)
 	{
-		memcpy(&(m_vsConstants[0]), &(other.m_vsConstants[0]), m_vsConstants.size() * sizeof(float));
+		memcpy(&(m_vsConstants[0]), &(other.m_vsConstants[0]), other.GetVSConstantLength());
 	}
-	if (m_psConstants.size() > 0)
+	if (other.GetPSConstantLength() > 0)
 	{
-		memcpy(&(m_psConstants[0]), &(other.m_psConstants[0]), m_psConstants.size() * sizeof(float));
+		memcpy(&(m_psConstants[0]), &(other.m_psConstants[0]), other.GetPSConstantLength());
 	}
 }
 
@@ -355,13 +351,14 @@ Pass* Pass::Clone()
 	Pass* p = new Pass(*this);
 	return p;
 }
+
 bool Pass::IsSame(g2d::Pass* other) const
 {
 	Pass* p = dynamic_cast<Pass*>(other);
 	if (p == nullptr)
 		return false;
 
-	if (m_effectName != p->m_effectName)
+	if (m_vsName != m_vsName || m_psName != p->m_psName)
 		return false;
 
 	if (m_textures.size() != p->m_textures.size() ||
@@ -417,6 +414,7 @@ void Pass::SetTexture(unsigned int index, g2d::Texture* tex, bool autoRelease)
 		m_textures[index]->AddRef();
 	}
 }
+
 void Pass::SetVSConstant(unsigned int index, float* data, unsigned int size, unsigned int count)
 {
 	if (count == 0)
@@ -438,14 +436,14 @@ void Pass::SetPSConstant(unsigned int index, float* data, unsigned int size, uns
 	if (count == 0)
 		return;
 
-	if (index + count > m_vsConstants.size())
+	if (index + count > m_psConstants.size())
 	{
-		m_vsConstants.resize(index + count);
+		m_psConstants.resize(index + count);
 	}
 
 	for (unsigned int i = 0; i < count; i++)
 	{
-		memcpy(&(m_vsConstants[index + i]), data + i*size, size);
+		memcpy(&(m_psConstants[index + i]), data + i*size, size);
 	}
 }
 
@@ -469,7 +467,6 @@ void Material::SetPass(unsigned int index, Pass* p)
 	assert(index < m_passes.size());
 	m_passes[index] = p;
 }
-
 
 Material::~Material()
 {
