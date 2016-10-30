@@ -375,7 +375,7 @@ g2d::Mesh* RenderSystem::CreateMesh(unsigned int vertexCount, unsigned int index
 g2d::Material* RenderSystem::CreateColorTextureMaterial()
 {
 	auto mat = new ::Material(1);
-	mat->SetPass(0, new Pass("defualt","color.texture"));
+	mat->SetPass(0, new Pass("default","color.texture"));
 	mat->GetPass(0)->SetTexture(0, Texture::Default(), false);
 	return mat;
 }
@@ -383,7 +383,7 @@ g2d::Material* RenderSystem::CreateColorTextureMaterial()
 g2d::Material* RenderSystem::CreateSimpleTextureMaterial()
 {
 	auto mat = new ::Material(1);
-	mat->SetPass(0, new Pass("defualt", "simple.texture"));
+	mat->SetPass(0, new Pass("default", "simple.texture"));
 	mat->GetPass(0)->SetTexture(0, Texture::Default(), false);
 	return mat;
 }
@@ -391,6 +391,6 @@ g2d::Material* RenderSystem::CreateSimpleTextureMaterial()
 g2d::Material* RenderSystem::CreateSimpleColorMaterial()
 {
 	auto mat = new ::Material(1);
-	mat->SetPass(0, new Pass("defualt", "simple.color"));
+	mat->SetPass(0, new Pass("default", "simple.color"));
 	return mat;
 }
