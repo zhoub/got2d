@@ -63,7 +63,7 @@ bool RenderSystem::CreateBlendModes()
 	HRESULT hr = S_OK;
 	ID3D11BlendState* blendState = nullptr;
 	D3D11_BLEND_DESC blendDesc;
-	m_blendModes[BLEND_NONE] = nullptr;
+	m_blendModes[g2d::BLEND_NONE] = nullptr;
 
 	blendDesc.AlphaToCoverageEnable = FALSE;
 	blendDesc.IndependentBlendEnable = FALSE;
@@ -82,7 +82,7 @@ bool RenderSystem::CreateBlendModes()
 	hr = m_d3dDevice->CreateBlendState(&blendDesc, &blendState);
 	if (hr != S_OK)
 		return false;
-	m_blendModes[BLEND_NORMAL] = blendState;
+	m_blendModes[g2d::BLEND_NORMAL] = blendState;
 
 	for (int i = 0; i < D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT; i++)
 	{
@@ -99,7 +99,24 @@ bool RenderSystem::CreateBlendModes()
 	hr = m_d3dDevice->CreateBlendState(&blendDesc, &blendState);
 	if (hr != S_OK)
 		return false;
-	m_blendModes[BLEND_ADD] = blendState;
+	m_blendModes[g2d::BLEND_ADD] = blendState;
+
+	for (int i = 0; i < D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT; i++)
+	{
+		blendDesc.RenderTarget[i].BlendEnable = TRUE;
+		blendDesc.RenderTarget[i].SrcBlend = D3D11_BLEND_ONE;
+		blendDesc.RenderTarget[i].DestBlend = D3D11_BLEND_INV_SRC_COLOR;
+		blendDesc.RenderTarget[i].BlendOp = D3D11_BLEND_OP_ADD;
+		blendDesc.RenderTarget[i].SrcBlendAlpha = D3D11_BLEND_ONE;
+		blendDesc.RenderTarget[i].DestBlendAlpha = D3D11_BLEND_ZERO;
+		blendDesc.RenderTarget[i].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+		blendDesc.RenderTarget[i].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+	}
+
+	hr = m_d3dDevice->CreateBlendState(&blendDesc, &blendState);
+	if (hr != S_OK)
+		return false;
+	m_blendModes[g2d::BLEND_SCREEN] = blendState;
 
 	return true;
 }
@@ -216,7 +233,7 @@ bool RenderSystem::Create(void* nativeWindow)
 
 		m_d3dContext->OMSetRenderTargets(1, &m_bbView, nullptr);
 		m_d3dContext->RSSetViewports(1, &m_viewport);
-		SetBlendMode(BLEND_NORMAL);
+		SetBlendMode(g2d::BLEND_NONE);
 		Instance = this;
 
 		//all creation using RenderSystem should be start here.
@@ -286,7 +303,7 @@ void RenderSystem::Present()
 	m_swapChain->Present(0, 0);
 }
 
-void RenderSystem::SetBlendMode(BlendMode blendMode)
+void RenderSystem::SetBlendMode(g2d::BlendMode blendMode)
 {
 	if (m_blendModes.count(blendMode) == 0)
 		return;
@@ -355,6 +372,7 @@ void RenderSystem::FlushBatch(Mesh& mesh, g2d::Material* material)
 			m_d3dContext->PSSetShader(shader->GetPixelShader(), NULL, 0);
 			UpdateSceneConstBuffer(nullptr);
 			m_d3dContext->VSSetConstantBuffers(0, 1, &m_sceneConstBuffer);
+			SetBlendMode(pass->GetBlendMode());
 
 			auto vcb = shader->GetVertexConstBuffer();
 			if (vcb)

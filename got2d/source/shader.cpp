@@ -320,6 +320,7 @@ Pass::Pass(const Pass& other)
 	, m_textures(other.m_textures.size())
 	, m_vsConstants(other.m_vsConstants.size())
 	, m_psConstants(other.m_psConstants.size())
+	, m_blendMode(other.m_blendMode)
 {
 	for (size_t i = 0, n = m_textures.size(); i < n; i++)
 	{
@@ -361,7 +362,7 @@ bool Pass::IsSame(g2d::Pass* other) const
 	if (p == nullptr)
 		return false;
 
-	if (m_vsName != m_vsName || m_psName != p->m_psName)
+	if (m_blendMode != p->m_blendMode || m_vsName != m_vsName || m_psName != p->m_psName)
 		return false;
 
 	if (m_textures.size() != p->m_textures.size() ||
@@ -448,6 +449,10 @@ void Pass::SetPSConstant(unsigned int index, float* data, unsigned int size, uns
 	{
 		memcpy(&(m_psConstants[index + i]), data + i*size, size);
 	}
+}
+g2d::BlendMode Pass::GetBlendMode() const
+{
+	return m_blendMode;
 }
 
 Material::Material(unsigned int passCount)
