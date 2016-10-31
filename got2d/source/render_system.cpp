@@ -4,7 +4,7 @@
 g2d::RenderSystem::~RenderSystem() { }
 RenderSystem* RenderSystem::Instance = nullptr;
 
-RenderSystem::RenderSystem() :m_bkColor(gml::color4::blue()), m_mesh(0, 0)
+RenderSystem::RenderSystem() :m_bkColor(gml::color4::blue())
 {
 }
 
@@ -78,15 +78,15 @@ bool RenderSystem::Create(void* nativeWindow)
 			break;
 		}
 
-        IDXGIDevice * dxgiDevice = nullptr;
-        hr = m_d3dDevice->QueryInterface(__uuidof(IDXGIDevice), (void **)&dxgiDevice);
-        if (S_OK != hr || dxgiDevice == nullptr)
-        {
-            break;
-        }
+		IDXGIDevice * dxgiDevice = nullptr;
+		hr = m_d3dDevice->QueryInterface(__uuidof(IDXGIDevice), (void **)&dxgiDevice);
+		if (S_OK != hr || dxgiDevice == nullptr)
+		{
+			break;
+		}
 
-        IDXGIAdapter * adapter = nullptr;
-        hr = dxgiDevice->GetParent(__uuidof(IDXGIAdapter), (void **)&adapter);
+		IDXGIAdapter * adapter = nullptr;
+		hr = dxgiDevice->GetParent(__uuidof(IDXGIAdapter), (void **)&adapter);
 		if (S_OK != hr || adapter == nullptr)
 		{
 			break;
@@ -94,7 +94,7 @@ bool RenderSystem::Create(void* nativeWindow)
 
 		//CreateSwapChain
 		IDXGIFactory* factory = nullptr;
-        hr = adapter->GetParent(__uuidof(IDXGIFactory), (void **)&factory);
+		hr = adapter->GetParent(__uuidof(IDXGIFactory), (void **)&factory);
 		if (S_OK != hr || factory == nullptr)
 		{
 			break;
@@ -181,14 +181,14 @@ bool RenderSystem::Create(void* nativeWindow)
 
 void RenderSystem::Destroy()
 {
-	SR(m_lastMaterial);
+	for (auto& list : m_renderRequests)
+	{
+		delete list.second;
+	}
+	m_renderRequests.clear();
 	m_geometry.Destroy();
 	m_texPool.Destroy();
-	if (shaderlib)
-	{
-		delete shaderlib;
-		shaderlib = nullptr;
-	}
+	SD(shaderlib);
 	SR(m_sceneConstBuffer);
 	SR(m_colorTexture);
 	SR(m_rtView);
@@ -241,6 +241,7 @@ void RenderSystem::UpdateConstBuffer(ID3D11Buffer* cbuffer, const void* data, un
 		m_d3dContext->Unmap(cbuffer, 0);
 	}
 }
+
 void RenderSystem::UpdateSceneConstBuffer(gml::mat32* matrixView)
 {
 	if (matrixView == nullptr && !m_matProjConstBufferDirty && !m_matrixProjDirty)
@@ -260,16 +261,19 @@ void RenderSystem::UpdateSceneConstBuffer(gml::mat32* matrixView)
 	}
 }
 
-void RenderSystem::FlushBatch()
+void RenderSystem::FlushBatch(Mesh& mesh, g2d::Material* material)
 {
-	m_geometry.MakeEnoughVertexArray(m_mesh.GetVertexCount());
-	m_geometry.MakeEnoughIndexArray(m_mesh.GetIndexCount());
-	m_geometry.UploadVertices(0, m_mesh.GetRawVertices(), m_mesh.GetVertexCount());
-	m_geometry.UploadIndices(0, m_mesh.GetRawIndices(), m_mesh.GetIndexCount());
+	if (mesh.GetIndexCount() == 0 || material == nullptr)
+		return;
 
-	for (unsigned int i = 0; i < m_lastMaterial->GetPassCount(); i++)
+	m_geometry.MakeEnoughVertexArray(mesh.GetVertexCount());
+	m_geometry.MakeEnoughIndexArray(mesh.GetIndexCount());
+	m_geometry.UploadVertices(0, mesh.GetRawVertices(), mesh.GetVertexCount());
+	m_geometry.UploadIndices(0, mesh.GetRawIndices(), mesh.GetIndexCount());
+
+	for (unsigned int i = 0; i < material->GetPassCount(); i++)
 	{
-		auto pass = m_lastMaterial->GetPass(i);
+		auto pass = material->GetPass(i);
 		auto shader = shaderlib->GetShaderByName(pass->GetVertexShaderName(), pass->GetPixelShaderName());
 		if (shader)
 		{
@@ -335,47 +339,61 @@ void RenderSystem::FlushBatch()
 				m_d3dContext->PSSetSamplers(0, numView, &(samplerstates[0]));
 			}
 
-			m_d3dContext->DrawIndexed(m_mesh.GetIndexCount(), 0, 0);
+			m_d3dContext->DrawIndexed(mesh.GetIndexCount(), 0, 0);
 		}
 	}
+
+	mesh.Clear();
 }
 
 void RenderSystem::Render()
 {
-	if (m_mesh.GetIndexCount() > 0)
+	if (m_renderRequests.size() == 0)
+		return;
+
+	Mesh batchMesh(0, 0);
+	g2d::Material* material = nullptr;
+	for (auto& reqList : m_renderRequests)
 	{
-		FlushBatch();
+		ReqList& list = *(reqList.second);
+		if (list.size() == 0)
+			continue;
+
+		for (auto& request : list)
+		{
+			if (!request.material->IsSame(material))//material may be nullptr.
+			{
+				FlushBatch(batchMesh, material);
+				material = request.material;
+			}
+
+			if (!batchMesh.Merge(request.mesh, request.worldMatrix))
+			{
+				FlushBatch(batchMesh, material);
+			}
+
+			//de factor, no need to Merge when there is only ONE MESH each drawcall.
+			batchMesh.Merge(request.mesh, request.worldMatrix);
+		}
 	}
+	FlushBatch(batchMesh, material);
 }
 
-void RenderSystem::RenderMesh(g2d::Mesh* m, g2d::Material* material, const gml::mat32& transform)
+void RenderSystem::RenderMesh(unsigned int layer, g2d::Mesh* mesh, g2d::Material* material, const gml::mat32& worldMatrix)
 {
-	if (m_lastMaterial)
-	{
-		if (!m_lastMaterial->IsSame(material) && m_mesh.GetVertexCount() != 0)
-		{
-			FlushBatch();
-			m_mesh.Clear();
-		}
-		m_lastMaterial->Release();
-	}
-
-	m_lastMaterial = material->Clone();
-	if (m_mesh.Merge(m, transform))
-	{
+	if (mesh == nullptr || material == nullptr)
 		return;
+	if (m_renderRequests.count(layer) == 0)
+	{
+		m_renderRequests[layer] = new ReqList();
 	}
 
-	FlushBatch();
-	m_mesh.Clear();
-	//de factor, no need to Merge when there is only ONE MESH each drawcall.
-	m_mesh.Merge(m, transform);
+	ReqList* list = m_renderRequests[layer];
+	list->push_back({ mesh, material, worldMatrix });
 }
 
 void RenderSystem::BeginRender()
 {
-	m_mesh.Clear();
-	//render
 	Clear();
 }
 
@@ -393,7 +411,7 @@ g2d::Mesh* RenderSystem::CreateMesh(unsigned int vertexCount, unsigned int index
 g2d::Material* RenderSystem::CreateColorTextureMaterial()
 {
 	auto mat = new ::Material(1);
-	mat->SetPass(0, new Pass("default","color.texture"));
+	mat->SetPass(0, new Pass("default", "color.texture"));
 	mat->GetPass(0)->SetTexture(0, Texture::Default(), false);
 	return mat;
 }
