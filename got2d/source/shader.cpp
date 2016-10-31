@@ -373,7 +373,7 @@ bool Pass::IsSame(g2d::Pass* other) const
 
 	for (size_t i = 0, n = m_textures.size(); i < n; i++)
 	{
-		if (m_textures[i]->IsSame(p->m_textures[i]))
+		if (!m_textures[i]->IsSame(p->m_textures[i]))
 		{
 			return false;
 		}
