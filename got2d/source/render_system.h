@@ -219,7 +219,7 @@ public:
 	virtual bool OnResize(long width, long height) override;
 	virtual void BeginRender() override;
 	virtual void EndRender() override;
-	virtual void RenderMesh(g2d::Mesh*, g2d::Material*, const gml::mat32&) override;
+	virtual void RenderMesh(unsigned int layer, g2d::Mesh*, g2d::Material*, const gml::mat32&) override;
 public:
 	virtual g2d::Mesh* CreateMesh(unsigned int vertexCount, unsigned int indexCount) override;
 	virtual g2d::Material* CreateColorTextureMaterial() override;
@@ -227,7 +227,7 @@ public:
 	virtual g2d::Material* CreateSimpleColorMaterial() override;
 
 private:
-	void FlushBatch();
+	void FlushBatch(Mesh& mesh, g2d::Material*);
 	void UpdateConstBuffer(ID3D11Buffer* cbuffer, const void* data, unsigned int length);
 	void UpdateSceneConstBuffer(gml::mat32* matrixView);
 
@@ -243,15 +243,20 @@ private:
 
 	//render request
 	struct RenderRequest {
+		RenderRequest(g2d::Mesh* inMesh, g2d::Material* inMaterial, const gml::mat32& inWorldMatrix)
+			: mesh(inMesh)
+			, material(inMaterial)
+			, worldMatrix(inWorldMatrix)
+		{
+
+		}
 		g2d::Mesh* mesh;
 		g2d::Material* material;
 		gml::mat32 worldMatrix;
 	};
 
-	std::vector<RenderRequest> m_renderRequests;
-
-	Mesh m_mesh;
-	g2d::Material* m_lastMaterial = nullptr;
+	typedef std::vector<RenderRequest> ReqList;
+	std::map<unsigned int, ReqList*> m_renderRequests;
 
 	Geometry m_geometry;
 	TexturePool m_texPool;

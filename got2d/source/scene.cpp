@@ -196,7 +196,7 @@ QuadEntity::~QuadEntity()
 }
 void QuadEntity::OnRender()
 {
-	g2d::GetEngine()->GetRenderSystem()->RenderMesh(m_mesh, m_material, GetSceneNode()->GetWorldMatrix());
+	g2d::GetEngine()->GetRenderSystem()->RenderMesh(g2d::RenderOrder::RORDER_DEFAULT, m_mesh, m_material, GetSceneNode()->GetWorldMatrix());
 }
 g2d::Entity* QuadEntity::SetSize(const gml::vec2& size)
 {

@@ -4,7 +4,7 @@
 g2d::RenderSystem::~RenderSystem() { }
 RenderSystem* RenderSystem::Instance = nullptr;
 
-RenderSystem::RenderSystem() :m_bkColor(gml::color4::blue()), m_mesh(0, 0)
+RenderSystem::RenderSystem() :m_bkColor(gml::color4::blue())
 {
 }
 
@@ -181,14 +181,14 @@ bool RenderSystem::Create(void* nativeWindow)
 
 void RenderSystem::Destroy()
 {
-	SR(m_lastMaterial);
+	for (auto& list : m_renderRequests)
+	{
+		delete list.second;
+	}
+	m_renderRequests.clear();
 	m_geometry.Destroy();
 	m_texPool.Destroy();
-	if (shaderlib)
-	{
-		delete shaderlib;
-		shaderlib = nullptr;
-	}
+	SD(shaderlib);
 	SR(m_sceneConstBuffer);
 	SR(m_colorTexture);
 	SR(m_rtView);
@@ -261,19 +261,19 @@ void RenderSystem::UpdateSceneConstBuffer(gml::mat32* matrixView)
 	}
 }
 
-void RenderSystem::FlushBatch()
+void RenderSystem::FlushBatch(Mesh& mesh, g2d::Material* material)
 {
-	if (m_mesh.GetIndexCount() == 0)
+	if (mesh.GetIndexCount() == 0 || material == nullptr)
 		return;
 
-	m_geometry.MakeEnoughVertexArray(m_mesh.GetVertexCount());
-	m_geometry.MakeEnoughIndexArray(m_mesh.GetIndexCount());
-	m_geometry.UploadVertices(0, m_mesh.GetRawVertices(), m_mesh.GetVertexCount());
-	m_geometry.UploadIndices(0, m_mesh.GetRawIndices(), m_mesh.GetIndexCount());
+	m_geometry.MakeEnoughVertexArray(mesh.GetVertexCount());
+	m_geometry.MakeEnoughIndexArray(mesh.GetIndexCount());
+	m_geometry.UploadVertices(0, mesh.GetRawVertices(), mesh.GetVertexCount());
+	m_geometry.UploadIndices(0, mesh.GetRawIndices(), mesh.GetIndexCount());
 
-	for (unsigned int i = 0; i < m_lastMaterial->GetPassCount(); i++)
+	for (unsigned int i = 0; i < material->GetPassCount(); i++)
 	{
-		auto pass = m_lastMaterial->GetPass(i);
+		auto pass = material->GetPass(i);
 		auto shader = shaderlib->GetShaderByName(pass->GetVertexShaderName(), pass->GetPixelShaderName());
 		if (shader)
 		{
@@ -339,11 +339,11 @@ void RenderSystem::FlushBatch()
 				m_d3dContext->PSSetSamplers(0, numView, &(samplerstates[0]));
 			}
 
-			m_d3dContext->DrawIndexed(m_mesh.GetIndexCount(), 0, 0);
+			m_d3dContext->DrawIndexed(mesh.GetIndexCount(), 0, 0);
 		}
 	}
 
-	m_mesh.Clear();
+	mesh.Clear();
 }
 
 void RenderSystem::Render()
@@ -351,49 +351,49 @@ void RenderSystem::Render()
 	if (m_renderRequests.size() == 0)
 		return;
 
-
-	m_lastMaterial = nullptr;
-	for (auto& request : m_renderRequests)
+	Mesh batchMesh(0, 0);
+	g2d::Material* material = nullptr;
+	for (auto& reqList : m_renderRequests)
 	{
-		if (m_lastMaterial == nullptr)
-		{
-			m_lastMaterial = request.material;
-		}
-		else if (!m_lastMaterial->IsSame(request.material))
-		{
-			FlushBatch();
-			m_lastMaterial = request.material;
-		}
+		ReqList& list = *(reqList.second);
+		if (list.size() == 0)
+			continue;
 
-		if (!m_mesh.Merge(request.mesh, request.worldMatrix))
+		for (auto& request : list)
 		{
-			FlushBatch();
-		}
+			if (!request.material->IsSame(material))//material may be nullptr.
+			{
+				FlushBatch(batchMesh, material);
+				material = request.material;
+			}
 
-		//de factor, no need to Merge when there is only ONE MESH each drawcall.
-		m_mesh.Merge(request.mesh, request.worldMatrix);
+			if (!batchMesh.Merge(request.mesh, request.worldMatrix))
+			{
+				FlushBatch(batchMesh, material);
+			}
+
+			//de factor, no need to Merge when there is only ONE MESH each drawcall.
+			batchMesh.Merge(request.mesh, request.worldMatrix);
+		}
 	}
-	FlushBatch();
-	m_lastMaterial = nullptr;
-
+	FlushBatch(batchMesh, material);
 }
 
-void RenderSystem::RenderMesh(g2d::Mesh* mesh, g2d::Material* material, const gml::mat32& transform)
+void RenderSystem::RenderMesh(unsigned int layer, g2d::Mesh* mesh, g2d::Material* material, const gml::mat32& worldMatrix)
 {
 	if (mesh == nullptr || material == nullptr)
 		return;
+	if (m_renderRequests.count(layer) == 0)
+	{
+		m_renderRequests[layer] = new ReqList();
+	}
 
-	auto nextID = m_renderRequests.size();
-	m_renderRequests.push_back(RenderRequest());
-	m_renderRequests[nextID].mesh = mesh;
-	m_renderRequests[nextID].material = material;
-	m_renderRequests[nextID].worldMatrix = transform;
+	ReqList* list = m_renderRequests[layer];
+	list->push_back({ mesh, material, worldMatrix });
 }
 
 void RenderSystem::BeginRender()
 {
-	m_mesh.Clear();
-	//render
 	Clear();
 }
 

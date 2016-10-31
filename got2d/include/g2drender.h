@@ -69,6 +69,14 @@ namespace g2d
 		virtual void Release() = 0;
 	};
 
+	enum RenderOrder
+	{
+		RORDER_PREZ = 0,
+		RORDER_BACKGROUND = 0x4000,
+		RORDER_DEFAULT = RORDER_BACKGROUND + 0x1000,
+		RORDER_FOREGROUND = RORDER_BACKGROUND + 0x400,
+		RORDER_OVERLAY = 0x8000,
+	};
 	class RenderSystem
 	{
 	public:
@@ -76,7 +84,7 @@ namespace g2d
 		virtual bool OnResize(long width, long height) = 0;
 		virtual void BeginRender() = 0;
 		virtual void EndRender() = 0;
-		virtual void RenderMesh(Mesh*, Material*, const gml::mat32&) = 0;
+		virtual void RenderMesh(unsigned int layer, Mesh*, Material*, const gml::mat32&) = 0;
 	public:
 		virtual Mesh* CreateMesh(unsigned int vertexCount, unsigned int indexCount) = 0;
 		virtual Material* CreateColorTextureMaterial() = 0;
