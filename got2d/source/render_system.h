@@ -107,6 +107,13 @@ public:
 	virtual unsigned int GetConstBufferLength() = 0;
 };
 
+enum BlendMode
+{
+	BLEND_NONE,
+	BLEND_NORMAL,
+	BLEND_ADD,
+};
+
 class Shader
 {
 public:
@@ -207,7 +214,7 @@ public:
 	void Clear();
 	void Render();
 	void Present();
-
+	void SetBlendMode(BlendMode blendMode);
 	const gml::mat44& GetProjectionMatrix();
 
 	Texture* CreateTextureFromFile(const char* resPath);
@@ -227,6 +234,7 @@ public:
 	virtual g2d::Material* CreateSimpleColorMaterial() override;
 
 private:
+	bool CreateBlendModes();
 	void FlushBatch(Mesh& mesh, g2d::Material*);
 	void UpdateConstBuffer(ID3D11Buffer* cbuffer, const void* data, unsigned int length);
 	void UpdateSceneConstBuffer(gml::mat32* matrixView);
@@ -237,8 +245,8 @@ private:
 	ID3D11Texture2D* m_colorTexture = nullptr;
 	ID3D11RenderTargetView* m_rtView = nullptr;
 	ID3D11RenderTargetView* m_bbView = nullptr;
-	ID3D11BlendState* m_blendState = nullptr;
 	D3D11_VIEWPORT m_viewport;
+	std::map<BlendMode, ID3D11BlendState*> m_blendModes;
 
 	gml::color4 m_bkColor = gml::color4::blue();
 
