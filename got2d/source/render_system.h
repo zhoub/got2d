@@ -237,6 +237,7 @@ private:
 	ID3D11Texture2D* m_colorTexture = nullptr;
 	ID3D11RenderTargetView* m_rtView = nullptr;
 	ID3D11RenderTargetView* m_bbView = nullptr;
+	ID3D11BlendState* m_blendState = nullptr;
 	D3D11_VIEWPORT m_viewport;
 
 	gml::color4 m_bkColor = gml::color4::blue();

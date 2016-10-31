@@ -152,6 +152,25 @@ bool RenderSystem::Create(void* nativeWindow)
 			break;
 		}
 
+		D3D11_BLEND_DESC blendDesc;
+		blendDesc.AlphaToCoverageEnable = FALSE;
+		blendDesc.IndependentBlendEnable = FALSE;
+		for (int i = 0; i < D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT; i++)
+		{
+			blendDesc.RenderTarget[i].BlendEnable = TRUE;
+			blendDesc.RenderTarget[i].SrcBlend = D3D11_BLEND_SRC_ALPHA;
+			blendDesc.RenderTarget[i].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+			blendDesc.RenderTarget[i].BlendOp = D3D11_BLEND_OP_ADD;
+			blendDesc.RenderTarget[i].SrcBlendAlpha = D3D11_BLEND_ONE;
+			blendDesc.RenderTarget[i].DestBlendAlpha = D3D11_BLEND_ZERO;
+			blendDesc.RenderTarget[i].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+			blendDesc.RenderTarget[i].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+		}
+
+		hr = m_d3dDevice->CreateBlendState(&blendDesc, &m_blendState);
+		if (hr != S_OK)
+			break;
+
 		m_viewport =
 		{
 			0.0f,//FLOAT TopLeftX;
@@ -164,6 +183,7 @@ bool RenderSystem::Create(void* nativeWindow)
 
 		m_d3dContext->OMSetRenderTargets(1, &m_bbView, nullptr);
 		m_d3dContext->RSSetViewports(1, &m_viewport);
+		m_d3dContext->OMSetBlendState(m_blendState, nullptr, 0xffffffff);
 		Instance = this;
 
 		//all creation using RenderSystem should be start here.
@@ -191,6 +211,7 @@ void RenderSystem::Destroy()
 	SD(shaderlib);
 	SR(m_sceneConstBuffer);
 	SR(m_colorTexture);
+	SR(m_blendState);
 	SR(m_rtView);
 	SR(m_bbView);
 	SR(m_d3dDevice);
