@@ -8,6 +8,9 @@ Texture::Texture(const char* resPath) : m_resPath(resPath)
 }
 bool Texture::IsSame(g2d::Texture* other) const
 {
+	if (other == nullptr)	return false;
+	if (this == other)		return true;
+
 	Texture* timpl = dynamic_cast<Texture*>(other);
 	if (timpl == nullptr)
 		return false;

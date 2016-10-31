@@ -354,6 +354,9 @@ Pass* Pass::Clone()
 
 bool Pass::IsSame(g2d::Pass* other) const
 {
+	if (other == nullptr)	return false;
+	if (this == other)		return true;
+
 	Pass* p = dynamic_cast<Pass*>(other);
 	if (p == nullptr)
 		return false;
@@ -491,6 +494,9 @@ unsigned int Material::GetPassCount() const
 
 bool Material::IsSame(g2d::Material* other) const
 {
+	if (other == nullptr)	return false;
+	if (this == other)		return true;
+
 	if (other->GetPassCount() != GetPassCount())
 		return false;
 
