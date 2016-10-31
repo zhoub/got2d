@@ -375,6 +375,7 @@ void RenderSystem::Render()
 			//de factor, no need to Merge when there is only ONE MESH each drawcall.
 			batchMesh.Merge(request.mesh, request.worldMatrix);
 		}
+		list.clear();
 	}
 	FlushBatch(batchMesh, material);
 }
