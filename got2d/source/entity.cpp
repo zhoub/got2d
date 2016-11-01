@@ -6,7 +6,7 @@ g2d::Entity::~Entity() {}
 
 void g2d::Entity::OnInitial() {}
 
-void g2d::Entity::OnUpdate() {}
+void g2d::Entity::OnUpdate(unsigned int elpasedTime) {}
 
 void g2d::Entity::OnRender() {}
 

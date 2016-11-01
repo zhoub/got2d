@@ -74,7 +74,7 @@ void SceneNode::SetLocalMatrixDirty()
 
 void SceneNode::Update(unsigned int elpasedTime)
 {
-	if (m_entity)m_entity->OnUpdate();
+	if (m_entity)m_entity->OnUpdate(elpasedTime);
 	for (auto& child : m_children)
 	{
 		child->Update(elpasedTime);
@@ -83,6 +83,8 @@ void SceneNode::Update(unsigned int elpasedTime)
 
 void SceneNode::Render()
 {
+	if (!IsVisible())
+		return;
 	if (m_entity)m_entity->OnRender();
 	for (auto& child : m_children)
 	{

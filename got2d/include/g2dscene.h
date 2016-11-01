@@ -16,7 +16,7 @@ namespace g2d
 	public:
 		virtual ~Entity();
 		virtual void OnInitial();
-		virtual void OnUpdate();
+		virtual void OnUpdate(unsigned int elpasedTime);
 		virtual void OnRender();
 		void SetSceneNode(g2d::SceneNode* node);
 		
