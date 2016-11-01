@@ -3,7 +3,6 @@
 #include <gmlmatrix.h>
 #include <vector>
 
-class QuadEntity;
 class SceneNode : public g2d::SceneNode
 {
 public:
@@ -20,11 +19,13 @@ public:
 	virtual g2d::SceneNode* SetPivot(const gml::vec2& pivot)override;
 	virtual g2d::SceneNode* SetScale(const gml::vec2& scale)override;
 	virtual g2d::SceneNode* SetRotation(float radian)override;
+	inline virtual void SetVisible(bool visible) override { m_isVisible = visible; }
 	inline virtual const gml::vec2& GetPosition()  const override { return m_position; }
 	inline virtual const gml::vec2& GetPivot() const override { return m_pivot; }
 	inline virtual const gml::vec2& GetScale() const override { return m_scale; }
 	inline virtual float GetRotation() const override { return m_rotationRadian; }
 	inline virtual g2d::Entity* GetEntity() const override { return m_entity; }
+	inline virtual bool IsVisible() const override { return m_isVisible; }
 
 private:
 	void SetLocalMatrixDirty();
@@ -36,7 +37,8 @@ private:
 	gml::vec2 m_position;
 	gml::vec2 m_pivot;
 	gml::vec2 m_scale;
-	float m_rotationRadian;
+	float m_rotationRadian = 0;
+	bool m_isVisible = true;
 
 	bool m_matrixLocalDirty = false;
 	bool m_matrixWorldDirty = true;
@@ -57,11 +59,14 @@ public:
 public:
 	inline virtual g2d::Entity* SetSize(const gml::vec2& size) override;
 	inline virtual const gml::vec2& GetSize() const override { return m_size; }
-	inline virtual void Release() { delete this; }
+	inline virtual void Release() override { delete this; }
+	virtual gml::aabb2d GetLocalAABB() const override { return m_aabb; }
+	virtual gml::aabb2d GetWorldAABB() const override;
 
 	g2d::Mesh* m_mesh;
 	g2d::Material* m_material;
 	gml::vec2 m_size;
+	gml::aabb2d m_aabb;
 };
 
 class Scene : public g2d::Scene
@@ -75,18 +80,20 @@ public:
 	inline void Render() { return m_root->Render(); }
 
 public:
-	inline virtual g2d::SceneNode* CreateSceneNode(g2d::Entity* e, bool autoRelease) override { return m_root->CreateSceneNode(e,autoRelease); }
+	inline virtual g2d::SceneNode* CreateSceneNode(g2d::Entity* e, bool autoRelease) override { return m_root->CreateSceneNode(e, autoRelease); }
 	inline virtual const gml::mat32& GetLocalMatrix() override { return m_root->GetLocalMatrix(); }
 	inline virtual const gml::mat32& GetWorldMatrix() override { return m_root->GetWorldMatrix(); }
 	inline virtual g2d::SceneNode* SetPosition(const gml::vec2& position) override { m_root->SetPosition(position); return this; }
 	inline virtual g2d::SceneNode* SetPivot(const gml::vec2& pivot) override { m_root->SetPivot(pivot); return this; }
 	inline virtual g2d::SceneNode* SetScale(const gml::vec2& scale) override { m_root->SetScale(scale); return this; }
 	inline virtual g2d::SceneNode* SetRotation(float radian) override { m_root->SetRotation(radian); return this; }
+	inline virtual void SetVisible(bool visible) override { m_root->SetVisible(visible); }
 	inline virtual const gml::vec2& GetPosition()  const override { return m_root->GetPosition(); }
 	inline virtual const gml::vec2& GetPivot() const override { return m_root->GetPivot(); }
 	inline virtual const gml::vec2& GetScale() const override { return m_root->GetScale(); }
 	inline virtual float GetRotation() const override { return m_root->GetRotation(); }
 	inline virtual g2d::Entity* GetEntity() const override { return m_root->GetEntity(); }
+	inline virtual bool IsVisible() const override { return m_root->IsVisible(); }
 
 public:
 	inline virtual g2d::QuadEntity* CreateQuadEntity() override { return new ::QuadEntity; }

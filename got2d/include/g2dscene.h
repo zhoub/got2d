@@ -2,7 +2,7 @@
 #include <g2dconfig.h>
 #include <gmlvector.h>
 #include <gmlmatrix.h>
-
+#include <gmlaabb.h>
 namespace g2d
 {
 	class SceneNode;
@@ -11,14 +11,17 @@ namespace g2d
 	public:
 		DECL_CLASSID;
 		virtual void Release() = 0;
+		virtual gml::aabb2d GetLocalAABB() const = 0;
+		virtual gml::aabb2d GetWorldAABB() const = 0;
 	public:
 		virtual ~Entity();
 		virtual void OnInitial();
 		virtual void OnUpdate();
 		virtual void OnRender();
 		void SetSceneNode(g2d::SceneNode* node);
+		
 	protected:
-		SceneNode* GetSceneNode();
+		SceneNode* GetSceneNode() const;
 	private:
 		SceneNode* m_sceneNode;
 	};
@@ -41,11 +44,13 @@ namespace g2d
 		virtual SceneNode* SetPivot(const gml::vec2& pivot) = 0;
 		virtual SceneNode* SetScale(const gml::vec2& scale) = 0;
 		virtual SceneNode* SetRotation(float radian) = 0;
+		virtual void SetVisible(bool) = 0;
 		virtual const gml::vec2& GetPosition()  const = 0;
 		virtual const gml::vec2& GetPivot() const = 0;
 		virtual const gml::vec2& GetScale() const = 0;
 		virtual float GetRotation() const = 0;
 		virtual Entity* GetEntity() const = 0;
+		virtual bool IsVisible() const = 0;
 	};
 
 	class G2DAPI Scene : public SceneNode
