@@ -10,6 +10,14 @@ void g2d::Entity::OnUpdate(unsigned int elpasedTime) {}
 
 void g2d::Entity::OnRender() {}
 
+void g2d::Entity::OnRotate(float radian) {}
+
+void g2d::Entity::OnScale(const gml::vec2 newScaler) {}
+
+void g2d::Entity::OnMove(const gml::vec2 newPos) {}
+
+void g2d::Entity::OnUpdateMatrixChanged() {}
+
 void g2d::Entity::SetSceneNode(g2d::SceneNode* node)
 {
 	m_sceneNode = node;
@@ -98,19 +106,16 @@ gml::aabb2d QuadEntity::GetWorldAABB() const
 
 void Camera::OnUpdate(unsigned int elapsedTime)
 {
-	static unsigned int t = 0;
-	t += elapsedTime;
-
-	float realt = t * 0.002f;
-	float cost = cos(realt);
-	float sint = sin(realt);
-
+	m_time += elapsedTime;
+	float realt = m_time * 0.001f;
+	GetSceneNode()->SetPosition(gml::vec2(10*realt, 0));
 	GetSceneNode()->SetScale(gml::vec2(1.0f + 0.1f*realt, 1.0f + 0.1f*realt));
+}
 
+void Camera::OnUpdateMatrixChanged()
+{
 	auto pos = GetSceneNode()->GetPosition();
 	auto scale = GetSceneNode()->GetScale();
 	auto rotation = GetSceneNode()->GetRotation();
-
 	m_matrix = gml::mat32::inv_trs(pos, rotation, scale);
-	return;
 }

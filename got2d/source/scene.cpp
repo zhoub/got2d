@@ -59,22 +59,35 @@ const gml::mat32& SceneNode::GetWorldMatrix()
 		m_matrixWorldDirty = false;
 	}
 	return m_matrixWorld;
+}
 
+void SceneNode::SetWorldMatrixDirty()
+{
+	m_matrixWorldDirty = true;
+	for (auto& child : m_children)
+	{
+		child->SetWorldMatrixDirty();
+	}
+	m_matrixDirtyUpdate = true;
 }
 
 void SceneNode::SetLocalMatrixDirty()
 {
 	m_matrixLocalDirty = true;
-	for (auto& child : m_children)
-	{
-		m_matrixWorldDirty = true;
-		child->m_matrixWorldDirty = true;
-	}
+	SetWorldMatrixDirty();
 }
 
 void SceneNode::Update(unsigned int elpasedTime)
 {
-	if (m_entity)m_entity->OnUpdate(elpasedTime);
+	if (m_entity)
+	{
+		m_entity->OnUpdate(elpasedTime);
+		if (m_matrixDirtyUpdate)
+		{
+			m_entity->OnUpdateMatrixChanged();
+			m_matrixDirtyUpdate = false;
+		}
+	}
 	for (auto& child : m_children)
 	{
 		child->Update(elpasedTime);
@@ -118,18 +131,31 @@ g2d::SceneNode* SceneNode::SetPivot(const gml::vec2& pivot)
 }
 g2d::SceneNode* SceneNode::SetScale(const gml::vec2& scale)
 {
+	if (m_entity)
+	{
+		m_entity->OnScale(scale);
+	}
 	SetLocalMatrixDirty();
 	m_scale = scale;
 	return this;
 }
 g2d::SceneNode* SceneNode::SetPosition(const gml::vec2& position)
 {
+	if (m_entity)
+	{
+		m_entity->OnMove(position);
+	}
 	SetLocalMatrixDirty();
 	m_position = position;
+
 	return this;
 }
 g2d::SceneNode* SceneNode::SetRotation(float radian)
 {
+	if (m_entity)
+	{
+		m_entity->OnRotate(radian);
+	}
 	SetLocalMatrixDirty();
 	m_rotationRadian = radian;
 	return this;

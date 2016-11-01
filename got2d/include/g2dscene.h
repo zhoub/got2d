@@ -18,6 +18,10 @@ namespace g2d
 		virtual void OnInitial();
 		virtual void OnUpdate(unsigned int elpasedTime);
 		virtual void OnRender();
+		virtual void OnRotate(float newRotation);
+		virtual void OnScale(const gml::vec2 newScaler);
+		virtual void OnMove(const gml::vec2 newPos);
+		virtual void OnUpdateMatrixChanged();
 		void SetSceneNode(g2d::SceneNode* node);
 
 	protected:

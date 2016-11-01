@@ -31,7 +31,7 @@ class Camera : public g2d::Camera
 	IMPL_CLASSID;
 public:
 	virtual void OnUpdate(unsigned int elapsedTime) override;
-
+	virtual void OnUpdateMatrixChanged() override;
 public:
 	inline virtual void Release() override { delete this; }
 	virtual gml::aabb2d GetLocalAABB() const override { return gml::aabb2d(); }
@@ -40,5 +40,6 @@ public:
 	inline virtual g2d::Camera* SetScale(const gml::vec2& scale) override { GetSceneNode()->SetScale(scale); return this; }
 	inline virtual g2d::Camera* SetRotation(float radian) override { GetSceneNode()->SetRotation(radian); return this; }
 	virtual const gml::mat32& GetViewMatrix() const override { return m_matrix; }
+	unsigned int m_time;
 	gml::mat32 m_matrix;
 };

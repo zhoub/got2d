@@ -30,6 +30,7 @@ public:
 
 private:
 	void SetLocalMatrixDirty();
+	void SetWorldMatrixDirty();
 	::SceneNode* m_parent = nullptr;
 	g2d::Entity* m_entity = nullptr;
 	std::vector<::SceneNode*> m_children;
@@ -41,6 +42,7 @@ private:
 	float m_rotationRadian = 0;
 	bool m_isVisible = true;
 
+	bool m_matrixDirtyUpdate= false;
 	bool m_matrixLocalDirty = false;
 	bool m_matrixWorldDirty = true;
 	gml::mat32 m_matrixLocal;
