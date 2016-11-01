@@ -85,7 +85,13 @@ void SceneNode::Render()
 {
 	if (!IsVisible())
 		return;
-	if (m_entity)m_entity->OnRender();
+	if (m_entity)
+	{
+		if (!m_entity->GetLocalAABB().is_empty())
+		{
+			m_entity->OnRender();
+		}
+	}
 	for (auto& child : m_children)
 	{
 		child->Render();

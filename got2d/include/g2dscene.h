@@ -19,7 +19,7 @@ namespace g2d
 		virtual void OnUpdate(unsigned int elpasedTime);
 		virtual void OnRender();
 		void SetSceneNode(g2d::SceneNode* node);
-		
+
 	protected:
 		SceneNode* GetSceneNode() const;
 	private:
@@ -52,6 +52,12 @@ namespace g2d
 		virtual Entity* GetEntity() const = 0;
 		virtual bool IsVisible() const = 0;
 	};
+
+	template<class T> T* GetEntity(SceneNode* node)
+	{
+		Entity* entity = node->GetEntity();
+		return (T::GetClassID() == entity->GetClassID()) ? entity : nullptr;
+	}
 
 	class G2DAPI Scene : public SceneNode
 	{

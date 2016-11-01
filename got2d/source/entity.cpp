@@ -89,6 +89,9 @@ g2d::Entity* QuadEntity::SetSize(const gml::vec2& size)
 
 gml::aabb2d QuadEntity::GetWorldAABB() const
 {
+	if (m_aabb.is_empty())
+		return m_aabb;
+
 	auto matrixWorld = GetSceneNode()->GetWorldMatrix();
 	return gml::transform(matrixWorld, m_aabb);
 }
