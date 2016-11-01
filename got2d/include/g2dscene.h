@@ -33,6 +33,15 @@ namespace g2d
 		virtual const gml::vec2& GetSize()  const = 0;
 	};
 
+	class G2DAPI Camera : public Entity
+	{
+	public:
+		virtual Camera* SetPosition(const gml::vec2& position) = 0;
+		virtual Camera* SetScale(const gml::vec2& scale) = 0;
+		virtual Camera* SetRotation(float radian) = 0;
+		virtual const gml::mat32& GetViewMatrix() const = 0;
+	};
+
 	class G2DAPI SceneNode
 	{
 	public:
@@ -63,7 +72,8 @@ namespace g2d
 	{
 	public:
 		virtual ~Scene();
-
+		virtual Camera* CreateCamera() = 0;
 		virtual QuadEntity* CreateQuadEntity() = 0;
+		virtual void SetCamera(Camera* camera) = 0;
 	};
 }

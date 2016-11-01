@@ -210,6 +210,7 @@ public:
 	void Render();
 	void Present();
 	void SetBlendMode(g2d::BlendMode blendMode);
+	void SetViewMatrix(const gml::mat32& viewMatrix);
 	const gml::mat44& GetProjectionMatrix();
 
 	Texture* CreateTextureFromFile(const char* resPath);
@@ -266,6 +267,7 @@ private:
 	TexturePool m_texPool;
 	ShaderLib* shaderlib = nullptr;
 	ID3D11Buffer* m_sceneConstBuffer = nullptr;
+	gml::mat32 m_matView;
 	gml::mat44 m_matProj;
 
 	bool m_matProjConstBufferDirty = true;

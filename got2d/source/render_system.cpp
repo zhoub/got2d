@@ -6,6 +6,7 @@ RenderSystem* RenderSystem::Instance = nullptr;
 
 RenderSystem::RenderSystem() :m_bkColor(gml::color4::blue())
 {
+	m_matView.identity();
 }
 
 bool RenderSystem::OnResize(long width, long height)
@@ -259,7 +260,10 @@ void RenderSystem::Destroy()
 
 	for (auto& blendMode : m_blendModes)
 	{
-		blendMode.second->Release();
+		if (blendMode.second)
+		{
+			blendMode.second->Release();
+		}
 	}
 	m_blendModes.clear();
 
@@ -280,14 +284,19 @@ void RenderSystem::Destroy()
 	}
 }
 
+void RenderSystem::SetViewMatrix(const gml::mat32& viewMatrix)
+{
+	m_matView = viewMatrix;
+}
+
 const gml::mat44& RenderSystem::GetProjectionMatrix()
 {
 	if (m_matrixProjDirty)
 	{
 		m_matrixProjDirty = false;
 		float znear = -0.5f;
-		//m_matProj = gml::mat44::center_ortho_lh(static_cast<float>(m_windowWidth), static_cast<float>(m_windowHeight), znear, 1000.0f);
-		m_matProj = gml::mat44::ortho2d_lh(static_cast<float>(m_windowWidth), static_cast<float>(m_windowHeight), znear, 1000.0f);
+		m_matProj = gml::mat44::center_ortho_lh(static_cast<float>(m_windowWidth), static_cast<float>(m_windowHeight), znear, 1000.0f);
+		//m_matProj = gml::mat44::ortho2d_lh(static_cast<float>(m_windowWidth), static_cast<float>(m_windowHeight), znear, 1000.0f);
 		m_matProjConstBufferDirty = true;
 	}
 	return m_matProj;
@@ -370,7 +379,7 @@ void RenderSystem::FlushBatch(Mesh& mesh, g2d::Material* material)
 			m_d3dContext->IASetInputLayout(shader->GetInputLayout());
 			m_d3dContext->VSSetShader(shader->GetVertexShader(), NULL, 0);
 			m_d3dContext->PSSetShader(shader->GetPixelShader(), NULL, 0);
-			UpdateSceneConstBuffer(nullptr);
+			UpdateSceneConstBuffer(&m_matView);
 			m_d3dContext->VSSetConstantBuffers(0, 1, &m_sceneConstBuffer);
 			SetBlendMode(pass->GetBlendMode());
 

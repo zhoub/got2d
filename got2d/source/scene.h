@@ -1,5 +1,6 @@
 #pragma once
 #include "../include/g2dscene.h"
+#include "entity.h"
 #include <gmlmatrix.h>
 #include <vector>
 
@@ -46,29 +47,6 @@ private:
 	gml::mat32 m_matrixWorld;
 };
 
-#include<g2drender.h>
-class QuadEntity : public g2d::QuadEntity
-{
-	IMPL_CLASSID;
-public:
-	QuadEntity();
-	~QuadEntity();
-	virtual void OnInitial() override;
-	virtual void OnRender() override;
-
-public:
-	inline virtual g2d::Entity* SetSize(const gml::vec2& size) override;
-	inline virtual const gml::vec2& GetSize() const override { return m_size; }
-	inline virtual void Release() override { delete this; }
-	virtual gml::aabb2d GetLocalAABB() const override { return m_aabb; }
-	virtual gml::aabb2d GetWorldAABB() const override;
-
-	g2d::Mesh* m_mesh;
-	g2d::Material* m_material;
-	gml::vec2 m_size;
-	gml::aabb2d m_aabb;
-};
-
 class Scene : public g2d::Scene
 {
 public:
@@ -77,7 +55,7 @@ public:
 
 	inline ::SceneNode* GetRoot() { return m_root; }
 	inline void Update(unsigned int elpasedTime) { return m_root->Update(elpasedTime); }
-	inline void Render() { return m_root->Render(); }
+	void Render();
 
 public:
 	inline virtual g2d::SceneNode* CreateSceneNode(g2d::Entity* e, bool autoRelease) override { return m_root->CreateSceneNode(e, autoRelease); }
@@ -96,8 +74,11 @@ public:
 	inline virtual bool IsVisible() const override { return m_root->IsVisible(); }
 
 public:
-	inline virtual g2d::QuadEntity* CreateQuadEntity() override { return new ::QuadEntity; }
+	inline virtual g2d::Camera* CreateCamera() override { return ::new Camera(); }
+	inline virtual g2d::QuadEntity* CreateQuadEntity() override { return new ::QuadEntity(); }
+	inline virtual void SetCamera(g2d::Camera* camera) override { m_camera = camera; }
 
 private:
 	::SceneNode* m_root;
+	g2d::Camera* m_camera = 0;
 };

@@ -40,6 +40,10 @@ bool Testbed::InitApp()
 		auto* child = node->CreateSceneNode(quad, true)->SetPosition(gml::vec2(50, 50));
 		node = child;
 	}
+
+	g2d::Camera* camera = g2d::GetEngine()->GetCurrentScene()->CreateCamera();
+	g2d::GetEngine()->GetCurrentScene()->CreateSceneNode(camera, true);
+	g2d::GetEngine()->GetCurrentScene()->SetCamera(camera);
 	return true;
 }
 

@@ -143,3 +143,10 @@ Scene::~Scene()
 {
 	delete m_root;
 }
+
+#include "render_system.h"
+void Scene::Render()
+{
+	::GetRenderSystem()->SetViewMatrix(m_camera->GetViewMatrix());
+	return m_root->Render();
+}

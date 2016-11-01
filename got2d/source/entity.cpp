@@ -95,3 +95,22 @@ gml::aabb2d QuadEntity::GetWorldAABB() const
 	auto matrixWorld = GetSceneNode()->GetWorldMatrix();
 	return gml::transform(matrixWorld, m_aabb);
 }
+
+void Camera::OnUpdate(unsigned int elapsedTime)
+{
+	static unsigned int t = 0;
+	t += elapsedTime;
+
+	float realt = t * 0.002f;
+	float cost = cos(realt);
+	float sint = sin(realt);
+
+	GetSceneNode()->SetScale(gml::vec2(1.0f + 0.1f*realt, 1.0f + 0.1f*realt));
+
+	auto pos = GetSceneNode()->GetPosition();
+	auto scale = GetSceneNode()->GetScale();
+	auto rotation = GetSceneNode()->GetRotation();
+
+	m_matrix = gml::mat32::inv_trs(pos, rotation, scale);
+	return;
+}

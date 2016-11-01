@@ -42,6 +42,9 @@
     <ClInclude Include="source\scene.h">
       <Filter>源文件\scene</Filter>
     </ClInclude>
+    <ClInclude Include="source\entity.h">
+      <Filter>源文件\scene</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="source\engine.cpp">

@@ -25,7 +25,7 @@ bool Shader::Create(const char* vsCode, unsigned int vcbLength, const char* psCo
 		if (S_OK != ret)
 		{
 			const char* reason = (const char*)errorBlob->GetBufferPointer();
-			assert(0);
+			assert(false);
 			errorBlob->Release();
 			errorBlob = nullptr;
 			break;
@@ -41,7 +41,7 @@ bool Shader::Create(const char* vsCode, unsigned int vcbLength, const char* psCo
 		if (S_OK != ret)
 		{
 			const char* reason = (const char*)errorBlob->GetBufferPointer();
-			assert(0);
+			assert(false);
 			errorBlob->Release();
 			errorBlob = nullptr;
 			break;
@@ -164,7 +164,11 @@ public:
 			VertexOutput VSMain(GeometryVertex input)
 			{
 				VertexOutput output;
-				output.position = mul(float4(input.position, 0, 1), matrixProj);
+				float3 position = float3(input.position,1);
+				float2 viewPos = float2(
+					dot(position, float3(matrixView[0][0],matrixView[1][0],matrixView[2][0])),
+					dot(position, float3(matrixView[0][1],matrixView[1][1],matrixView[2][1])));
+				output.position = mul(float4(viewPos, 0, 1), matrixProj);
 				output.texcoord = input.texcoord;
 				output.vtxcolor = input.vtxcolor;
 				return output;
