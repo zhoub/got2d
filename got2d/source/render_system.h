@@ -149,7 +149,7 @@ private:
 class Pass : public g2d::Pass
 {
 public:
-	inline Pass(const char* vsName, const char* psName) : m_vsName(vsName), m_psName(psName) {}
+	inline Pass(const char* vsName, const char* psName) : m_vsName(vsName), m_psName(psName), m_blendMode(g2d::BLEND_NONE) {}
 	Pass(const Pass& other);
 	~Pass();
 	Pass* Clone();
@@ -160,6 +160,7 @@ public:
 	virtual void SetTexture(unsigned int index, g2d::Texture*, bool autoRelease) override;
 	virtual void SetVSConstant(unsigned int index, float* data, unsigned int size, unsigned int count) override;
 	virtual void SetPSConstant(unsigned int index, float* data, unsigned int size, unsigned int count) override;
+	inline virtual void SetBlendMode(g2d::BlendMode blendMode) override { m_blendMode = blendMode; }
 	virtual g2d::Texture* GetTexture(unsigned int index) const override { return m_textures[index]; }
 	inline virtual unsigned int GetTextureCount() const override { return static_cast<unsigned int>(m_textures.size()); }
 	inline virtual const float* GetVSConstant() const override { return reinterpret_cast<const float*>(&(m_vsConstants[0])); }
@@ -167,7 +168,7 @@ public:
 	inline virtual const float* GetPSConstant() const override { return reinterpret_cast<const float*>(&(m_psConstants[0])); }
 	inline virtual unsigned int GetPSConstantLength() const override { return static_cast<unsigned int>(m_psConstants.size()) * 4 * sizeof(float); }
 	inline virtual void Release() override { delete this; }
-	inline unsigned int GetTextureCount() { return static_cast<unsigned int>(m_textures.size()); }
+	virtual g2d::BlendMode GetBlendMode() const override;
 
 private:
 	std::string m_vsName;
@@ -175,6 +176,7 @@ private:
 	std::vector<g2d::Texture*> m_textures;
 	std::vector<gml::vec4> m_vsConstants;
 	std::vector<gml::vec4> m_psConstants;
+	g2d::BlendMode m_blendMode;
 };
 
 class Material : public g2d::Material
@@ -207,7 +209,7 @@ public:
 	void Clear();
 	void Render();
 	void Present();
-
+	void SetBlendMode(g2d::BlendMode blendMode);
 	const gml::mat44& GetProjectionMatrix();
 
 	Texture* CreateTextureFromFile(const char* resPath);
@@ -227,6 +229,7 @@ public:
 	virtual g2d::Material* CreateSimpleColorMaterial() override;
 
 private:
+	bool CreateBlendModes();
 	void FlushBatch(Mesh& mesh, g2d::Material*);
 	void UpdateConstBuffer(ID3D11Buffer* cbuffer, const void* data, unsigned int length);
 	void UpdateSceneConstBuffer(gml::mat32* matrixView);
@@ -238,6 +241,7 @@ private:
 	ID3D11RenderTargetView* m_rtView = nullptr;
 	ID3D11RenderTargetView* m_bbView = nullptr;
 	D3D11_VIEWPORT m_viewport;
+	std::map<g2d::BlendMode, ID3D11BlendState*> m_blendModes;
 
 	gml::color4 m_bkColor = gml::color4::blue();
 

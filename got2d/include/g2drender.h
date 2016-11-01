@@ -7,6 +7,14 @@
 
 namespace g2d
 {
+	enum BlendMode
+	{
+		BLEND_NONE,
+		BLEND_NORMAL,
+		BLEND_ADD,
+		BLEND_SCREEN,
+	};
+
 	struct GeometryVertex
 	{
 		gml::vec2 position;
@@ -49,12 +57,14 @@ namespace g2d
 		virtual void SetTexture(unsigned int index, Texture*, bool autoRelease) = 0;
 		virtual void SetVSConstant(unsigned int index, float* data, unsigned int size, unsigned int count) = 0;
 		virtual void SetPSConstant(unsigned int index, float* data, unsigned int size, unsigned int count) = 0;
+		virtual void SetBlendMode(BlendMode) = 0;
 		virtual Texture* GetTexture(unsigned int index) const = 0;
 		virtual unsigned int GetTextureCount() const = 0;
 		virtual const float* GetVSConstant() const = 0;
 		virtual unsigned int GetVSConstantLength() const = 0;
 		virtual const float* GetPSConstant() const = 0;
 		virtual unsigned int GetPSConstantLength() const = 0;
+		virtual BlendMode GetBlendMode() const = 0;
 		virtual void Release() = 0;
 	};
 

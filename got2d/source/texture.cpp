@@ -97,6 +97,7 @@ void Texture2D::UploadImage(unsigned char* data, bool hasAlpha)
 				for (unsigned int j = 0; j < m_width; j++)
 				{
 					memcpy(dstPtr + j * 4, srcPtr + j * 3, 3);
+					dstPtr[3 + j * 4] = 255;
 				}
 			}
 		}
