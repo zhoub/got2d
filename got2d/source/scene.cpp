@@ -94,20 +94,20 @@ void SceneNode::Update(unsigned int elpasedTime)
 	}
 }
 
-void SceneNode::Render()
+void SceneNode::Render(g2d::Camera* m_camera)
 {
 	if (!IsVisible())
 		return;
 	if (m_entity)
 	{
-		if (!m_entity->GetLocalAABB().is_empty())
+		if (!m_camera || m_camera->TestVisible(m_entity))
 		{
 			m_entity->OnRender();
 		}
 	}
 	for (auto& child : m_children)
 	{
-		child->Render();
+		child->Render(m_camera);
 	}
 }
 
@@ -174,5 +174,5 @@ Scene::~Scene()
 void Scene::Render()
 {
 	::GetRenderSystem()->SetViewMatrix(m_camera->GetViewMatrix());
-	return m_root->Render();
+	return m_root->Render(m_camera);
 }

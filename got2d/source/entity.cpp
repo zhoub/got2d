@@ -108,7 +108,7 @@ void Camera::OnUpdate(unsigned int elapsedTime)
 {
 	m_time += elapsedTime;
 	float realt = m_time * 0.001f;
-	GetSceneNode()->SetPosition(gml::vec2(10*realt, 0));
+	GetSceneNode()->SetPosition(gml::vec2(10 * realt, 0));
 	GetSceneNode()->SetScale(gml::vec2(1.0f + 0.1f*realt, 1.0f + 0.1f*realt));
 }
 
@@ -118,4 +118,36 @@ void Camera::OnUpdateMatrixChanged()
 	auto scale = GetSceneNode()->GetScale();
 	auto rotation = GetSceneNode()->GetRotation();
 	m_matrix = gml::mat32::inv_trs(pos, rotation, scale);
+
+	auto rs = g2d::GetEngine()->GetRenderSystem();
+	gml::vec2 halfSize(rs->GetWindowWidth() * 0.5f, rs->GetWindowHeight()* 0.5f);
+
+	halfSize.x /= scale.x;
+	halfSize.y /= scale.y;
+	gml::vec2 p[4] =
+	{
+		-halfSize, halfSize,
+		{+halfSize.x, -halfSize.y },
+		{-halfSize.x, +halfSize.y }
+	};
+
+	m_aabb.clear();
+	auto r = gml::mat22::rotate(rotation);
+	for (int i = 0; i < 4; i++)
+	{
+		p[i] = r * p[i];
+		m_aabb.expand(pos + p[i]);
+	}
+}
+
+bool Camera::TestVisible(g2d::Entity* entity)
+{
+	if (entity->GetLocalAABB().is_empty())
+	{
+		return false;
+	}
+
+	auto& entityAABB = entity->GetWorldAABB();
+	return (m_aabb.is_intersect(entityAABB) != gml::it_none);
+
 }

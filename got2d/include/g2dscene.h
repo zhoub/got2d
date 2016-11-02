@@ -23,8 +23,6 @@ namespace g2d
 		virtual void OnMove(const gml::vec2 newPos);
 		virtual void OnUpdateMatrixChanged();
 		void SetSceneNode(g2d::SceneNode* node);
-
-	protected:
 		SceneNode* GetSceneNode() const;
 	private:
 		SceneNode* m_sceneNode;
@@ -44,6 +42,7 @@ namespace g2d
 		virtual Camera* SetScale(const gml::vec2& scale) = 0;
 		virtual Camera* SetRotation(float radian) = 0;
 		virtual const gml::mat32& GetViewMatrix() const = 0;
+		virtual bool TestVisible(g2d::Entity* entity) = 0;
 	};
 
 	class G2DAPI SceneNode

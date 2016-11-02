@@ -223,6 +223,8 @@ public:
 	virtual void BeginRender() override;
 	virtual void EndRender() override;
 	virtual void RenderMesh(unsigned int layer, g2d::Mesh*, g2d::Material*, const gml::mat32&) override;
+	inline virtual long GetWindowWidth() const override { return m_windowWidth; }
+	inline virtual long GetWindowHeight() const override { return m_windowHeight; }
 public:
 	virtual g2d::Mesh* CreateMesh(unsigned int vertexCount, unsigned int indexCount) override;
 	virtual g2d::Material* CreateColorTextureMaterial() override;

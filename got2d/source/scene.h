@@ -10,7 +10,7 @@ public:
 	SceneNode(SceneNode* parent, g2d::Entity* entity, bool autoRelease);
 	virtual ~SceneNode();
 	void Update(unsigned int elpasedTime);
-	void Render();
+	void Render(g2d::Camera* m_camera);
 
 public:
 	virtual g2d::SceneNode* CreateSceneNode(g2d::Entity* entity, bool autoRelease)override;

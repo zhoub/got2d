@@ -95,6 +95,8 @@ namespace g2d
 		virtual void BeginRender() = 0;
 		virtual void EndRender() = 0;
 		virtual void RenderMesh(unsigned int layer, Mesh*, Material*, const gml::mat32&) = 0;
+		virtual long GetWindowWidth() const = 0;
+		virtual long GetWindowHeight() const = 0;
 	public:
 		virtual Mesh* CreateMesh(unsigned int vertexCount, unsigned int indexCount) = 0;
 		virtual Material* CreateColorTextureMaterial() = 0;
