@@ -62,6 +62,18 @@ const gml::mat32& SceneNode::GetWorldMatrix()
 	return m_matrixWorld;
 }
 
+void SceneNode::SetVisibleMask(unsigned int mask, bool recurssive)
+{
+	m_visibleMask = mask;
+	if (recurssive)
+	{
+		for (auto& child : m_children)
+		{
+			child->SetVisibleMask(mask, true);
+		}
+	}
+}
+
 void SceneNode::SetWorldMatrixDirty()
 {
 	m_matrixWorldDirty = true;

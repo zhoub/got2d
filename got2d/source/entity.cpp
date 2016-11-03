@@ -4,7 +4,6 @@
 
 g2d::Entity::Entity()
 	: m_sceneNode(nullptr)
-	, m_visibleMask(0xFFFFFFFF)
 {
 
 }
@@ -29,13 +28,14 @@ void g2d::Entity::SetSceneNode(g2d::SceneNode* node)
 {
 	m_sceneNode = node;
 }
-void g2d::Entity::SetVisibleMask(unsigned int mask)
-{
-	m_visibleMask = mask;
-}
+
 unsigned int g2d::Entity::GetVisibleMask() const
 {
-	return m_visibleMask;
+	if (GetSceneNode())
+	{
+		return GetSceneNode()->GetVisibleMask();
+	}
+	return DEFAULT_VISIBLE_MASK;
 }
 
 g2d::SceneNode* g2d::Entity::GetSceneNode() const { return m_sceneNode; }

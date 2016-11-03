@@ -5,12 +5,13 @@
 #include <gmlaabb.h>
 namespace g2d
 {
+	constexpr const int DEFAULT_VISIBLE_MASK = 0xFFFFFFFF;
+
 	class SceneNode;
 	class Scene;
 	class G2DAPI Entity
 	{
 	public:
-
 		DECL_CLASSID;
 		virtual void Release() = 0;
 		virtual gml::aabb2d GetLocalAABB() const = 0;
@@ -27,13 +28,11 @@ namespace g2d
 
 	public:
 		Entity();
-		void SetVisibleMask(unsigned int mask);
 		void SetSceneNode(g2d::SceneNode* node);
 		unsigned int GetVisibleMask() const;
 		SceneNode* GetSceneNode() const;
 	private:
 		SceneNode* m_sceneNode;
-		unsigned int m_visibleMask;
 	};
 
 	class G2DAPI Quad : public Entity
@@ -51,9 +50,10 @@ namespace g2d
 		virtual Camera* SetScale(const gml::vec2& scale) = 0;
 		virtual Camera* SetRotation(float radian) = 0;
 		virtual void SetRenderingOrder(int order) = 0;
+		virtual void SetVisibleMask(unsigned int mask) = 0;
 		virtual const gml::mat32& GetViewMatrix() const = 0;
 		virtual bool TestVisible(g2d::Entity* entity) = 0;
-		//SetVisibleMask is used for testing visibility of each entity for camera.
+		virtual unsigned int GetVisibleMask() const = 0;
 		virtual int GetRenderingOrder() const = 0;
 	};
 
@@ -70,15 +70,16 @@ namespace g2d
 		virtual SceneNode* SetScale(const gml::vec2& scale) = 0;
 		virtual SceneNode* SetRotation(float radian) = 0;
 		virtual void SetVisible(bool) = 0;
+		virtual void SetVisibleMask(unsigned int mask, bool recursive) = 0;
 		virtual const gml::vec2& GetPosition()  const = 0;
 		virtual const gml::vec2& GetPivot() const = 0;
 		virtual const gml::vec2& GetScale() const = 0;
 		virtual float GetRotation() const = 0;
 		virtual Entity* GetEntity() const = 0;
 		virtual bool IsVisible() const = 0;
-		
+		virtual unsigned int GetVisibleMask() const = 0;
 	};
-
+	
 	template<class T> T* GetEntity(SceneNode* node)
 	{
 		Entity* entity = node->GetEntity();

@@ -33,13 +33,13 @@ bool Testbed::InitApp()
 		return false;
 
 	g2d::Entity* quad = g2d::GetEngine()->GetCurrentScene()->CreateQuad()->SetSize(gml::vec2(100, 120));
-	quad->SetVisibleMask(3);
 	auto* node = g2d::GetEngine()->GetCurrentScene()->CreateSceneNode(quad, true)->SetPosition(gml::vec2(100, 100));
+	node->SetVisibleMask(3, true);
 	for (int i = 0; i < 4; i++)
 	{
 		g2d::Entity* quad = g2d::GetEngine()->GetCurrentScene()->CreateQuad()->SetSize(gml::vec2(100, 120));
 		auto* child = node->CreateSceneNode(quad, true)->SetPosition(gml::vec2(50, 50));
-		child->GetEntity()->SetVisibleMask((i % 2) ? 1 : 2);
+		child->SetVisibleMask((i % 2) ? 1 : 2, true);
 		node = child;
 	}
 
