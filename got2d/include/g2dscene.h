@@ -51,10 +51,12 @@ namespace g2d
 		virtual Camera* SetRotation(float radian) = 0;
 		virtual void SetRenderingOrder(int order) = 0;
 		virtual void SetVisibleMask(unsigned int mask) = 0;
+		virtual void SetActivity(bool activity) = 0;
 		virtual const gml::mat32& GetViewMatrix() const = 0;
 		virtual bool TestVisible(g2d::Entity* entity) = 0;
 		virtual unsigned int GetVisibleMask() const = 0;
 		virtual int GetRenderingOrder() const = 0;
+		virtual bool IsActivity() const = 0;
 	};
 
 	class G2DAPI SceneNode
@@ -79,7 +81,7 @@ namespace g2d
 		virtual bool IsVisible() const = 0;
 		virtual unsigned int GetVisibleMask() const = 0;
 	};
-	
+
 	template<class T> T* GetEntity(SceneNode* node)
 	{
 		Entity* entity = node->GetEntity();

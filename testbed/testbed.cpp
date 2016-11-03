@@ -42,20 +42,25 @@ bool Testbed::InitApp()
 		child->SetVisibleMask((i % 2) ? 1 : 2, true);
 		node = child;
 	}
+	
+	auto camera = g2d::GetEngine()->GetCurrentScene()->GetMainCamera();
+	camera->SetActivity(true);
 
-	auto camera = g2d::GetEngine()->GetCurrentScene()->CreateCameraNode();
+	camera = g2d::GetEngine()->GetCurrentScene()->CreateCameraNode();
 	if (camera)
 	{
-		camera->SetPosition(gml::vec2(250, 100));
+		camera->SetPosition(gml::vec2(220, 100));
 		camera->SetVisibleMask(2);
+		camera->SetActivity(false);
 	}
 
 	camera = g2d::GetEngine()->GetCurrentScene()->CreateCameraNode();
 	if (camera)
 	{
-		camera->SetPosition(gml::vec2(250, 100));
+		camera->SetPosition(gml::vec2(220, 100));
 		camera->SetRenderingOrder(-1);
 		camera->SetVisibleMask(1);
+		camera->SetActivity(true);
 	}
 	return true;
 }

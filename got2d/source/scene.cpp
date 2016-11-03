@@ -220,6 +220,8 @@ void Scene::Render()
 	for (size_t i = 0, n = m_renderingOrder.size(); i < n; i++)
 	{
 		auto& camera = m_renderingOrder[i];
+		if (!camera->IsActivity())
+			continue;
 		GetRenderSystem()->SetViewMatrix(camera->GetViewMatrix());
 		m_root->Render(camera);
 		GetRenderSystem()->FlushRequests();
