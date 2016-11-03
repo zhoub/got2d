@@ -174,28 +174,28 @@ Scene::~Scene()
 #include "render_system.h"
 void Scene::Render()
 {
-
 	for (size_t i = 0, n = m_cameras.size(); i < n; i++)
 	{
-		::GetRenderSystem()->SetViewMatrix(GetCamera(i)->GetViewMatrix());
+		GetRenderSystem()->SetViewMatrix(GetCamera(i)->GetViewMatrix());
 		m_root->Render(GetCamera(i));
+		GetRenderSystem()->Render();
 	}
 
 }
 
-unsigned int Scene::CreateCameraNode()
+g2d::Camera* Scene::CreateCameraNode()
 {
 	Camera* camera = new ::Camera();
-
 	if (CreateSceneNode(camera, true) != nullptr)
 	{
+		camera->SetID(m_cameras.size());
 		m_cameras.push_back(camera);
-		return m_cameras.size() - 1;
+		return camera;
 	}
 	else
 	{
 		camera->Release();
-		return 0;
+		return nullptr;
 	}
 
 }

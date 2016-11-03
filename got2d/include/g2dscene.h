@@ -38,6 +38,7 @@ namespace g2d
 	class G2DAPI Camera : public Entity
 	{
 	public:
+		virtual unsigned int GetID() const = 0;
 		virtual Camera* SetPosition(const gml::vec2& position) = 0;
 		virtual Camera* SetScale(const gml::vec2& scale) = 0;
 		virtual Camera* SetRotation(float radian) = 0;
@@ -75,7 +76,7 @@ namespace g2d
 	{
 	public:
 		virtual ~Scene();
-		virtual unsigned int CreateCameraNode() = 0;
+		virtual Camera* CreateCameraNode() = 0;
 		virtual Camera* GetMainCamera() const = 0;
 		virtual Camera* GetCamera(unsigned int index) const = 0;
 		virtual Quad* CreateQuad() = 0;

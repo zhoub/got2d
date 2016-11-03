@@ -106,9 +106,9 @@ gml::aabb2d Quad::GetWorldAABB() const
 
 void Camera::OnUpdate(unsigned int elapsedTime)
 {
-	m_time += elapsedTime;
-	float realt = m_time * 0.001f;
-	GetSceneNode()->SetPosition(gml::vec2(10 * realt, 0));
+	float realt = elapsedTime * 0.001f;
+	auto pos = GetSceneNode()->GetPosition();
+	GetSceneNode()->SetPosition(gml::vec2(pos.x + 10 * realt, pos.y));
 	GetSceneNode()->SetScale(gml::vec2(1.0f + 0.1f*realt, 1.0f + 0.1f*realt));
 }
 

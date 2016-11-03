@@ -41,6 +41,11 @@ bool Testbed::InitApp()
 		node = child;
 	}
 
+	auto camera = g2d::GetEngine()->GetCurrentScene()->CreateCameraNode();
+	if (camera)
+	{
+		camera->SetPosition(gml::vec2(250, 100));
+	}
 	return true;
 }
 

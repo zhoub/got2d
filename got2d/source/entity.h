@@ -30,12 +30,16 @@ class Camera : public g2d::Camera
 {
 	IMPL_CLASSID;
 public:
+	void SetID(unsigned int index) { m_id = index; }
+public:
 	virtual void OnUpdate(unsigned int elapsedTime) override;
 	virtual void OnUpdateMatrixChanged() override;
+
 public:
 	inline virtual void Release() override { delete this; }
 	virtual gml::aabb2d GetLocalAABB() const override { return gml::aabb2d(); }
 	virtual gml::aabb2d GetWorldAABB() const override { return gml::aabb2d(); }
+	inline virtual unsigned int GetID() const override { return m_id; }
 	inline virtual g2d::Camera* SetPosition(const gml::vec2& position) override { GetSceneNode()->SetPosition(position); return this; }
 	inline virtual g2d::Camera* SetScale(const gml::vec2& scale) override { GetSceneNode()->SetScale(scale); return this; }
 	inline virtual g2d::Camera* SetRotation(float radian) override { GetSceneNode()->SetRotation(radian); return this; }
@@ -43,7 +47,7 @@ public:
 	virtual bool TestVisible(g2d::Entity* entity) override;
 
 private:
-	unsigned int m_time;
+	unsigned int m_id;
 	gml::mat32 m_matrix;
 	gml::aabb2d m_aabb;
 };
