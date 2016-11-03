@@ -6,6 +6,7 @@ RenderSystem* RenderSystem::Instance = nullptr;
 
 RenderSystem::RenderSystem() :m_bkColor(gml::color4::blue())
 {
+	m_matView.identity();
 }
 
 bool RenderSystem::OnResize(long width, long height)
@@ -259,7 +260,10 @@ void RenderSystem::Destroy()
 
 	for (auto& blendMode : m_blendModes)
 	{
-		blendMode.second->Release();
+		if (blendMode.second)
+		{
+			blendMode.second->Release();
+		}
 	}
 	m_blendModes.clear();
 
@@ -280,15 +284,25 @@ void RenderSystem::Destroy()
 	}
 }
 
+void RenderSystem::SetViewMatrix(const gml::mat32& viewMatrix)
+{
+	if (viewMatrix != m_matView)
+	{
+		m_matView = viewMatrix;
+		m_matrixViewDirty = true;
+		m_matrixConstBufferDirty = true;
+	}
+}
+
 const gml::mat44& RenderSystem::GetProjectionMatrix()
 {
 	if (m_matrixProjDirty)
 	{
 		m_matrixProjDirty = false;
 		float znear = -0.5f;
-		//m_matProj = gml::mat44::center_ortho_lh(static_cast<float>(m_windowWidth), static_cast<float>(m_windowHeight), znear, 1000.0f);
-		m_matProj = gml::mat44::ortho2d_lh(static_cast<float>(m_windowWidth), static_cast<float>(m_windowHeight), znear, 1000.0f);
-		m_matProjConstBufferDirty = true;
+		m_matProj = gml::mat44::center_ortho_lh(static_cast<float>(m_windowWidth), static_cast<float>(m_windowHeight), znear, 1000.0f);
+		//m_matProj = gml::mat44::ortho2d_lh(static_cast<float>(m_windowWidth), static_cast<float>(m_windowHeight), znear, 1000.0f);
+		m_matrixConstBufferDirty = true;
 	}
 	return m_matProj;
 }
@@ -327,19 +341,20 @@ void RenderSystem::UpdateConstBuffer(ID3D11Buffer* cbuffer, const void* data, un
 	}
 }
 
-void RenderSystem::UpdateSceneConstBuffer(gml::mat32* matrixView)
+void RenderSystem::UpdateSceneConstBuffer()
 {
-	if (matrixView == nullptr && !m_matProjConstBufferDirty && !m_matrixProjDirty)
+	if (!m_matrixViewDirty && !m_matrixProjDirty && !m_matrixConstBufferDirty)
 		return;
 
-	m_matProjConstBufferDirty = false;
+	m_matrixConstBufferDirty = false;
 	D3D11_MAPPED_SUBRESOURCE mappedData;
 	if (S_OK == m_d3dContext->Map(m_sceneConstBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData))
 	{
 		unsigned char*  dstBuffer = reinterpret_cast<unsigned char*>(mappedData.pData);
-		if (matrixView)
+		if (m_matrixViewDirty)
 		{
-			memcpy(dstBuffer, matrixView->m, sizeof(gml::mat32));
+			memcpy(dstBuffer, m_matView.m, sizeof(gml::mat32));
+			m_matrixViewDirty = false;
 		}
 		memcpy(dstBuffer + sizeof(gml::mat32), GetProjectionMatrix().m, sizeof(gml::mat44));
 		m_d3dContext->Unmap(m_sceneConstBuffer, 0);
@@ -370,7 +385,7 @@ void RenderSystem::FlushBatch(Mesh& mesh, g2d::Material* material)
 			m_d3dContext->IASetInputLayout(shader->GetInputLayout());
 			m_d3dContext->VSSetShader(shader->GetVertexShader(), NULL, 0);
 			m_d3dContext->PSSetShader(shader->GetPixelShader(), NULL, 0);
-			UpdateSceneConstBuffer(nullptr);
+			UpdateSceneConstBuffer();
 			m_d3dContext->VSSetConstantBuffers(0, 1, &m_sceneConstBuffer);
 			SetBlendMode(pass->GetBlendMode());
 
@@ -432,7 +447,7 @@ void RenderSystem::FlushBatch(Mesh& mesh, g2d::Material* material)
 	mesh.Clear();
 }
 
-void RenderSystem::Render()
+void RenderSystem::FlushRequests()
 {
 	if (m_renderRequests.size() == 0)
 		return;
@@ -485,7 +500,7 @@ void RenderSystem::BeginRender()
 
 void RenderSystem::EndRender()
 {
-	Render();
+	FlushRequests();
 	Present();
 }
 

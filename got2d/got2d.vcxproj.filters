@@ -16,6 +16,9 @@
     <Filter Include="源文件\render">
       <UniqueIdentifier>{a5b0682e-9e2b-4a70-8cfe-2b18918c02c8}</UniqueIdentifier>
     </Filter>
+    <Filter Include="源文件\scene">
+      <UniqueIdentifier>{f132b091-4288-4664-b9e5-cc670bdf803b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\g2dengine.h">
@@ -33,18 +36,18 @@
     <ClInclude Include="include\g2dscene.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="source\scene.h">
-      <Filter>源文件</Filter>
-    </ClInclude>
     <ClInclude Include="source\render_system.h">
       <Filter>源文件\render</Filter>
+    </ClInclude>
+    <ClInclude Include="source\scene.h">
+      <Filter>源文件\scene</Filter>
+    </ClInclude>
+    <ClInclude Include="source\entity.h">
+      <Filter>源文件\scene</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="source\engine.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="source\scene.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="source\render_system.cpp">
@@ -58,6 +61,12 @@
     </ClCompile>
     <ClCompile Include="source\texture.cpp">
       <Filter>源文件\render</Filter>
+    </ClCompile>
+    <ClCompile Include="source\scene.cpp">
+      <Filter>源文件\scene</Filter>
+    </ClCompile>
+    <ClCompile Include="source\entity.cpp">
+      <Filter>源文件\scene</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -32,13 +32,30 @@ bool Testbed::InitApp()
 	if (!g2d::InitEngine(ecfg))
 		return false;
 
-	g2d::Entity* quad = g2d::GetEngine()->GetCurrentScene()->CreateQuadEntity()->SetSize(gml::vec2(100, 120));
+	g2d::Entity* quad = g2d::GetEngine()->GetCurrentScene()->CreateQuad()->SetSize(gml::vec2(100, 120));
 	auto* node = g2d::GetEngine()->GetCurrentScene()->CreateSceneNode(quad, true)->SetPosition(gml::vec2(100, 100));
+	node->SetVisibleMask(3, true);
 	for (int i = 0; i < 4; i++)
 	{
-		g2d::Entity* quad = g2d::GetEngine()->GetCurrentScene()->CreateQuadEntity()->SetSize(gml::vec2(100, 120));
+		g2d::Entity* quad = g2d::GetEngine()->GetCurrentScene()->CreateQuad()->SetSize(gml::vec2(100, 120));
 		auto* child = node->CreateSceneNode(quad, true)->SetPosition(gml::vec2(50, 50));
+		child->SetVisibleMask((i % 2) ? 1 : 2, true);
 		node = child;
+	}
+
+	auto camera = g2d::GetEngine()->GetCurrentScene()->CreateCameraNode();
+	if (camera)
+	{
+		camera->SetPosition(gml::vec2(250, 100));
+		camera->SetVisibleMask(2);
+	}
+
+	camera = g2d::GetEngine()->GetCurrentScene()->CreateCameraNode();
+	if (camera)
+	{
+		camera->SetPosition(gml::vec2(250, 100));
+		camera->SetRenderingOrder(-1);
+		camera->SetVisibleMask(1);
 	}
 	return true;
 }

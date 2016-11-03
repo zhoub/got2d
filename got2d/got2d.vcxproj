@@ -171,11 +171,13 @@
     <ClInclude Include="include\g2drender.h" />
     <ClInclude Include="include\g2dscene.h" />
     <ClInclude Include="source\engine.h" />
+    <ClInclude Include="source\entity.h" />
     <ClInclude Include="source\render_system.h" />
     <ClInclude Include="source\scene.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="source\engine.cpp" />
+    <ClCompile Include="source\entity.cpp" />
     <ClCompile Include="source\mesh.cpp" />
     <ClCompile Include="source\render_system.cpp" />
     <ClCompile Include="source\scene.cpp" />
