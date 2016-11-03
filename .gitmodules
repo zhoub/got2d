@@ -1,6 +1,6 @@
 [submodule "extern/gml"]
 	path = extern/gml
-	url = git@github:goteet/gml.git
+	url = git@github.com:goteet/gml.git
 [submodule "extern/res"]
 	path = extern/res
-	url = git@github:goteet/res.git
+	url = git@github.com:goteet/res.git
