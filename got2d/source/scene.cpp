@@ -164,6 +164,7 @@ g2d::SceneNode* SceneNode::SetRotation(float radian)
 Scene::Scene()
 {
 	m_root = new ::SceneNode(nullptr, nullptr, false);
+	CreateCameraNode();
 }
 Scene::~Scene()
 {
@@ -173,6 +174,34 @@ Scene::~Scene()
 #include "render_system.h"
 void Scene::Render()
 {
-	::GetRenderSystem()->SetViewMatrix(m_camera->GetViewMatrix());
-	return m_root->Render(m_camera);
+
+	for (size_t i = 0, n = m_cameras.size(); i < n; i++)
+	{
+		::GetRenderSystem()->SetViewMatrix(GetCamera(i)->GetViewMatrix());
+		m_root->Render(GetCamera(i));
+	}
+
+}
+
+unsigned int Scene::CreateCameraNode()
+{
+	Camera* camera = new ::Camera();
+
+	if (CreateSceneNode(camera, true) != nullptr)
+	{
+		m_cameras.push_back(camera);
+		return m_cameras.size() - 1;
+	}
+	else
+	{
+		camera->Release();
+		return 0;
+	}
+
+}
+g2d::Camera* Scene::GetCamera(unsigned int index) const
+{
+	if (index >= m_cameras.size())
+		return nullptr;
+	return m_cameras[index];
 }

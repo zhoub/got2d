@@ -4,12 +4,12 @@
 #include <g2drender.h>
 
 
-class QuadEntity : public g2d::QuadEntity
+class Quad : public g2d::Quad
 {
 	IMPL_CLASSID;
 public:
-	QuadEntity();
-	~QuadEntity();
+	Quad();
+	~Quad();
 	virtual void OnInitial() override;
 	virtual void OnRender() override;
 

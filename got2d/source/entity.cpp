@@ -25,7 +25,7 @@ void g2d::Entity::SetSceneNode(g2d::SceneNode* node)
 
 g2d::SceneNode* g2d::Entity::GetSceneNode() const { return m_sceneNode; }
 
-QuadEntity::QuadEntity()
+Quad::Quad()
 {
 	unsigned int indices[] = { 0, 1, 2, 0, 2, 3 };
 	m_mesh = g2d::GetEngine()->GetRenderSystem()->CreateMesh(4, 6);
@@ -69,20 +69,20 @@ QuadEntity::QuadEntity()
 		break;
 	}
 }
-void QuadEntity::OnInitial()
+void Quad::OnInitial()
 {
 	GetSceneNode()->SetPivot(gml::vec2(-0.5f, -0.5f));
 }
-QuadEntity::~QuadEntity()
+Quad::~Quad()
 {
 	m_mesh->Release();
 	m_material->Release();
 }
-void QuadEntity::OnRender()
+void Quad::OnRender()
 {
 	g2d::GetEngine()->GetRenderSystem()->RenderMesh(g2d::RenderOrder::RORDER_DEFAULT, m_mesh, m_material, GetSceneNode()->GetWorldMatrix());
 }
-g2d::Entity* QuadEntity::SetSize(const gml::vec2& size)
+g2d::Entity* Quad::SetSize(const gml::vec2& size)
 {
 	g2d::GeometryVertex* vertices = m_mesh->GetRawVertices();
 	vertices[0].position.set(-0.5f, -0.5f) *= size;
@@ -95,7 +95,7 @@ g2d::Entity* QuadEntity::SetSize(const gml::vec2& size)
 	return this;
 }
 
-gml::aabb2d QuadEntity::GetWorldAABB() const
+gml::aabb2d Quad::GetWorldAABB() const
 {
 	if (m_aabb.is_empty())
 		return m_aabb;

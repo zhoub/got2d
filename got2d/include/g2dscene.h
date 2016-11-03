@@ -28,7 +28,7 @@ namespace g2d
 		SceneNode* m_sceneNode;
 	};
 
-	class G2DAPI QuadEntity : public Entity
+	class G2DAPI Quad : public Entity
 	{
 	public:
 		virtual g2d::Entity* SetSize(const gml::vec2& size) = 0;
@@ -75,8 +75,9 @@ namespace g2d
 	{
 	public:
 		virtual ~Scene();
-		virtual Camera* CreateCamera() = 0;
-		virtual QuadEntity* CreateQuadEntity() = 0;
-		virtual void SetCamera(Camera* camera) = 0;
+		virtual unsigned int CreateCameraNode() = 0;
+		virtual Camera* GetMainCamera() const = 0;
+		virtual Camera* GetCamera(unsigned int index) const = 0;
+		virtual Quad* CreateQuad() = 0;
 	};
 }

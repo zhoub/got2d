@@ -42,7 +42,7 @@ private:
 	float m_rotationRadian = 0;
 	bool m_isVisible = true;
 
-	bool m_matrixDirtyUpdate= false;
+	bool m_matrixDirtyUpdate = false;
 	bool m_matrixLocalDirty = false;
 	bool m_matrixWorldDirty = true;
 	gml::mat32 m_matrixLocal;
@@ -76,11 +76,12 @@ public:
 	inline virtual bool IsVisible() const override { return m_root->IsVisible(); }
 
 public:
-	inline virtual g2d::Camera* CreateCamera() override { return ::new Camera(); }
-	inline virtual g2d::QuadEntity* CreateQuadEntity() override { return new ::QuadEntity(); }
-	inline virtual void SetCamera(g2d::Camera* camera) override { m_camera = camera; }
+	virtual unsigned int CreateCameraNode() override;
+	virtual g2d::Camera* GetMainCamera() const override { return GetCamera(0); }
+	virtual g2d::Camera* GetCamera(unsigned int index) const override;
+	inline virtual g2d::Quad* CreateQuad() override { return new ::Quad(); }
 
 private:
 	::SceneNode* m_root;
-	g2d::Camera* m_camera = 0;
+	std::vector<g2d::Camera*> m_cameras;
 };
