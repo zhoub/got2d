@@ -207,7 +207,7 @@ public:
 	bool Create(void* nativeWindow);
 	void Destroy();
 	void Clear();
-	void Render();
+	void FlushRequests();
 	void Present();
 	void SetBlendMode(g2d::BlendMode blendMode);
 	void SetViewMatrix(const gml::mat32& viewMatrix);
@@ -235,7 +235,7 @@ private:
 	bool CreateBlendModes();
 	void FlushBatch(Mesh& mesh, g2d::Material*);
 	void UpdateConstBuffer(ID3D11Buffer* cbuffer, const void* data, unsigned int length);
-	void UpdateSceneConstBuffer(gml::mat32* matrixView);
+	void UpdateSceneConstBuffer();
 
 	IDXGISwapChain* m_swapChain = nullptr;
 	ID3D11Device* m_d3dDevice = nullptr;
@@ -272,7 +272,8 @@ private:
 	gml::mat32 m_matView;
 	gml::mat44 m_matProj;
 
-	bool m_matProjConstBufferDirty = true;
+	bool m_matrixConstBufferDirty = true;
+	bool m_matrixViewDirty = true;
 	bool m_matrixProjDirty = true;
 	long m_windowWidth = 0;
 	long m_windowHeight = 0;

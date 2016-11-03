@@ -214,13 +214,15 @@ void Scene::ResortCameraRenderingOrder()
 
 void Scene::Render()
 {
+	GetRenderSystem()->FlushRequests();
+
 	ResortCameraRenderingOrder();
 	for (size_t i = 0, n = m_renderingOrder.size(); i < n; i++)
 	{
 		auto& camera = m_renderingOrder[i];
 		GetRenderSystem()->SetViewMatrix(camera->GetViewMatrix());
 		m_root->Render(camera);
-		GetRenderSystem()->Render();
+		GetRenderSystem()->FlushRequests();
 	}
 
 }
