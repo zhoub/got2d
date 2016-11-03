@@ -2,6 +2,13 @@
 #include <g2dengine.h>
 #include <gmlconv.h>
 
+g2d::Entity::Entity()
+	: m_sceneNode(nullptr)
+	, m_visibleMask(0xFFFFFFFF)
+{
+
+}
+
 g2d::Entity::~Entity() {}
 
 void g2d::Entity::OnInitial() {}
@@ -21,6 +28,14 @@ void g2d::Entity::OnUpdateMatrixChanged() {}
 void g2d::Entity::SetSceneNode(g2d::SceneNode* node)
 {
 	m_sceneNode = node;
+}
+void g2d::Entity::SetVisibleMask(unsigned int mask)
+{
+	m_visibleMask = mask;
+}
+unsigned int g2d::Entity::GetVisibleMask() const
+{
+	return m_visibleMask;
 }
 
 g2d::SceneNode* g2d::Entity::GetSceneNode() const { return m_sceneNode; }
@@ -142,7 +157,7 @@ void Camera::OnUpdateMatrixChanged()
 
 bool Camera::TestVisible(g2d::Entity* entity)
 {
-	if (entity->GetLocalAABB().is_empty())
+	if (entity->GetLocalAABB().is_empty() || (GetVisibleMask() &entity->GetVisibleMask()) == 0)
 	{
 		return false;
 	}
