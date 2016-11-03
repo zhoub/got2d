@@ -1,11 +1,12 @@
 #include "scene.h"
-
+#include <algorithm>
 g2d::SceneNode::~SceneNode() { }
 
 g2d::Scene::~Scene() { }
 
-SceneNode::SceneNode(SceneNode* parent, g2d::Entity* entity, bool autoRelease)
-	: m_parent(parent)
+SceneNode::SceneNode(g2d::Scene* scene, SceneNode* parent, g2d::Entity* entity, bool autoRelease)
+	: m_scene(scene)
+	, m_parent(parent)
 	, m_entity(entity)
 	, m_autoRelease(autoRelease)
 	, m_matrixLocal(gml::mat32::I())
@@ -118,7 +119,7 @@ g2d::SceneNode* SceneNode::CreateSceneNode(g2d::Entity* e, bool autoRelease)
 		return nullptr;
 	}
 
-	auto rst = new ::SceneNode(this, e, autoRelease);
+	auto rst = new ::SceneNode(GetScene(), this, e, autoRelease);
 	m_children.push_back(rst);
 	return rst;
 }
@@ -163,7 +164,7 @@ g2d::SceneNode* SceneNode::SetRotation(float radian)
 
 Scene::Scene()
 {
-	m_root = new ::SceneNode(nullptr, nullptr, false);
+	m_root = new ::SceneNode(this, nullptr, nullptr, false);
 	CreateCameraNode();
 }
 Scene::~Scene()
@@ -171,13 +172,42 @@ Scene::~Scene()
 	delete m_root;
 }
 
+void Scene::SetRenderingOrderDirty()
+{
+	m_renderingOrderDirty = true;
+}
+
+void Scene::ResortCameraRenderingOrder()
+{
+	if (m_renderingOrderDirty)
+	{
+		m_renderingOrderDirty = false;
+		m_renderingOrder = m_cameras;
+
+		std::sort(m_renderingOrder.begin(), m_renderingOrder.end(),
+			[](g2d::Camera* a, g2d::Camera* b)->bool {
+
+			auto aOrder = a->GetRenderingOrder();
+			auto bOrder = b->GetRenderingOrder();
+			if (aOrder == bOrder)
+			{
+				return a->GetID() < b->GetID();
+			}
+			return aOrder < bOrder;
+		});
+	}
+}
 #include "render_system.h"
+
+
 void Scene::Render()
 {
-	for (size_t i = 0, n = m_cameras.size(); i < n; i++)
+	ResortCameraRenderingOrder();
+	for (size_t i = 0, n = m_renderingOrder.size(); i < n; i++)
 	{
-		GetRenderSystem()->SetViewMatrix(GetCamera(i)->GetViewMatrix());
-		m_root->Render(GetCamera(i));
+		auto& camera = m_renderingOrder[i];
+		GetRenderSystem()->SetViewMatrix(camera->GetViewMatrix());
+		m_root->Render(camera);
 		GetRenderSystem()->Render();
 	}
 
@@ -188,6 +218,7 @@ g2d::Camera* Scene::CreateCameraNode()
 	Camera* camera = new ::Camera();
 	if (CreateSceneNode(camera, true) != nullptr)
 	{
+		m_renderingOrderDirty = true;
 		camera->SetID(m_cameras.size());
 		m_cameras.push_back(camera);
 		return camera;

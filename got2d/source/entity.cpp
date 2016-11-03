@@ -155,6 +155,12 @@ void Camera::OnUpdateMatrixChanged()
 	}
 }
 
+void Camera::SetRenderingOrder(int renderingOrder)
+{
+	m_renderingOrder = renderingOrder;
+	::Scene* scene = dynamic_cast<::Scene*>(GetSceneNode()->GetScene());
+	scene->SetRenderingOrderDirty();
+}
 bool Camera::TestVisible(g2d::Entity* entity)
 {
 	if (entity->GetLocalAABB().is_empty() || (GetVisibleMask() &entity->GetVisibleMask()) == 0)

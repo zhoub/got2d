@@ -7,12 +7,13 @@
 class SceneNode : public g2d::SceneNode
 {
 public:
-	SceneNode(SceneNode* parent, g2d::Entity* entity, bool autoRelease);
+	SceneNode(g2d::Scene* scene, SceneNode* parent, g2d::Entity* entity, bool autoRelease);
 	virtual ~SceneNode();
 	void Update(unsigned int elpasedTime);
 	void Render(g2d::Camera* m_camera);
 
 public:
+	inline virtual g2d::Scene* GetScene() const override { return m_scene; }
 	virtual g2d::SceneNode* CreateSceneNode(g2d::Entity* entity, bool autoRelease)override;
 	virtual const gml::mat32& GetLocalMatrix() override;
 	virtual const gml::mat32& GetWorldMatrix() override;
@@ -31,6 +32,7 @@ public:
 private:
 	void SetLocalMatrixDirty();
 	void SetWorldMatrixDirty();
+	g2d::Scene* m_scene = nullptr;
 	::SceneNode* m_parent = nullptr;
 	g2d::Entity* m_entity = nullptr;
 	std::vector<::SceneNode*> m_children;
@@ -58,8 +60,10 @@ public:
 	inline ::SceneNode* GetRoot() { return m_root; }
 	inline void Update(unsigned int elpasedTime) { return m_root->Update(elpasedTime); }
 	void Render();
+	void SetRenderingOrderDirty();
 
 public:
+	inline virtual g2d::Scene* GetScene() const override { return m_root->GetScene(); }
 	inline virtual g2d::SceneNode* CreateSceneNode(g2d::Entity* e, bool autoRelease) override { return m_root->CreateSceneNode(e, autoRelease); }
 	inline virtual const gml::mat32& GetLocalMatrix() override { return m_root->GetLocalMatrix(); }
 	inline virtual const gml::mat32& GetWorldMatrix() override { return m_root->GetWorldMatrix(); }
@@ -82,6 +86,10 @@ public:
 	inline virtual g2d::Quad* CreateQuad() override { return new ::Quad(); }
 
 private:
+	void ResortCameraRenderingOrder();
+
 	::SceneNode* m_root;
 	std::vector<g2d::Camera*> m_cameras;
+	std::vector<g2d::Camera*> m_renderingOrder;
+	bool m_renderingOrderDirty;
 };

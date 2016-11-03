@@ -40,14 +40,17 @@ public:
 	virtual gml::aabb2d GetLocalAABB() const override { return gml::aabb2d(); }
 	virtual gml::aabb2d GetWorldAABB() const override { return gml::aabb2d(); }
 	inline virtual unsigned int GetID() const override { return m_id; }
+	virtual void SetRenderingOrder(int renderingOrder) override;
 	inline virtual g2d::Camera* SetPosition(const gml::vec2& position) override { GetSceneNode()->SetPosition(position); return this; }
 	inline virtual g2d::Camera* SetScale(const gml::vec2& scale) override { GetSceneNode()->SetScale(scale); return this; }
 	inline virtual g2d::Camera* SetRotation(float radian) override { GetSceneNode()->SetRotation(radian); return this; }
 	virtual const gml::mat32& GetViewMatrix() const override { return m_matrix; }
 	virtual bool TestVisible(g2d::Entity* entity) override;
+	inline virtual int GetRenderingOrder() const override { return m_renderingOrder; }
 
 private:
 	unsigned int m_id;
+	int m_renderingOrder;
 	gml::mat32 m_matrix;
 	gml::aabb2d m_aabb;
 };

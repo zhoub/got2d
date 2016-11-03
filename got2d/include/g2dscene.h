@@ -6,6 +6,7 @@
 namespace g2d
 {
 	class SceneNode;
+	class Scene;
 	class G2DAPI Entity
 	{
 	public:
@@ -45,20 +46,22 @@ namespace g2d
 	class G2DAPI Camera : public Entity
 	{
 	public:
-
 		virtual unsigned int GetID() const = 0;
 		virtual Camera* SetPosition(const gml::vec2& position) = 0;
 		virtual Camera* SetScale(const gml::vec2& scale) = 0;
 		virtual Camera* SetRotation(float radian) = 0;
+		virtual void SetRenderingOrder(int order) = 0;
 		virtual const gml::mat32& GetViewMatrix() const = 0;
 		virtual bool TestVisible(g2d::Entity* entity) = 0;
 		//SetVisibleMask is used for testing visibility of each entity for camera.
+		virtual int GetRenderingOrder() const = 0;
 	};
 
 	class G2DAPI SceneNode
 	{
 	public:
 		virtual ~SceneNode();
+		virtual Scene* GetScene() const = 0;
 		virtual SceneNode* CreateSceneNode(Entity*, bool autoRelease) = 0;
 		virtual const gml::mat32& GetLocalMatrix() = 0;
 		virtual const gml::mat32& GetWorldMatrix() = 0;
@@ -73,6 +76,7 @@ namespace g2d
 		virtual float GetRotation() const = 0;
 		virtual Entity* GetEntity() const = 0;
 		virtual bool IsVisible() const = 0;
+		
 	};
 
 	template<class T> T* GetEntity(SceneNode* node)
