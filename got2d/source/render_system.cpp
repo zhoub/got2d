@@ -1,8 +1,9 @@
 #include "render_system.h"
 #include <string>
 
-g2d::RenderSystem::~RenderSystem() { }
 RenderSystem* RenderSystem::Instance = nullptr;
+
+g2d::RenderSystem::~RenderSystem() { }
 
 RenderSystem::RenderSystem() :m_bkColor(gml::color4::blue())
 {
@@ -325,6 +326,7 @@ void RenderSystem::SetBlendMode(g2d::BlendMode blendMode)
 	ID3D11BlendState* blendState = m_blendModes[blendMode];
 	m_d3dContext->OMSetBlendState(blendState, nullptr, 0xffffffff);
 }
+
 Texture* RenderSystem::CreateTextureFromFile(const char* resPath)
 {
 	return new Texture(resPath);
@@ -502,32 +504,4 @@ void RenderSystem::EndRender()
 {
 	FlushRequests();
 	Present();
-}
-
-g2d::Mesh* RenderSystem::CreateMesh(unsigned int vertexCount, unsigned int indexCount)
-{
-	return new Mesh(vertexCount, indexCount);
-}
-
-g2d::Material* RenderSystem::CreateColorTextureMaterial()
-{
-	auto mat = new ::Material(1);
-	mat->SetPass(0, new Pass("default", "color.texture"));
-	mat->GetPass(0)->SetTexture(0, Texture::Default(), false);
-	return mat;
-}
-
-g2d::Material* RenderSystem::CreateSimpleTextureMaterial()
-{
-	auto mat = new ::Material(1);
-	mat->SetPass(0, new Pass("default", "simple.texture"));
-	mat->GetPass(0)->SetTexture(0, Texture::Default(), false);
-	return mat;
-}
-
-g2d::Material* RenderSystem::CreateSimpleColorMaterial()
-{
-	auto mat = new ::Material(1);
-	mat->SetPass(0, new Pass("default", "simple.color"));
-	return mat;
 }

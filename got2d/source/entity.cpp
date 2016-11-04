@@ -2,6 +2,11 @@
 #include <g2dengine.h>
 #include <gmlconv.h>
 
+g2d::Quad* g2d::Quad::Create()
+{
+	return new ::Quad();
+}
+
 g2d::Entity::Entity()
 	: m_sceneNode(nullptr)
 {
@@ -43,7 +48,7 @@ g2d::SceneNode* g2d::Entity::GetSceneNode() const { return m_sceneNode; }
 Quad::Quad()
 {
 	unsigned int indices[] = { 0, 1, 2, 0, 2, 3 };
-	m_mesh = g2d::GetEngine()->GetRenderSystem()->CreateMesh(4, 6);
+	m_mesh = g2d::Mesh::Create(4, 6);
 	auto idx = m_mesh->GetRawIndices();
 
 	for (int i = 0; i < 6; i++)
@@ -72,31 +77,35 @@ Quad::Quad()
 	switch ((rand() % 3))
 	{
 	case 0:
-		m_material = g2d::GetEngine()->GetRenderSystem()->CreateSimpleColorMaterial();
+		m_material = g2d::Material::CreateSimpleColor();
 		break;
 	case 1:
-		m_material = g2d::GetEngine()->GetRenderSystem()->CreateSimpleTextureMaterial();
-		m_material->GetPass(0)->SetTexture(0, g2d::GetEngine()->LoadTexture((rand() % 2) ? "test_alpha.bmp" : "test_alpha.png"), true);
+		m_material = g2d::Material::CreateSimpleTexture();
+		m_material->GetPass(0)->SetTexture(0, g2d::Texture::LoadFromFile((rand() % 2) ? "test_alpha.bmp" : "test_alpha.png"), true);
 		break;
 	case 2:
-		m_material = g2d::GetEngine()->GetRenderSystem()->CreateColorTextureMaterial();
-		m_material->GetPass(0)->SetTexture(0, g2d::GetEngine()->LoadTexture((rand() % 2) ? "test_alpha.bmp" : "test_alpha.png"), true);
+		m_material = g2d::Material::CreateColorTexture();
+		m_material->GetPass(0)->SetTexture(0, g2d::Texture::LoadFromFile((rand() % 2) ? "test_alpha.bmp" : "test_alpha.png"), true);
 		break;
 	}
 }
-void Quad::OnInitial()
-{
-	GetSceneNode()->SetPivot(gml::vec2(-0.5f, -0.5f));
-}
+
 Quad::~Quad()
 {
 	m_mesh->Release();
 	m_material->Release();
 }
+
+void Quad::OnInitial()
+{
+	GetSceneNode()->SetPivot(gml::vec2(-0.5f, -0.5f));
+}
+
 void Quad::OnRender()
 {
 	g2d::GetEngine()->GetRenderSystem()->RenderMesh(g2d::RenderOrder::RORDER_DEFAULT, m_mesh, m_material, GetSceneNode()->GetWorldMatrix());
 }
+
 g2d::Entity* Quad::SetSize(const gml::vec2& size)
 {
 	g2d::GeometryVertex* vertices = m_mesh->GetRawVertices();
@@ -161,6 +170,7 @@ void Camera::SetRenderingOrder(int renderingOrder)
 	::Scene* scene = dynamic_cast<::Scene*>(GetSceneNode()->GetScene());
 	scene->SetRenderingOrderDirty();
 }
+
 bool Camera::TestVisible(g2d::Entity* entity)
 {
 	if (entity->GetLocalAABB().is_empty() || (GetVisibleMask() &entity->GetVisibleMask()) == 0)

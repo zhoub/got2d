@@ -1,5 +1,6 @@
 #include "scene.h"
 #include <algorithm>
+
 g2d::SceneNode::~SceneNode() { }
 
 g2d::Scene::~Scene() { }
@@ -142,6 +143,7 @@ g2d::SceneNode* SceneNode::SetPivot(const gml::vec2& pivot)
 	m_pivot = pivot;
 	return this;
 }
+
 g2d::SceneNode* SceneNode::SetScale(const gml::vec2& scale)
 {
 	if (m_entity)
@@ -152,6 +154,7 @@ g2d::SceneNode* SceneNode::SetScale(const gml::vec2& scale)
 	m_scale = scale;
 	return this;
 }
+
 g2d::SceneNode* SceneNode::SetPosition(const gml::vec2& position)
 {
 	if (m_entity)
@@ -163,6 +166,7 @@ g2d::SceneNode* SceneNode::SetPosition(const gml::vec2& position)
 
 	return this;
 }
+
 g2d::SceneNode* SceneNode::SetRotation(float radian)
 {
 	if (m_entity)
@@ -179,6 +183,7 @@ Scene::Scene()
 	m_root = new ::SceneNode(this, nullptr, nullptr, false);
 	CreateCameraNode();
 }
+
 Scene::~Scene()
 {
 	delete m_root;
@@ -209,9 +214,8 @@ void Scene::ResortCameraRenderingOrder()
 		});
 	}
 }
+
 #include "render_system.h"
-
-
 void Scene::Render()
 {
 	GetRenderSystem()->FlushRequests();
@@ -246,6 +250,7 @@ g2d::Camera* Scene::CreateCameraNode()
 	}
 
 }
+
 g2d::Camera* Scene::GetCamera(unsigned int index) const
 {
 	if (index >= m_cameras.size())

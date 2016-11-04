@@ -3,6 +3,33 @@
 #include <assert.h>
 #pragma comment(lib,"d3dcompiler.lib")
 
+g2d::Pass::~Pass() {}
+
+g2d::Material::~Material() {}
+
+g2d::Material* g2d::Material::CreateColorTexture()
+{
+	auto mat = new ::Material(1);
+	mat->SetPass(0, new ::Pass("default", "color.texture"));
+	mat->GetPass(0)->SetTexture(0, ::Texture::Default(), false);
+	return mat;
+}
+
+g2d::Material* g2d::Material::CreateSimpleTexture()
+{
+	auto mat = new ::Material(1);
+	mat->SetPass(0, new ::Pass("default", "simple.texture"));
+	mat->GetPass(0)->SetTexture(0, ::Texture::Default(), false);
+	return mat;
+}
+
+g2d::Material* g2d::Material::CreateSimpleColor()
+{
+	auto mat = new ::Material(1);
+	mat->SetPass(0, new ::Pass("default", "simple.color"));
+	return mat;
+}
+
 bool Shader::Create(const char* vsCode, unsigned int vcbLength, const char* psCode, unsigned int pcbLength)
 {
 	auto vsCodeLength = strlen(vsCode) + 1;
@@ -276,7 +303,6 @@ ShaderLib::~ShaderLib()
 	m_vsSources.clear();
 }
 
-
 std::string ShaderLib::GetEffectName(const std::string& vsName, const std::string& psName)
 {
 	return std::move(vsName + psName);
@@ -313,10 +339,6 @@ bool ShaderLib::BuildShader(const std::string& effectName, const std::string& vs
 	delete shader;
 	return false;
 }
-
-g2d::Pass::~Pass() {}
-
-g2d::Material::~Material() {}
 
 Pass::Pass(const Pass& other)
 	: m_vsName(other.m_vsName)
@@ -454,6 +476,7 @@ void Pass::SetPSConstant(unsigned int index, float* data, unsigned int size, uns
 		memcpy(&(m_psConstants[index + i]), data + i*size, size);
 	}
 }
+
 g2d::BlendMode Pass::GetBlendMode() const
 {
 	return m_blendMode;

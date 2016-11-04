@@ -26,23 +26,23 @@ bool Testbed::InitApp()
 	::GetCurrentDirectoryA(MAX_PATH, path);
 	std::string p = path;
 	p += "/../extern/res/win32_test/";
-	g2d::EngineConfig ecfg;
+	g2d::Engine::Config ecfg;
 	ecfg.nativeWindow = hWnd;
 	ecfg.resourceFolderPath = p.c_str();
-	if (!g2d::InitEngine(ecfg))
+	if (!g2d::Engine::Initialize(ecfg))
 		return false;
 
-	g2d::Entity* quad = g2d::GetEngine()->GetCurrentScene()->CreateQuad()->SetSize(gml::vec2(100, 120));
+	g2d::Entity* quad = g2d::Quad::Create()->SetSize(gml::vec2(100, 120));
 	auto* node = g2d::GetEngine()->GetCurrentScene()->CreateSceneNode(quad, true)->SetPosition(gml::vec2(100, 100));
 	node->SetVisibleMask(3, true);
 	for (int i = 0; i < 4; i++)
 	{
-		g2d::Entity* quad = g2d::GetEngine()->GetCurrentScene()->CreateQuad()->SetSize(gml::vec2(100, 120));
+		g2d::Entity* quad = g2d::Quad::Create()->SetSize(gml::vec2(100, 120));
 		auto* child = node->CreateSceneNode(quad, true)->SetPosition(gml::vec2(50, 50));
 		child->SetVisibleMask((i % 2) ? 1 : 2, true);
 		node = child;
 	}
-	
+
 	auto camera = g2d::GetEngine()->GetCurrentScene()->GetMainCamera();
 	camera->SetActivity(true);
 
@@ -68,7 +68,7 @@ bool Testbed::InitApp()
 void Testbed::DestroyApp()
 {
 	End();
-	g2d::UninitEngine();
+	g2d::Engine::Uninitialize();
 }
 
 void Testbed::FirstTick()

@@ -18,7 +18,7 @@ public:
 	virtual void Render() override;
 	inline virtual g2d::RenderSystem* GetRenderSystem() override { return &m_renderSystem; }
 	inline virtual g2d::Scene* GetCurrentScene() override { return m_currentScene; }
-	virtual g2d::Texture* LoadTexture(const char* path);
+
 private:
 	void* nativeWindow = nullptr;
 	RenderSystem m_renderSystem;

@@ -25,6 +25,8 @@ namespace g2d
 	class Mesh
 	{
 	public:
+		static Mesh* Create(unsigned int vertexCount, unsigned int indexCount);
+
 		virtual ~Mesh();
 		virtual GeometryVertex* GetRawVertices() = 0;
 		virtual unsigned int* GetRawIndices() = 0;
@@ -38,6 +40,8 @@ namespace g2d
 	class Texture
 	{
 	public:
+		static Texture* LoadFromFile(const char* path);
+
 		virtual ~Texture();
 		virtual bool IsSame(Texture* other) const = 0;
 		virtual void AddRef() = 0;
@@ -71,6 +75,10 @@ namespace g2d
 	class Material
 	{
 	public:
+		static Material* CreateColorTexture();
+		static Material* CreateSimpleTexture();
+		static Material* CreateSimpleColor();
+
 		virtual ~Material();
 		virtual Pass* GetPass(unsigned int index) const = 0;
 		virtual unsigned int GetPassCount() const = 0;
@@ -97,10 +105,5 @@ namespace g2d
 		virtual void RenderMesh(unsigned int layer, Mesh*, Material*, const gml::mat32&) = 0;
 		virtual long GetWindowWidth() const = 0;
 		virtual long GetWindowHeight() const = 0;
-	public:
-		virtual Mesh* CreateMesh(unsigned int vertexCount, unsigned int indexCount) = 0;
-		virtual Material* CreateColorTextureMaterial() = 0;
-		virtual Material* CreateSimpleTextureMaterial() = 0;
-		virtual Material* CreateSimpleColorMaterial() = 0;
 	};
 }

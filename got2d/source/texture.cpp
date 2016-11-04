@@ -1,6 +1,12 @@
 #include "render_system.h"
-
+#include "engine.h"
 g2d::Texture::~Texture() {}
+
+g2d::Texture* g2d::Texture::LoadFromFile(const char* path)
+{
+	std::string resourcePath = ::GetEngine()->GetResourceRoot() + path;
+	return ::GetRenderSystem()->CreateTextureFromFile(resourcePath.c_str());
+}
 
 Texture::Texture(const char* resPath) : m_resPath(resPath)
 {

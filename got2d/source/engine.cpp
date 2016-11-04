@@ -1,8 +1,10 @@
 #include "engine.h"
 
+Engine* Engine::Instance = nullptr;
+
 g2d::Engine::~Engine() { }
 
-bool g2d::InitEngine(const EngineConfig& config)
+bool g2d::Engine::Initialize(const Config& config)
 {
 	auto& inst = ::Engine::Instance;
 
@@ -29,7 +31,7 @@ bool g2d::InitEngine(const EngineConfig& config)
 	return false;
 }
 
-void g2d::UninitEngine()
+void g2d::Engine::Uninitialize()
 {
 	if (::Engine::Instance)
 	{
@@ -38,12 +40,10 @@ void g2d::UninitEngine()
 	}
 }
 
-g2d::Engine* g2d::GetEngine()
+g2d::Engine* g2d::Engine::Instance()
 {
 	return ::Engine::Instance;
 }
-
-Engine* Engine::Instance = nullptr;
 
 Engine::~Engine()
 {
@@ -56,15 +56,10 @@ bool Engine::Update(unsigned long elapsedTime)
 	m_currentScene->Update(elapsedTime);
 	return true;
 }
+
 void Engine::Render()
 {
 	m_currentScene->Render();
-}
-
-g2d::Texture* Engine::LoadTexture(const char* path)
-{
-	std::string resourcePath = m_resourceRoot + path;
-	return m_renderSystem.CreateTextureFromFile(resourcePath.c_str());
 }
 
 bool Engine::CreateRenderSystem(void* nativeWindow)

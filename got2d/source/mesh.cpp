@@ -2,6 +2,11 @@
 
 g2d::Mesh::~Mesh() { }
 
+g2d::Mesh* g2d::Mesh::Create(unsigned int vertexCount, unsigned int indexCount)
+{
+	return new ::Mesh(vertexCount, indexCount);
+}
+
 Mesh::Mesh(unsigned int vertexCount, unsigned int indexCount)
 	: m_vertices(vertexCount), m_indices(indexCount)
 {
@@ -72,7 +77,6 @@ void Mesh::Release()
 {
 	delete this;
 }
-
 
 bool Geometry::Create(unsigned int vertexCount, unsigned int indexCount)
 {

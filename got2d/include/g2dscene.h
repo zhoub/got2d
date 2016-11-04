@@ -38,6 +38,8 @@ namespace g2d
 	class G2DAPI Quad : public Entity
 	{
 	public:
+		static Quad* Create();
+
 		virtual g2d::Entity* SetSize(const gml::vec2& size) = 0;
 		virtual const gml::vec2& GetSize()  const = 0;
 	};
@@ -95,6 +97,5 @@ namespace g2d
 		virtual Camera* CreateCameraNode() = 0;
 		virtual Camera* GetMainCamera() const = 0;
 		virtual Camera* GetCamera(unsigned int index) const = 0;
-		virtual Quad* CreateQuad() = 0;
 	};
 }

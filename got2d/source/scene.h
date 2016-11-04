@@ -89,7 +89,6 @@ public:
 	virtual g2d::Camera* CreateCameraNode() override;
 	virtual g2d::Camera* GetMainCamera() const override { return GetCamera(0); }
 	virtual g2d::Camera* GetCamera(unsigned int index) const override;
-	inline virtual g2d::Quad* CreateQuad() override { return new ::Quad(); }
 
 private:
 	void ResortCameraRenderingOrder();
