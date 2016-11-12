@@ -5,7 +5,7 @@
 #include <gmlaabb.h>
 namespace g2d
 {
-	constexpr const int DEFAULT_VISIBLE_MASK = 0xFFFFFFFF;
+	constexpr int DEFAULT_VISIBLE_MASK = 0xFFFFFFFF;
 
 	class SceneNode;
 	class Scene;
@@ -84,7 +84,7 @@ namespace g2d
 		virtual unsigned int GetVisibleMask() const = 0;
 	};
 
-	template<class T> T* GetEntity(SceneNode* node)
+	template<class T> inline T* GetEntity(SceneNode* node)
 	{
 		Entity* entity = node->GetEntity();
 		return (T::GetClassID() == entity->GetClassID()) ? entity : nullptr;

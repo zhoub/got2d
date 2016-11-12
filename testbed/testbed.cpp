@@ -5,11 +5,15 @@
 #include <g2drender.h>
 #include <g2dscene.h>
 #include <time.h>
+
+#include "hexgon.h"
+
 const std::wstring& Testbed::GetWindowClassName()
 {
 	static const std::wstring name = L"got2d_window_class";
 	return name;
 }
+
 const std::wstring& Testbed::GetWindowTitle()
 {
 	static const std::wstring title = L"got2d test bed";
@@ -32,36 +36,6 @@ bool Testbed::InitApp()
 	if (!g2d::Engine::Initialize(ecfg))
 		return false;
 
-	g2d::Entity* quad = g2d::Quad::Create()->SetSize(gml::vec2(100, 120));
-	auto* node = g2d::GetEngine()->GetCurrentScene()->CreateSceneNode(quad, true)->SetPosition(gml::vec2(100, 100));
-	node->SetVisibleMask(3, true);
-	for (int i = 0; i < 4; i++)
-	{
-		g2d::Entity* quad = g2d::Quad::Create()->SetSize(gml::vec2(100, 120));
-		auto* child = node->CreateSceneNode(quad, true)->SetPosition(gml::vec2(50, 50));
-		child->SetVisibleMask((i % 2) ? 1 : 2, true);
-		node = child;
-	}
-
-	auto camera = g2d::GetEngine()->GetCurrentScene()->GetMainCamera();
-	camera->SetActivity(true);
-
-	camera = g2d::GetEngine()->GetCurrentScene()->CreateCameraNode();
-	if (camera)
-	{
-		camera->SetPosition(gml::vec2(220, 100));
-		camera->SetVisibleMask(2);
-		camera->SetActivity(false);
-	}
-
-	camera = g2d::GetEngine()->GetCurrentScene()->CreateCameraNode();
-	if (camera)
-	{
-		camera->SetPosition(gml::vec2(220, 100));
-		camera->SetRenderingOrder(-1);
-		camera->SetVisibleMask(1);
-		camera->SetActivity(true);
-	}
 	return true;
 }
 
@@ -118,7 +92,40 @@ unsigned long Testbed::GetElapsedTime() const
 
 void Testbed::Start()
 {
+	g2d::Entity* quad = g2d::Quad::Create()->SetSize(gml::vec2(100, 120));
+	auto* node = g2d::GetEngine()->GetCurrentScene()->CreateSceneNode(quad, true)->SetPosition(gml::vec2(100, 100));
+	node->SetVisibleMask(3, true);
+	for (int i = 0; i < 4; i++)
+	{
+		g2d::Entity* quad = g2d::Quad::Create()->SetSize(gml::vec2(100, 120));
+		auto* child = node->CreateSceneNode(quad, true)->SetPosition(gml::vec2(50, 50));
+		child->SetVisibleMask((i % 2) ? 1 : 2, true);
+		node = child;
+	}
 
+	auto camera = g2d::GetEngine()->GetCurrentScene()->GetMainCamera();
+	camera->SetActivity(true);
+
+	camera = g2d::GetEngine()->GetCurrentScene()->CreateCameraNode();
+	if (camera)
+	{
+		camera->SetPosition(gml::vec2(220, 100));
+		camera->SetVisibleMask(2);
+		camera->SetActivity(false);
+	}
+
+	camera = g2d::GetEngine()->GetCurrentScene()->CreateCameraNode();
+	if (camera)
+	{
+		camera->SetPosition(gml::vec2(220, 100));
+		camera->SetRenderingOrder(-1);
+		camera->SetVisibleMask(1);
+		camera->SetActivity(true);
+	}
+
+	Hexgon* hexgonEntity = new Hexgon();
+	auto hexgonNode = g2d::GetEngine()->GetCurrentScene()->CreateSceneNode(hexgonEntity, true);
+	hexgonNode->SetPosition({ 100,100 });
 }
 
 void Testbed::End()
