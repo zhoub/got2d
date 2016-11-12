@@ -18,7 +18,6 @@ public:
 	inline virtual const gml::vec2& GetSize() const override { return m_size; }
 	inline virtual void Release() override { delete this; }
 	virtual gml::aabb2d GetLocalAABB() const override { return m_aabb; }
-	virtual gml::aabb2d GetWorldAABB() const override;
 
 	g2d::Mesh* m_mesh;
 	g2d::Material* m_material;
@@ -38,7 +37,6 @@ public:
 public:
 	inline virtual void Release() override { delete this; }
 	virtual gml::aabb2d GetLocalAABB() const override { return gml::aabb2d(); }
-	virtual gml::aabb2d GetWorldAABB() const override { return gml::aabb2d(); }
 	inline virtual unsigned int GetID() const override { return m_id; }
 	inline virtual void SetActivity(bool activity) override { m_activity = activity; }
 	inline virtual void SetVisibleMask(unsigned int mask) override { m_visibleMask = mask; }

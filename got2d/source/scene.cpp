@@ -239,7 +239,7 @@ g2d::Camera* Scene::CreateCameraNode()
 	if (CreateSceneNode(camera, true) != nullptr)
 	{
 		m_renderingOrderDirty = true;
-		camera->SetID(m_cameras.size());
+		camera->SetID(static_cast<unsigned int>(m_cameras.size()));
 		m_cameras.push_back(camera);
 		return camera;
 	}
