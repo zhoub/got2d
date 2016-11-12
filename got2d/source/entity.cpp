@@ -21,7 +21,7 @@ void g2d::Entity::OnUpdate(unsigned int elpasedTime) {}
 
 void g2d::Entity::OnRender() {}
 
-void g2d::Entity::OnRotate(float radian) {}
+void g2d::Entity::OnRotate(gml::radian r) {}
 
 void g2d::Entity::OnScale(const gml::vec2 newScaler) {}
 
@@ -109,10 +109,15 @@ void Quad::OnRender()
 g2d::Entity* Quad::SetSize(const gml::vec2& size)
 {
 	g2d::GeometryVertex* vertices = m_mesh->GetRawVertices();
-	vertices[0].position.set(-0.5f, -0.5f) *= size;
-	vertices[3].position.set(-0.5f, +0.5f) *= size;
-	vertices[2].position.set(+0.5f, +0.5f) *= size;
-	vertices[1].position.set(+0.5f, -0.5f) *= size;
+	vertices[0].position.set(-0.5f, -0.5f);
+	vertices[3].position.set(-0.5f, +0.5f);
+	vertices[2].position.set(+0.5f, +0.5f);
+	vertices[1].position.set(+0.5f, -0.5f);
+
+	vertices[0].position *= size;
+	vertices[3].position *= size;
+	vertices[2].position *= size;
+	vertices[1].position *= size;
 
 	m_aabb.expand(gml::vec2(-0.5f, -0.5f) * size);
 	m_aabb.expand(gml::vec2(+0.5f, +0.5f) * size);

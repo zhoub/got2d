@@ -14,7 +14,7 @@ SceneNode::SceneNode(g2d::Scene* scene, SceneNode* parent, g2d::Entity* entity, 
 	, m_position(gml::vec2::zero())
 	, m_pivot(gml::vec2::zero())
 	, m_scale(gml::vec2::one())
-	, m_rotationRadian(0)
+	, m_rotation(0)
 	, m_isVisible(true)
 {
 	if (m_entity)
@@ -41,7 +41,7 @@ const gml::mat32& SceneNode::GetLocalMatrix()
 {
 	if (m_matrixLocalDirty)
 	{
-		m_matrixLocal = gml::mat32::trsp(m_position, m_rotationRadian, m_scale, m_pivot);
+		m_matrixLocal = gml::mat32::trsp(m_position, m_rotation, m_scale, m_pivot);
 		m_matrixLocalDirty = false;
 	}
 	return m_matrixLocal;
@@ -167,14 +167,14 @@ g2d::SceneNode* SceneNode::SetPosition(const gml::vec2& position)
 	return this;
 }
 
-g2d::SceneNode* SceneNode::SetRotation(float radian)
+g2d::SceneNode* SceneNode::SetRotation(gml::radian r)
 {
 	if (m_entity)
 	{
-		m_entity->OnRotate(radian);
+		m_entity->OnRotate(r);
 	}
 	SetLocalMatrixDirty();
-	m_rotationRadian = radian;
+	m_rotation = r;
 	return this;
 }
 
