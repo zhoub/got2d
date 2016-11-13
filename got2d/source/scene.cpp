@@ -178,6 +178,15 @@ g2d::SceneNode* SceneNode::SetRotation(gml::radian r)
 	return this;
 }
 
+void SceneNode::SetStatic(bool s)
+{
+	m_isStatic = s;
+	if (m_isStatic)
+	{
+		//reset spartial
+	}
+}
+
 Scene::Scene()
 {
 	m_root = new ::SceneNode(this, nullptr, nullptr, false);

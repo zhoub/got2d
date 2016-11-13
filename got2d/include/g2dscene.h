@@ -74,6 +74,7 @@ namespace g2d
 		virtual SceneNode* SetScale(const gml::vec2& scale) = 0;
 		virtual SceneNode* SetRotation(gml::radian r) = 0;
 		virtual void SetVisible(bool) = 0;
+		virtual void SetStatic(bool) = 0;
 		virtual void SetVisibleMask(unsigned int mask, bool recursive) = 0;
 		virtual const gml::vec2& GetPosition()  const = 0;
 		virtual const gml::vec2& GetPivot() const = 0;
@@ -81,6 +82,7 @@ namespace g2d
 		virtual gml::radian GetRotation() const = 0;
 		virtual Entity* GetEntity() const = 0;
 		virtual bool IsVisible() const = 0;
+		virtual bool IsStatic() const = 0;
 		virtual unsigned int GetVisibleMask() const = 0;
 	};
 

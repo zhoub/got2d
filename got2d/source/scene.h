@@ -23,12 +23,14 @@ public:
 	virtual g2d::SceneNode* SetScale(const gml::vec2& scale) override;
 	virtual g2d::SceneNode* SetRotation(gml::radian r) override;
 	inline virtual void SetVisible(bool visible) override { m_isVisible = visible; }
+	virtual void SetStatic(bool s) override;
 	inline virtual const gml::vec2& GetPosition()  const override { return m_position; }
 	inline virtual const gml::vec2& GetPivot() const override { return m_pivot; }
 	inline virtual const gml::vec2& GetScale() const override { return m_scale; }
 	inline virtual gml::radian GetRotation() const override { return m_rotation; }
 	inline virtual g2d::Entity* GetEntity() const override { return m_entity; }
 	inline virtual bool IsVisible() const override { return m_isVisible; }
+	inline virtual bool IsStatic() const override { return m_isStatic; }
 	inline virtual unsigned int GetVisibleMask() const override { return m_visibleMask; }
 
 private:
@@ -42,6 +44,7 @@ private:
 	unsigned int m_visibleMask = g2d::DEFAULT_VISIBLE_MASK;
 	bool m_autoRelease = false;
 	bool m_isVisible = true;
+	bool m_isStatic = false;
 
 	gml::vec2 m_position;
 	gml::vec2 m_pivot;
@@ -78,12 +81,14 @@ public:
 	inline virtual g2d::SceneNode* SetScale(const gml::vec2& scale) override { m_root->SetScale(scale); return this; }
 	inline virtual g2d::SceneNode* SetRotation(gml::radian r) override { m_root->SetRotation(r); return this; }
 	inline virtual void SetVisible(bool visible) override { m_root->SetVisible(visible); }
+	inline virtual void SetStatic(bool visible) override { m_root->SetStatic(visible); }
 	inline virtual const gml::vec2& GetPosition()  const override { return m_root->GetPosition(); }
 	inline virtual const gml::vec2& GetPivot() const override { return m_root->GetPivot(); }
 	inline virtual const gml::vec2& GetScale() const override { return m_root->GetScale(); }
 	inline virtual gml::radian GetRotation() const override { return m_root->GetRotation(); }
 	inline virtual g2d::Entity* GetEntity() const override { return m_root->GetEntity(); }
 	inline virtual bool IsVisible() const override { return m_root->IsVisible(); }
+	inline virtual bool IsStatic() const override { return m_root->IsStatic(); }
 	inline virtual unsigned int GetVisibleMask() const override { return m_root->GetVisibleMask(); }
 public:
 	virtual g2d::Camera* CreateCameraNode() override;
