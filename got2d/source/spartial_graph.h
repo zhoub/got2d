@@ -6,7 +6,7 @@ class QuadTreeNode
 {
 public:
 	QuadTreeNode(gml::aabb2d bounding);
-	void PushSceneNode(SceneNode* sceneNode);
+	void PushSceneNode(g2d::SceneNode* sceneNode);
 
 private:
 	constexpr static int DIR_LT = 0;
@@ -19,11 +19,11 @@ private:
 	bool m_canCreateChildren = true;
 	void CreateChildren();
 
-	bool TryPushToTree(SceneNode* node);
+	bool TryPushToTree(const gml::aabb2d& nodeAABB, g2d::SceneNode* node);
 	QuadTreeNode* GetDirNode(int id);
 
 
 	QuadTreeNode* m_directionNodes[NUM_DIR];
-	std::vector<SceneNode*> m_dynamicNodes;
+	std::vector<g2d::SceneNode*> m_dynamicNodes;
 	gml::aabb2d m_bounding;
 };

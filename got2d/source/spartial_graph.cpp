@@ -9,11 +9,13 @@ QuadTreeNode::QuadTreeNode(gml::aabb2d bounding)
 	}
 }
 
-void QuadTreeNode::PushSceneNode(SceneNode* sceneNode)
+void QuadTreeNode::PushSceneNode(g2d::SceneNode* sceneNode)
 {
 	if (sceneNode->IsStatic())
 	{
-		if (!TryPushToTree(sceneNode))
+		gml::aabb2d nodeAABB = sceneNode->GetEntity()->GetWorldAABB();
+
+		if (!TryPushToTree(nodeAABB, sceneNode))
 		{
 			m_dynamicNodes.push_back(sceneNode);
 		}
@@ -24,12 +26,11 @@ void QuadTreeNode::PushSceneNode(SceneNode* sceneNode)
 	}
 }
 
-bool QuadTreeNode::TryPushToTree(SceneNode* sceneNode)
+bool QuadTreeNode::TryPushToTree(const gml::aabb2d& nodeAABB, g2d::SceneNode* sceneNode)
 {
 	CreateChildren();
 	if (m_hasChildren)
 	{
-		gml::aabb2d nodeAABB = sceneNode->GetEntity()->GetWorldAABB();
 		auto intersection = m_bounding.is_intersect(nodeAABB);
 		if (intersection == gml::it_contain)
 		{
@@ -38,9 +39,9 @@ bool QuadTreeNode::TryPushToTree(SceneNode* sceneNode)
 			for (int i = 0; i < NUM_DIR; i++)
 			{
 				QuadTreeNode* dirNode = GetDirNode(i);
-				if (dirNode == nullptr)
+				if (dirNode != nullptr)
 				{
-					if (dirNode->TryPushToTree(sceneNode))
+					if (dirNode->TryPushToTree(nodeAABB, sceneNode))
 					{
 						pushed = true;
 						break;
@@ -93,7 +94,7 @@ void QuadTreeNode::CreateChildren()
 		m_hasChildren = true;
 		gml::aabb2d childBound;
 		gml::vec2 min_bound, max_bound;
-		gml::vec2 halfExtend = m_bounding.extend() * 0.5f;
+		gml::vec2 halfExtend = m_bounding.extend();
 		//4 quad
 		if (widthEnough && heightEnough)
 		{

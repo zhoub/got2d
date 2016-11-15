@@ -59,6 +59,8 @@ private:
 	std::vector<::SceneNode*> m_children;
 };
 
+
+class QuadTreeNode;
 class Scene : public g2d::Scene
 {
 public:
@@ -72,7 +74,7 @@ public:
 
 public:
 	inline virtual g2d::Scene* GetScene() const override { return m_root->GetScene(); }
-	inline virtual g2d::SceneNode* CreateSceneNode(g2d::Entity* e, bool autoRelease) override { return m_root->CreateSceneNode(e, autoRelease); }
+	virtual g2d::SceneNode* CreateSceneNode(g2d::Entity* e, bool autoRelease) override; 
 	inline virtual const gml::mat32& GetLocalMatrix() override { return m_root->GetLocalMatrix(); }
 	inline virtual const gml::mat32& GetWorldMatrix() override { return m_root->GetWorldMatrix(); }
 	inline virtual void SetVisibleMask(unsigned int mask, bool recursive) override { m_root->SetVisibleMask(mask, recursive); }
@@ -99,6 +101,7 @@ private:
 	void ResortCameraRenderingOrder();
 
 	::SceneNode* m_root;
+	QuadTreeNode* m_spartialRoot;
 	std::vector<g2d::Camera*> m_cameras;
 	std::vector<g2d::Camera*> m_renderingOrder;
 	bool m_renderingOrderDirty;

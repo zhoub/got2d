@@ -1,4 +1,5 @@
 #include "scene.h"
+#include "spartial_graph.h"
 #include <algorithm>
 
 g2d::SceneNode::~SceneNode() { }
@@ -190,12 +191,19 @@ void SceneNode::SetStatic(bool s)
 Scene::Scene()
 {
 	m_root = new ::SceneNode(this, nullptr, nullptr, false);
+	constexpr const float SCENE_SIZE = 20000;
+	gml::aabb2d bounding(
+		gml::vec2(-SCENE_SIZE, -SCENE_SIZE),
+		gml::vec2(SCENE_SIZE, SCENE_SIZE)
+		);
+	m_spartialRoot = new QuadTreeNode(bounding);
 	CreateCameraNode();
 }
 
 Scene::~Scene()
 {
 	delete m_root;
+	delete m_spartialRoot;
 }
 
 void Scene::SetRenderingOrderDirty()
@@ -265,4 +273,13 @@ g2d::Camera* Scene::GetCamera(unsigned int index) const
 	if (index >= m_cameras.size())
 		return nullptr;
 	return m_cameras[index];
+}
+
+g2d::SceneNode* Scene::CreateSceneNode(g2d::Entity* e, bool autoRelease)
+{
+	auto node = m_root->CreateSceneNode(e, autoRelease);
+	// for test
+	node->SetStatic(true);
+	m_spartialRoot->PushSceneNode(node);
+	return node;
 }
