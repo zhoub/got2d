@@ -5,7 +5,7 @@
 #include <gmlaabb.h>
 namespace g2d
 {
-	constexpr const int DEFAULT_VISIBLE_MASK = 0xFFFFFFFF;
+	constexpr int DEFAULT_VISIBLE_MASK = 0xFFFFFFFF;
 
 	class SceneNode;
 	class Scene;
@@ -15,7 +15,6 @@ namespace g2d
 		DECL_CLASSID;
 		virtual void Release() = 0;
 		virtual gml::aabb2d GetLocalAABB() const = 0;
-		virtual gml::aabb2d GetWorldAABB() const = 0;
 	public:
 		virtual ~Entity();
 		virtual void OnInitial();
@@ -26,13 +25,14 @@ namespace g2d
 		virtual void OnMove(const gml::vec2 newPos);
 		virtual void OnUpdateMatrixChanged();
 
+		virtual gml::aabb2d GetWorldAABB() const;
+
 	public:
-		Entity();
 		void SetSceneNode(g2d::SceneNode* node);
 		unsigned int GetVisibleMask() const;
 		SceneNode* GetSceneNode() const;
 	private:
-		SceneNode* m_sceneNode;
+		SceneNode* m_sceneNode = nullptr;
 	};
 
 	class G2DAPI Quad : public Entity
@@ -84,7 +84,7 @@ namespace g2d
 		virtual unsigned int GetVisibleMask() const = 0;
 	};
 
-	template<class T> T* GetEntity(SceneNode* node)
+	template<class T> inline T* GetEntity(SceneNode* node)
 	{
 		Entity* entity = node->GetEntity();
 		return (T::GetClassID() == entity->GetClassID()) ? entity : nullptr;

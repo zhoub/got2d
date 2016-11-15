@@ -7,12 +7,6 @@ g2d::Quad* g2d::Quad::Create()
 	return new ::Quad();
 }
 
-g2d::Entity::Entity()
-	: m_sceneNode(nullptr)
-{
-
-}
-
 g2d::Entity::~Entity() {}
 
 void g2d::Entity::OnInitial() {}
@@ -28,6 +22,15 @@ void g2d::Entity::OnScale(const gml::vec2 newScaler) {}
 void g2d::Entity::OnMove(const gml::vec2 newPos) {}
 
 void g2d::Entity::OnUpdateMatrixChanged() {}
+
+gml::aabb2d g2d::Entity::GetWorldAABB() const
+{
+	if (GetLocalAABB().is_empty())
+		return GetLocalAABB();
+
+	auto matrixWorld = GetSceneNode()->GetWorldMatrix();
+	return gml::transform(matrixWorld, GetLocalAABB());
+}
 
 void g2d::Entity::SetSceneNode(g2d::SceneNode* node)
 {
@@ -122,15 +125,6 @@ g2d::Entity* Quad::SetSize(const gml::vec2& size)
 	m_aabb.expand(gml::vec2(-0.5f, -0.5f) * size);
 	m_aabb.expand(gml::vec2(+0.5f, +0.5f) * size);
 	return this;
-}
-
-gml::aabb2d Quad::GetWorldAABB() const
-{
-	if (m_aabb.is_empty())
-		return m_aabb;
-
-	auto matrixWorld = GetSceneNode()->GetWorldMatrix();
-	return gml::transform(matrixWorld, m_aabb);
 }
 
 void Camera::OnUpdate(unsigned int elapsedTime)

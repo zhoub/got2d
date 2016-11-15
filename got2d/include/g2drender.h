@@ -7,7 +7,7 @@
 
 namespace g2d
 {
-	enum BlendMode
+	enum G2DAPI BlendMode
 	{
 		BLEND_NONE,
 		BLEND_NORMAL,
@@ -22,7 +22,7 @@ namespace g2d
 		gml::color4 vtxcolor;
 	};
 
-	class Mesh
+	class G2DAPI Mesh
 	{
 	public:
 		static Mesh* Create(unsigned int vertexCount, unsigned int indexCount);
@@ -37,7 +37,7 @@ namespace g2d
 		virtual void Release() = 0;
 	};
 
-	class Texture
+	class G2DAPI Texture
 	{
 	public:
 		static Texture* LoadFromFile(const char* path);
@@ -51,7 +51,7 @@ namespace g2d
 	//keep it simple and stupid.
 	//there is no other more easy way to define param setting interface elegantly
 	//TODO: make it more elegant.
-	class Pass
+	class G2DAPI Pass
 	{
 	public:
 		virtual ~Pass();
@@ -72,7 +72,7 @@ namespace g2d
 		virtual void Release() = 0;
 	};
 
-	class Material
+	class G2DAPI Material
 	{
 	public:
 		static Material* CreateColorTexture();
@@ -87,7 +87,7 @@ namespace g2d
 		virtual void Release() = 0;
 	};
 
-	enum RenderOrder
+	enum G2DAPI RenderOrder
 	{
 		RORDER_PREZ = 0,
 		RORDER_BACKGROUND = 0x4000,
@@ -95,7 +95,7 @@ namespace g2d
 		RORDER_FOREGROUND = RORDER_BACKGROUND + 0x400,
 		RORDER_OVERLAY = 0x8000,
 	};
-	class RenderSystem
+	class G2DAPI RenderSystem
 	{
 	public:
 		virtual ~RenderSystem();
