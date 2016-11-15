@@ -18,7 +18,13 @@ public:
 
 			//indices;
 			{
-				unsigned int indices[] = { 0, 1, 2, 0, 2, 3, 0,3,4,0,4,5,0,5,6,0,6,1 };
+				unsigned int indices[] = {
+					0, 1, 2,
+					0, 2, 3,
+					0, 3, 4,
+					0, 4, 5,
+					0, 5, 6,
+					0, 6, 1 };
 				auto idx = m_mesh->GetRawIndices();
 				for (int i = 0; i < m_mesh->GetIndexCount(); i++)
 				{
@@ -37,7 +43,7 @@ public:
 				{
 					gml::vec2 v(0, 1);
 					float d = (i - 1) * 360.0f / 6;
-					v = gml::mat22::rotate(gml::degree(d)) *  v;
+					v = gml::mat22::rotate((gml::radian)gml::degree(d)) *  v;
 					vertices[i].position = v * 100;
 					vertices[i].texcoord.set(0, 0);
 

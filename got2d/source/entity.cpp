@@ -1,6 +1,6 @@
 #include "scene.h"
 #include <g2dengine.h>
-#include <gmlconv.h>
+#include <gmlconversion.h>
 
 g2d::Quad* g2d::Quad::Create()
 {

@@ -198,12 +198,12 @@ bool RenderSystem::Create(void* nativeWindow)
 
 		D3D11_BUFFER_DESC bufferDesc =
 		{
-			sizeof(gml::mat32) + sizeof(gml::mat44),	//UINT ByteWidth;
-			D3D11_USAGE_DYNAMIC,						//D3D11_USAGE Usage;
-			D3D11_BIND_CONSTANT_BUFFER,					//UINT BindFlags;
-			D3D11_CPU_ACCESS_WRITE,						//UINT CPUAccessFlags;
-			0,											//UINT MiscFlags;
-			0											//UINT StructureByteStride;
+			sizeof(gml::vec4) * 6,			//UINT ByteWidth;
+			D3D11_USAGE_DYNAMIC,			//D3D11_USAGE Usage;
+			D3D11_BIND_CONSTANT_BUFFER,		//UINT BindFlags;
+			D3D11_CPU_ACCESS_WRITE,			//UINT CPUAccessFlags;
+			0,								//UINT MiscFlags;
+			0								//UINT StructureByteStride;
 		};
 
 		hr = m_d3dDevice->CreateBuffer(&bufferDesc, NULL, &m_sceneConstBuffer);
@@ -355,10 +355,11 @@ void RenderSystem::UpdateSceneConstBuffer()
 		unsigned char*  dstBuffer = reinterpret_cast<unsigned char*>(mappedData.pData);
 		if (m_matrixViewDirty)
 		{
-			memcpy(dstBuffer, m_matView.m, sizeof(gml::mat32));
+			memcpy(dstBuffer, &(m_matView.row[0]), sizeof(gml::vec3));
+			memcpy(dstBuffer + sizeof(gml::vec4), &(m_matView.row[1]), sizeof(gml::vec3));
 			m_matrixViewDirty = false;
 		}
-		memcpy(dstBuffer + sizeof(gml::mat32), GetProjectionMatrix().m, sizeof(gml::mat44));
+		memcpy(dstBuffer + sizeof(gml::vec4) * 2, GetProjectionMatrix().m, sizeof(gml::mat44));
 		m_d3dContext->Unmap(m_sceneConstBuffer, 0);
 	}
 }

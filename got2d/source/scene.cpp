@@ -10,7 +10,7 @@ SceneNode::SceneNode(g2d::Scene* scene, SceneNode* parent, g2d::Entity* entity, 
 	, m_parent(parent)
 	, m_entity(entity)
 	, m_autoRelease(autoRelease)
-	, m_matrixLocal(gml::mat32::I())
+	, m_matrixLocal(gml::mat32::identity())
 	, m_position(gml::vec2::zero())
 	, m_pivot(gml::vec2::zero())
 	, m_scale(gml::vec2::one())
