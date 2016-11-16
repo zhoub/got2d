@@ -5,8 +5,11 @@
 class QuadTreeNode
 {
 public:
+	constexpr static float MIN_SIZE = 100.0f;
+
 	QuadTreeNode(gml::aabb2d bounding);
-	void PushSceneNode(g2d::SceneNode* sceneNode);
+	void Add(SceneNode* sceneNode);
+	void Remove(SceneNode* sceneNode);
 
 private:
 	constexpr static int DIR_LT = 0;
@@ -14,16 +17,16 @@ private:
 	constexpr static int DIR_RT = 2;
 	constexpr static int DIR_RD = 3;
 	constexpr static int NUM_DIR = 4;
-	constexpr static float MIN_SIZE = 100.0f;
+	
 	bool m_hasChildren = false;
 	bool m_canCreateChildren = true;
 	void CreateChildren();
 
-	bool TryPushToTree(const gml::aabb2d& nodeAABB, g2d::SceneNode* node);
+	bool TryAddRecursive(const gml::aabb2d& nodeAABB, SceneNode* node);
 	QuadTreeNode* GetDirNode(int id);
 
 
 	QuadTreeNode* m_directionNodes[NUM_DIR];
-	std::vector<g2d::SceneNode*> m_dynamicNodes;
+	std::vector<SceneNode*> m_dynamicNodes;
 	gml::aabb2d m_bounding;
 };

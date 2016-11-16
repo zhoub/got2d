@@ -1,4 +1,4 @@
-#include "spartial_graph.h"
+#include "spatial_graph.h"
 #include <assert.h>
 QuadTreeNode::QuadTreeNode(gml::aabb2d bounding)
 	: m_bounding(bounding)
@@ -9,24 +9,39 @@ QuadTreeNode::QuadTreeNode(gml::aabb2d bounding)
 	}
 }
 
-void QuadTreeNode::PushSceneNode(g2d::SceneNode* sceneNode)
+void QuadTreeNode::Add(SceneNode* sceneNode)
 {
+	bool needPush = false;
 	if (sceneNode->IsStatic())
 	{
 		gml::aabb2d nodeAABB = sceneNode->GetEntity()->GetWorldAABB();
-
-		if (!TryPushToTree(nodeAABB, sceneNode))
-		{
-			m_dynamicNodes.push_back(sceneNode);
-		}
+		needPush = !TryAddRecursive(nodeAABB, sceneNode);
 	}
 	else
 	{
+		needPush = true;
+	}
+
+	if (needPush)
+	{
+		sceneNode->SetSpatialNode(this);
 		m_dynamicNodes.push_back(sceneNode);
 	}
 }
 
-bool QuadTreeNode::TryPushToTree(const gml::aabb2d& nodeAABB, g2d::SceneNode* sceneNode)
+void QuadTreeNode::Remove(SceneNode* sceneNode)
+{
+	for (auto it = m_dynamicNodes.begin(), end = m_dynamicNodes.end(); it != end; it++)
+	{
+		if (*it == sceneNode)
+		{
+			m_dynamicNodes.erase(it);
+			break;
+		}
+	}
+}
+
+bool QuadTreeNode::TryAddRecursive(const gml::aabb2d& nodeAABB, SceneNode* sceneNode)
 {
 	CreateChildren();
 	if (m_hasChildren)
@@ -41,7 +56,7 @@ bool QuadTreeNode::TryPushToTree(const gml::aabb2d& nodeAABB, g2d::SceneNode* sc
 				QuadTreeNode* dirNode = GetDirNode(i);
 				if (dirNode != nullptr)
 				{
-					if (dirNode->TryPushToTree(nodeAABB, sceneNode))
+					if (dirNode->TryAddRecursive(nodeAABB, sceneNode))
 					{
 						pushed = true;
 						break;
@@ -51,6 +66,7 @@ bool QuadTreeNode::TryPushToTree(const gml::aabb2d& nodeAABB, g2d::SceneNode* sc
 
 			if (!pushed)
 			{
+				sceneNode->SetSpatialNode(this);
 				m_dynamicNodes.push_back(sceneNode);
 			}
 			return true;

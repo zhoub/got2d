@@ -45,7 +45,7 @@
     <ClInclude Include="source\entity.h">
       <Filter>源文件\scene</Filter>
     </ClInclude>
-    <ClInclude Include="source\spartial_graph.h">
+    <ClInclude Include="source\spatial_graph.h">
       <Filter>源文件\scene</Filter>
     </ClInclude>
   </ItemGroup>
@@ -71,7 +71,7 @@
     <ClCompile Include="source\entity.cpp">
       <Filter>源文件\scene</Filter>
     </ClCompile>
-    <ClCompile Include="source\spartial_graph.cpp">
+    <ClCompile Include="source\spatial_graph.cpp">
       <Filter>源文件\scene</Filter>
     </ClCompile>
   </ItemGroup>

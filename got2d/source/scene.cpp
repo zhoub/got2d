@@ -1,12 +1,13 @@
 #include "scene.h"
-#include "spartial_graph.h"
+#include "spatial_graph.h"
 #include <algorithm>
+#include <gmlconversion.h>
 
 g2d::SceneNode::~SceneNode() { }
 
 g2d::Scene::~Scene() { }
 
-SceneNode::SceneNode(g2d::Scene* scene, SceneNode* parent, g2d::Entity* entity, bool autoRelease)
+SceneNode::SceneNode(::Scene* scene, SceneNode* parent, g2d::Entity* entity, bool autoRelease)
 	: m_scene(scene)
 	, m_parent(parent)
 	, m_entity(entity)
@@ -27,11 +28,18 @@ SceneNode::SceneNode(g2d::Scene* scene, SceneNode* parent, g2d::Entity* entity, 
 
 SceneNode::~SceneNode()
 {
+	if (m_spatialNode)
+	{
+		m_spatialNode->Remove(this);
+		m_spatialNode = nullptr;
+	}
+
 	for (auto& child : m_children)
 	{
 		delete child;
 	}
 	m_children.clear();
+
 	if (m_autoRelease && m_entity)
 	{
 		m_entity->Release();
@@ -92,6 +100,16 @@ void SceneNode::SetLocalMatrixDirty()
 	SetWorldMatrixDirty();
 }
 
+void SceneNode::AdjustSpatial()
+{
+	if (m_spatialNode != nullptr)
+	{
+		m_spatialNode->Remove(this);
+		m_spatialNode = nullptr;
+		m_scene->GetSpatialRoot()->Add(this);
+	}
+}
+
 void SceneNode::Update(unsigned int elpasedTime)
 {
 	if (m_entity)
@@ -99,6 +117,12 @@ void SceneNode::Update(unsigned int elpasedTime)
 		m_entity->OnUpdate(elpasedTime);
 		if (m_matrixDirtyUpdate)
 		{
+			//现在阶段只需要在test visible之前处理好就行.
+			//也就是 Scene::Render之前
+			if (IsStatic())
+			{
+				AdjustSpatial();
+			}
 			m_entity->OnUpdateMatrixChanged();
 			m_matrixDirtyUpdate = false;
 		}
@@ -109,21 +133,41 @@ void SceneNode::Update(unsigned int elpasedTime)
 	}
 }
 
-void SceneNode::Render(g2d::Camera* m_camera)
+void SceneNode::Render(g2d::Camera* camera)
+{
+	RenderSingle(camera);
+	for (auto& child : m_children)
+	{
+		child->Render(camera);
+	}
+}
+void SceneNode::RenderSingle(g2d::Camera* camera)
 {
 	if (!IsVisible())
 		return;
 	if (m_entity)
 	{
-		if (!m_camera || m_camera->TestVisible(m_entity))
+		if (!camera || camera->TestVisible(m_entity))
 		{
 			m_entity->OnRender();
 		}
 	}
-	for (auto& child : m_children)
+}
+
+void SceneNode::SetSpatialNode(QuadTreeNode* node)
+{
+	assert(m_spatialNode == nullptr);
+
+	if (m_spatialNode)
 	{
-		child->Render(m_camera);
+		m_spatialNode->Remove(this);
 	}
+	m_spatialNode = node;
+}
+
+g2d::Scene* SceneNode::GetScene() const
+{
+	return m_scene;
 }
 
 g2d::SceneNode* SceneNode::CreateSceneNode(g2d::Entity* e, bool autoRelease)
@@ -133,7 +177,7 @@ g2d::SceneNode* SceneNode::CreateSceneNode(g2d::Entity* e, bool autoRelease)
 		return nullptr;
 	}
 
-	auto rst = new ::SceneNode(GetScene(), this, e, autoRelease);
+	auto rst = new ::SceneNode(m_scene, this, e, autoRelease);
 	m_children.push_back(rst);
 	return rst;
 }
@@ -181,29 +225,36 @@ g2d::SceneNode* SceneNode::SetRotation(gml::radian r)
 
 void SceneNode::SetStatic(bool s)
 {
-	m_isStatic = s;
-	if (m_isStatic)
+	if (m_isStatic != s)
 	{
-		//reset spartial
+		m_isStatic = s;
+		AdjustSpatial();
 	}
 }
+
+template<class T>
+constexpr T exp(T n, unsigned int iexp)
+{
+	return iexp == 0 ? T(1) : (iexp == 1 ? n : exp(n, iexp - 1) * n);
+}
+
 
 Scene::Scene()
 {
 	m_root = new ::SceneNode(this, nullptr, nullptr, false);
-	constexpr const float SCENE_SIZE = 20000;
+	constexpr const float SCENE_SIZE = QuadTreeNode::MIN_SIZE * exp(2.0f, 8);
 	gml::aabb2d bounding(
 		gml::vec2(-SCENE_SIZE, -SCENE_SIZE),
 		gml::vec2(SCENE_SIZE, SCENE_SIZE)
 		);
-	m_spartialRoot = new QuadTreeNode(bounding);
+	m_spatialRoot = new QuadTreeNode(bounding);
 	CreateCameraNode();
 }
 
 Scene::~Scene()
 {
 	delete m_root;
-	delete m_spartialRoot;
+	delete m_spatialRoot;
 }
 
 void Scene::SetRenderingOrderDirty()
@@ -278,8 +329,8 @@ g2d::Camera* Scene::GetCamera(unsigned int index) const
 g2d::SceneNode* Scene::CreateSceneNode(g2d::Entity* e, bool autoRelease)
 {
 	auto node = m_root->CreateSceneNode(e, autoRelease);
-	// for test
-	node->SetStatic(true);
-	m_spartialRoot->PushSceneNode(node);
+	auto nodeImpl = dynamic_cast<::SceneNode*>(node);
+	assert(nodeImpl != nullptr);
+	m_spatialRoot->Add(nodeImpl);
 	return node;
 }
