@@ -13,9 +13,9 @@ public:
 	SceneNode(::Scene* scene, SceneNode* parent, g2d::Entity* entity, bool autoRelease);
 	virtual ~SceneNode();
 	void Update(unsigned int elpasedTime);
-	void Render(g2d::Camera* m_camera);
-	void RenderSingle(g2d::Camera* m_camera);
-	void SetSpatialNode(QuadTreeNode* node);	
+	void Render(g2d::Camera* camera);
+	void RenderSingle(g2d::Camera* camera);
+	void SetSpatialNode(QuadTreeNode* node);
 
 public:
 	virtual g2d::Scene* GetScene() const override;

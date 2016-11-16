@@ -8,14 +8,24 @@ QuadTreeNode::QuadTreeNode(gml::aabb2d bounding)
 		dirNode = nullptr;
 	}
 }
+QuadTreeNode::~QuadTreeNode()
+{
+	for (auto& dirNode : m_directionNodes)
+	{
+		if (dirNode)
+		{
+			delete dirNode;
+		}
+	}
+}
 
-void QuadTreeNode::Add(SceneNode* sceneNode)
+void QuadTreeNode::Add(g2d::Entity* entity)
 {
 	bool needPush = false;
-	if (sceneNode->IsStatic())
+	if (entity->GetSceneNode()->IsStatic())
 	{
-		gml::aabb2d nodeAABB = sceneNode->GetEntity()->GetWorldAABB();
-		needPush = !TryAddRecursive(nodeAABB, sceneNode);
+		gml::aabb2d nodeAABB = entity->GetWorldAABB();
+		needPush = !TryAddRecursive(nodeAABB, entity);
 	}
 	else
 	{
@@ -24,24 +34,25 @@ void QuadTreeNode::Add(SceneNode* sceneNode)
 
 	if (needPush)
 	{
-		sceneNode->SetSpatialNode(this);
-		m_dynamicNodes.push_back(sceneNode);
+		::SceneNode* nodeImpl = dynamic_cast<::SceneNode*>(entity->GetSceneNode());
+		nodeImpl->SetSpatialNode(this);
+		m_dynamicEntities.push_back(entity);
 	}
 }
 
-void QuadTreeNode::Remove(SceneNode* sceneNode)
+void QuadTreeNode::Remove(g2d::Entity* entity)
 {
-	for (auto it = m_dynamicNodes.begin(), end = m_dynamicNodes.end(); it != end; it++)
+	for (auto it = m_dynamicEntities.begin(), end = m_dynamicEntities.end(); it != end; it++)
 	{
-		if (*it == sceneNode)
+		if (*it == entity)
 		{
-			m_dynamicNodes.erase(it);
+			m_dynamicEntities.erase(it);
 			break;
 		}
 	}
 }
 
-bool QuadTreeNode::TryAddRecursive(const gml::aabb2d& nodeAABB, SceneNode* sceneNode)
+bool QuadTreeNode::TryAddRecursive(const gml::aabb2d& nodeAABB, g2d::Entity* entity)
 {
 	CreateChildren();
 	if (m_hasChildren)
@@ -56,7 +67,7 @@ bool QuadTreeNode::TryAddRecursive(const gml::aabb2d& nodeAABB, SceneNode* scene
 				QuadTreeNode* dirNode = GetDirNode(i);
 				if (dirNode != nullptr)
 				{
-					if (dirNode->TryAddRecursive(nodeAABB, sceneNode))
+					if (dirNode->TryAddRecursive(nodeAABB, entity))
 					{
 						pushed = true;
 						break;
@@ -66,8 +77,9 @@ bool QuadTreeNode::TryAddRecursive(const gml::aabb2d& nodeAABB, SceneNode* scene
 
 			if (!pushed)
 			{
-				sceneNode->SetSpatialNode(this);
-				m_dynamicNodes.push_back(sceneNode);
+				::SceneNode* nodeImpl = dynamic_cast<::SceneNode*>(entity->GetSceneNode());
+				nodeImpl->SetSpatialNode(this);
+				m_dynamicEntities.push_back(entity);
 			}
 			return true;
 		}
@@ -163,5 +175,26 @@ void QuadTreeNode::CreateChildren()
 			m_directionNodes[DIR_LD] = new QuadTreeNode(childBound);
 		}
 	}
+}
 
+void QuadTreeNode::FindVisible(g2d::Camera* camera, std::vector<g2d::Entity*>& visibleEntities)
+{
+	if (camera->TestVisible(m_bounding))
+	{
+		for (auto& entity : m_dynamicEntities)
+		{
+			if (entity->GetSceneNode()->IsVisible() && camera->TestVisible(entity))
+			{
+				visibleEntities.push_back(entity);
+			}
+		}
+
+		for (auto& child : m_directionNodes)
+		{
+			if (child != nullptr)
+			{
+				child->FindVisible(camera, visibleEntities);
+			}
+		}
+	}
 }

@@ -7,8 +7,10 @@ namespace g2d
 {
 	constexpr int DEFAULT_VISIBLE_MASK = 0xFFFFFFFF;
 
+	class Camera;
 	class SceneNode;
 	class Scene;
+
 	class G2DAPI Entity
 	{
 	public:
@@ -26,6 +28,7 @@ namespace g2d
 		virtual void OnUpdateMatrixChanged();
 
 		virtual gml::aabb2d GetWorldAABB() const;
+		virtual bool TestVisible(Camera* camera);
 
 	public:
 		void SetSceneNode(g2d::SceneNode* node);
@@ -55,6 +58,7 @@ namespace g2d
 		virtual void SetVisibleMask(unsigned int mask) = 0;
 		virtual void SetActivity(bool activity) = 0;
 		virtual const gml::mat32& GetViewMatrix() const = 0;
+		virtual bool TestVisible(gml::aabb2d bounding) = 0;
 		virtual bool TestVisible(g2d::Entity* entity) = 0;
 		virtual unsigned int GetVisibleMask() const = 0;
 		virtual int GetRenderingOrder() const = 0;

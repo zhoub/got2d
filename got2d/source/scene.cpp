@@ -30,7 +30,7 @@ SceneNode::~SceneNode()
 {
 	if (m_spatialNode)
 	{
-		m_spatialNode->Remove(this);
+		m_spatialNode->Remove(m_entity);
 		m_spatialNode = nullptr;
 	}
 
@@ -104,9 +104,9 @@ void SceneNode::AdjustSpatial()
 {
 	if (m_spatialNode != nullptr)
 	{
-		m_spatialNode->Remove(this);
+		m_spatialNode->Remove(m_entity);
 		m_spatialNode = nullptr;
-		m_scene->GetSpatialRoot()->Add(this);
+		m_scene->GetSpatialRoot()->Add(m_entity);
 	}
 }
 
@@ -143,14 +143,9 @@ void SceneNode::Render(g2d::Camera* camera)
 }
 void SceneNode::RenderSingle(g2d::Camera* camera)
 {
-	if (!IsVisible())
-		return;
-	if (m_entity)
+	if (m_entity && m_entity->TestVisible(camera))
 	{
-		if (!camera || camera->TestVisible(m_entity))
-		{
-			m_entity->OnRender();
-		}
+		m_entity->OnRender();
 	}
 }
 
@@ -160,7 +155,7 @@ void SceneNode::SetSpatialNode(QuadTreeNode* node)
 
 	if (m_spatialNode)
 	{
-		m_spatialNode->Remove(this);
+		m_spatialNode->Remove(m_entity);
 	}
 	m_spatialNode = node;
 }
@@ -238,7 +233,6 @@ constexpr T exp(T n, unsigned int iexp)
 	return iexp == 0 ? T(1) : (iexp == 1 ? n : exp(n, iexp - 1) * n);
 }
 
-
 Scene::Scene()
 {
 	m_root = new ::SceneNode(this, nullptr, nullptr, false);
@@ -295,7 +289,20 @@ void Scene::Render()
 		if (!camera->IsActivity())
 			continue;
 		GetRenderSystem()->SetViewMatrix(camera->GetViewMatrix());
-		m_root->Render(camera);
+		if (0)
+		{
+			m_root->Render(camera);
+		}
+		else
+		{
+			std::vector<g2d::Entity*> visibleEntities;
+			m_spatialRoot->FindVisible(camera, visibleEntities);
+			//sort visibleEntities by render order
+			for (auto& entity : visibleEntities)
+			{
+				entity->OnRender();
+			}
+		}
 		GetRenderSystem()->FlushRequests();
 	}
 
@@ -329,8 +336,6 @@ g2d::Camera* Scene::GetCamera(unsigned int index) const
 g2d::SceneNode* Scene::CreateSceneNode(g2d::Entity* e, bool autoRelease)
 {
 	auto node = m_root->CreateSceneNode(e, autoRelease);
-	auto nodeImpl = dynamic_cast<::SceneNode*>(node);
-	assert(nodeImpl != nullptr);
-	m_spatialRoot->Add(nodeImpl);
+	m_spatialRoot->Add(e);
 	return node;
 }
