@@ -48,14 +48,6 @@ unsigned int g2d::Entity::GetVisibleMask() const
 
 g2d::SceneNode* g2d::Entity::GetSceneNode() const { return m_sceneNode; }
 
-bool g2d::Entity::TestVisible(g2d::Camera* camera)
-{
-	if (!GetSceneNode()->IsVisible())
-		return false;
-
-	return camera && camera->TestVisible(this);
-}
-
 Quad::Quad()
 {
 	unsigned int indices[] = { 0, 1, 2, 0, 2, 3 };

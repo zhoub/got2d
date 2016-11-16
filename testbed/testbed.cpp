@@ -128,6 +128,7 @@ void Testbed::Start()
 			camera->SetActivity(false);
 		}
 	}
+
 	Hexgon* hexgonEntity = new Hexgon();
 	auto hexgonNode = g2d::GetEngine()->GetCurrentScene()->CreateSceneNode(hexgonEntity, true);
 	hexgonNode->SetPosition({ 100,100 });

@@ -8,7 +8,7 @@ class QuadTreeNode
 public:
 	constexpr static float MIN_SIZE = 100.0f;
 
-	QuadTreeNode(gml::aabb2d bounding);
+	QuadTreeNode(const gml::vec2& center, float gridSize);
 	~QuadTreeNode();
 	void Add(g2d::Entity* sceneNode);
 	void Remove(g2d::Entity* sceneNode);
@@ -20,10 +20,7 @@ private:
 	constexpr static int DIR_RT = 2;
 	constexpr static int DIR_RD = 3;
 	constexpr static int NUM_DIR = 4;
-
-	bool m_hasChildren = false;
 	bool m_canCreateChildren = true;
-	void CreateChildren();
 
 	bool TryAddRecursive(const gml::aabb2d& nodeAABB, g2d::Entity* node);
 	QuadTreeNode* GetDirNode(int id);

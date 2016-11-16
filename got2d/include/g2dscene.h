@@ -28,7 +28,6 @@ namespace g2d
 		virtual void OnUpdateMatrixChanged();
 
 		virtual gml::aabb2d GetWorldAABB() const;
-		virtual bool TestVisible(Camera* camera);
 
 	public:
 		void SetSceneNode(g2d::SceneNode* node);

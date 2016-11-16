@@ -106,8 +106,8 @@ void SceneNode::AdjustSpatial()
 	{
 		m_spatialNode->Remove(m_entity);
 		m_spatialNode = nullptr;
-		m_scene->GetSpatialRoot()->Add(m_entity);
 	}
+	m_scene->GetSpatialRoot()->Add(m_entity);
 }
 
 void SceneNode::Update(unsigned int elpasedTime)
@@ -143,9 +143,12 @@ void SceneNode::Render(g2d::Camera* camera)
 }
 void SceneNode::RenderSingle(g2d::Camera* camera)
 {
-	if (m_entity && m_entity->TestVisible(camera))
+	if (IsVisible())
 	{
-		m_entity->OnRender();
+		if (m_entity && camera->TestVisible(m_entity))
+		{
+			m_entity->OnRender();
+		}
 	}
 }
 
@@ -174,6 +177,10 @@ g2d::SceneNode* SceneNode::CreateSceneNode(g2d::Entity* e, bool autoRelease)
 
 	auto rst = new ::SceneNode(m_scene, this, e, autoRelease);
 	m_children.push_back(rst);
+
+	auto scene = dynamic_cast<::Scene*>(GetScene());
+	assert(scene != nullptr);
+	scene->GetSpatialRoot()->Add(e);
 	return rst;
 }
 
@@ -241,7 +248,7 @@ Scene::Scene()
 		gml::vec2(-SCENE_SIZE, -SCENE_SIZE),
 		gml::vec2(SCENE_SIZE, SCENE_SIZE)
 		);
-	m_spatialRoot = new QuadTreeNode(bounding);
+	m_spatialRoot = new QuadTreeNode(gml::vec2::zero(), SCENE_SIZE);
 	CreateCameraNode();
 }
 
@@ -288,8 +295,9 @@ void Scene::Render()
 		auto& camera = m_renderingOrder[i];
 		if (!camera->IsActivity())
 			continue;
+
 		GetRenderSystem()->SetViewMatrix(camera->GetViewMatrix());
-		if (0)
+		if (false)
 		{
 			m_root->Render(camera);
 		}
@@ -335,7 +343,5 @@ g2d::Camera* Scene::GetCamera(unsigned int index) const
 
 g2d::SceneNode* Scene::CreateSceneNode(g2d::Entity* e, bool autoRelease)
 {
-	auto node = m_root->CreateSceneNode(e, autoRelease);
-	m_spatialRoot->Add(e);
-	return node;
+	return  m_root->CreateSceneNode(e, autoRelease);
 }
