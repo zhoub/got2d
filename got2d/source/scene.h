@@ -16,6 +16,7 @@ public:
 	void Render(g2d::Camera* camera);
 	void RenderSingle(g2d::Camera* camera);
 	void SetSpatialNode(QuadTreeNode* node);
+	void SetRenderingOrder(int& index);
 
 public:
 	virtual g2d::Scene* GetScene() const override;
@@ -75,7 +76,8 @@ public:
 	inline ::SceneNode* GetRoot() { return m_root; }
 	inline void Update(unsigned int elpasedTime) { return m_root->Update(elpasedTime); }
 	void Render();
-	void SetRenderingOrderDirty();
+	void SetCameraOrderDirty();
+	void ResortNodesRenderingOrder();
 	QuadTreeNode* GetSpatialRoot() { return m_spatialRoot; }
 
 public:
@@ -104,11 +106,11 @@ public:
 	virtual g2d::Camera* GetCamera(unsigned int index) const override;
 
 private:
-	void ResortCameraRenderingOrder();
+	void ResortCameraOrder();
 
 	::SceneNode* m_root;
 	QuadTreeNode* m_spatialRoot;
 	std::vector<g2d::Camera*> m_cameras;
 	std::vector<g2d::Camera*> m_renderingOrder;
-	bool m_renderingOrderDirty;
+	bool m_cameraOrderDirty;
 };

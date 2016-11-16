@@ -163,6 +163,22 @@ void SceneNode::SetSpatialNode(QuadTreeNode* node)
 	m_spatialNode = node;
 }
 
+void SceneNode::SetRenderingOrder(int& index)
+{
+	//for mulity-entity backup.
+	if (m_entity)
+	{
+		m_entity->SetRenderingOrder(index);
+		index++;
+	}
+	index++;
+
+	for (auto& child : m_children)
+	{
+		child->SetRenderingOrder(index);
+	}
+}
+
 g2d::Scene* SceneNode::GetScene() const
 {
 	return m_scene;
@@ -177,6 +193,7 @@ g2d::SceneNode* SceneNode::CreateSceneNode(g2d::Entity* e, bool autoRelease)
 
 	auto rst = new ::SceneNode(m_scene, this, e, autoRelease);
 	m_children.push_back(rst);
+	m_scene->ResortNodesRenderingOrder();
 
 	auto scene = dynamic_cast<::Scene*>(GetScene());
 	assert(scene != nullptr);
@@ -258,16 +275,22 @@ Scene::~Scene()
 	delete m_spatialRoot;
 }
 
-void Scene::SetRenderingOrderDirty()
+void Scene::SetCameraOrderDirty()
 {
-	m_renderingOrderDirty = true;
+	m_cameraOrderDirty = true;
 }
 
-void Scene::ResortCameraRenderingOrder()
+void Scene::ResortNodesRenderingOrder()
 {
-	if (m_renderingOrderDirty)
+	int index = 0;
+	m_root->SetRenderingOrder(index);
+}
+
+void Scene::ResortCameraOrder()
+{
+	if (m_cameraOrderDirty)
 	{
-		m_renderingOrderDirty = false;
+		m_cameraOrderDirty = false;
 		m_renderingOrder = m_cameras;
 
 		std::sort(m_renderingOrder.begin(), m_renderingOrder.end(),
@@ -289,7 +312,7 @@ void Scene::Render()
 {
 	GetRenderSystem()->FlushRequests();
 
-	ResortCameraRenderingOrder();
+	ResortCameraOrder();
 	for (size_t i = 0, n = m_renderingOrder.size(); i < n; i++)
 	{
 		auto& camera = m_renderingOrder[i];
@@ -297,23 +320,22 @@ void Scene::Render()
 			continue;
 
 		GetRenderSystem()->SetViewMatrix(camera->GetViewMatrix());
-		if (false)
+
+		std::vector<g2d::Entity*> visibleEntities;
+		m_spatialRoot->FindVisible(camera, visibleEntities);
+		//sort visibleEntities by render order
+
+		std::sort(visibleEntities.begin(), visibleEntities.end(),
+			[](g2d::Entity* a, g2d::Entity* b) {
+			return a->GetRenderingOrder() < b->GetRenderingOrder();
+		});
+
+		for (auto& entity : visibleEntities)
 		{
-			m_root->Render(camera);
-		}
-		else
-		{
-			std::vector<g2d::Entity*> visibleEntities;
-			m_spatialRoot->FindVisible(camera, visibleEntities);
-			//sort visibleEntities by render order
-			for (auto& entity : visibleEntities)
-			{
-				entity->OnRender();
-			}
+			entity->OnRender();
 		}
 		GetRenderSystem()->FlushRequests();
 	}
-
 }
 
 g2d::Camera* Scene::CreateCameraNode()
@@ -321,7 +343,7 @@ g2d::Camera* Scene::CreateCameraNode()
 	Camera* camera = new ::Camera();
 	if (CreateSceneNode(camera, true) != nullptr)
 	{
-		m_renderingOrderDirty = true;
+		m_cameraOrderDirty = true;
 		camera->SetID(static_cast<unsigned int>(m_cameras.size()));
 		m_cameras.push_back(camera);
 		return camera;

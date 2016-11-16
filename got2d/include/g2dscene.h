@@ -31,10 +31,13 @@ namespace g2d
 
 	public:
 		void SetSceneNode(g2d::SceneNode* node);
+		void SetRenderingOrder(int order);
 		unsigned int GetVisibleMask() const;
 		SceneNode* GetSceneNode() const;
+		int GetRenderingOrder() const;
 	private:
 		SceneNode* m_sceneNode = nullptr;
+		int m_renderingOrder = 0;
 	};
 
 	class G2DAPI Quad : public Entity

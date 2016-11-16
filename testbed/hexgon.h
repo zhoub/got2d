@@ -44,7 +44,7 @@ public:
 					gml::vec2 v(0, 1);
 					float d = (i - 1) * 360.0f / 6;
 					v = gml::mat22::rotate((gml::radian)gml::degree(d)) *  v;
-					vertices[i].position = v * 10;
+					vertices[i].position = v * 50;
 					vertices[i].texcoord.set(0, 0);
 
 					vertices[i].vtxcolor = gml::color4::random();

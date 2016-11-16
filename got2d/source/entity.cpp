@@ -36,6 +36,10 @@ void g2d::Entity::SetSceneNode(g2d::SceneNode* node)
 {
 	m_sceneNode = node;
 }
+void g2d::Entity::SetRenderingOrder(int order)
+{
+	m_renderingOrder = order;
+}
 
 unsigned int g2d::Entity::GetVisibleMask() const
 {
@@ -91,6 +95,11 @@ Quad::Quad()
 		m_material->GetPass(0)->SetTexture(0, g2d::Texture::LoadFromFile((rand() % 2) ? "test_alpha.bmp" : "test_alpha.png"), true);
 		break;
 	}
+}
+
+int g2d::Entity::GetRenderingOrder() const
+{
+	return m_renderingOrder;
 }
 
 Quad::~Quad()
@@ -167,7 +176,7 @@ void Camera::SetRenderingOrder(int renderingOrder)
 {
 	m_renderingOrder = renderingOrder;
 	::Scene* scene = dynamic_cast<::Scene*>(GetSceneNode()->GetScene());
-	scene->SetRenderingOrderDirty();
+	scene->SetCameraOrderDirty();
 }
 
 bool Camera::TestVisible(gml::aabb2d bounding)
