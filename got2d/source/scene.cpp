@@ -28,12 +28,6 @@ SceneNode::SceneNode(::Scene* scene, SceneNode* parent, g2d::Entity* entity, boo
 
 SceneNode::~SceneNode()
 {
-	if (m_spatialNode)
-	{
-		m_spatialNode->Remove(m_entity);
-		m_spatialNode = nullptr;
-	}
-
 	for (auto& child : m_children)
 	{
 		delete child;
@@ -102,12 +96,7 @@ void SceneNode::SetLocalMatrixDirty()
 
 void SceneNode::AdjustSpatial()
 {
-	if (m_spatialNode != nullptr)
-	{
-		m_spatialNode->Remove(m_entity);
-		m_spatialNode = nullptr;
-	}
-	m_scene->GetSpatialRoot()->Add(m_entity);
+	m_scene->GetSpatialGraph()->Add(m_entity);
 }
 
 void SceneNode::Update(unsigned int elpasedTime)
@@ -152,17 +141,6 @@ void SceneNode::RenderSingle(g2d::Camera* camera)
 	}
 }
 
-void SceneNode::SetSpatialNode(QuadTreeNode* node)
-{
-	assert(m_spatialNode == nullptr);
-
-	if (m_spatialNode)
-	{
-		m_spatialNode->Remove(m_entity);
-	}
-	m_spatialNode = node;
-}
-
 void SceneNode::SetRenderingOrder(int& index)
 {
 	//for mulity-entity backup.
@@ -197,7 +175,7 @@ g2d::SceneNode* SceneNode::CreateSceneNode(g2d::Entity* e, bool autoRelease)
 
 	auto scene = dynamic_cast<::Scene*>(GetScene());
 	assert(scene != nullptr);
-	scene->GetSpatialRoot()->Add(e);
+	scene->GetSpatialGraph()->Add(e);
 	return rst;
 }
 
@@ -257,22 +235,17 @@ constexpr T exp(T n, unsigned int iexp)
 	return iexp == 0 ? T(1) : (iexp == 1 ? n : exp(n, iexp - 1) * n);
 }
 
+constexpr const float SCENE_SIZE = QuadTreeNode::MIN_SIZE * exp(2.0f, 8);
 Scene::Scene()
+	: m_spatial(SCENE_SIZE)
 {
 	m_root = new ::SceneNode(this, nullptr, nullptr, false);
-	constexpr const float SCENE_SIZE = QuadTreeNode::MIN_SIZE * exp(2.0f, 8);
-	gml::aabb2d bounding(
-		gml::vec2(-SCENE_SIZE, -SCENE_SIZE),
-		gml::vec2(SCENE_SIZE, SCENE_SIZE)
-		);
-	m_spatialRoot = new QuadTreeNode(gml::vec2::zero(), SCENE_SIZE);
 	CreateCameraNode();
 }
 
 Scene::~Scene()
 {
 	delete m_root;
-	delete m_spatialRoot;
 }
 
 void Scene::SetCameraOrderDirty()
@@ -322,9 +295,9 @@ void Scene::Render()
 		GetRenderSystem()->SetViewMatrix(camera->GetViewMatrix());
 
 		std::vector<g2d::Entity*> visibleEntities;
-		m_spatialRoot->FindVisible(camera, visibleEntities);
-		//sort visibleEntities by render order
+		m_spatial.FindVisible(camera, visibleEntities);
 
+		//sort visibleEntities by render order
 		std::sort(visibleEntities.begin(), visibleEntities.end(),
 			[](g2d::Entity* a, g2d::Entity* b) {
 			return a->GetRenderingOrder() < b->GetRenderingOrder();

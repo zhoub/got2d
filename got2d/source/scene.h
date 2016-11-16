@@ -1,10 +1,11 @@
 #pragma once
 #include "../include/g2dscene.h"
 #include "entity.h"
+#include "spatial_graph.h"
 #include <gmlmatrix.h>
 #include <vector>
 
-class QuadTreeNode;
+class SpatialGraph;
 class Scene;
 
 class SceneNode : public g2d::SceneNode
@@ -15,7 +16,6 @@ public:
 	void Update(unsigned int elpasedTime);
 	void Render(g2d::Camera* camera);
 	void RenderSingle(g2d::Camera* camera);
-	void SetSpatialNode(QuadTreeNode* node);
 	void SetRenderingOrder(int& index);
 
 public:
@@ -46,7 +46,6 @@ private:
 
 	::Scene* m_scene = nullptr;
 	::SceneNode* m_parent = nullptr;
-	::QuadTreeNode* m_spatialNode = nullptr;
 	g2d::Entity* m_entity = nullptr;
 
 	unsigned int m_visibleMask = g2d::DEFAULT_VISIBLE_MASK;
@@ -78,7 +77,7 @@ public:
 	void Render();
 	void SetCameraOrderDirty();
 	void ResortNodesRenderingOrder();
-	QuadTreeNode* GetSpatialRoot() { return m_spatialRoot; }
+	SpatialGraph* GetSpatialGraph() { return &m_spatial; }
 
 public:
 	inline virtual g2d::Scene* GetScene() const override { return m_root->GetScene(); }
@@ -109,7 +108,7 @@ private:
 	void ResortCameraOrder();
 
 	::SceneNode* m_root;
-	QuadTreeNode* m_spatialRoot;
+	SpatialGraph m_spatial;
 	std::vector<g2d::Camera*> m_cameras;
 	std::vector<g2d::Camera*> m_renderingOrder;
 	bool m_cameraOrderDirty;

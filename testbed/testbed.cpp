@@ -131,7 +131,7 @@ void Testbed::Start()
 
 	Hexgon* hexgonEntity = new Hexgon();
 	auto hexgonNode = g2d::GetEngine()->GetCurrentScene()->CreateSceneNode(hexgonEntity, true);
-	hexgonNode->SetPosition({ 100,100 });
+	hexgonNode->SetPosition({ 10,10 });
 }
 
 void Testbed::End()
