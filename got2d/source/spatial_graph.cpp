@@ -42,14 +42,15 @@ QuadTreeNode* QuadTreeNode::AddRecursive(const gml::aabb2d& entityBound, g2d::En
 		//push to self if failed.
 
 		//WE HERE NEED aabb::move() !
-		gml::vec2 center = m_bounding.center();
-		float halfExtend = m_bounding.extend().x * 0.5f;
-
+		float extend = m_bounding.extend().x;
+		float halfExtend = extend * 0.5f;
+		auto& center = m_bounding.center();
 		//x-neg, y-pos
-		center = m_bounding.center();
-		center.x -= halfExtend;
-		center.y += halfExtend;
-		if (Contains(center, halfExtend, entityBound))
+		gml::aabb2d bounding(
+			gml::vec2(center.x - extend, center.y + extend),
+			m_bounding.center());
+
+		if (bounding.is_intersect(entityBound) == gml::it_contain)
 		{
 			if (m_directionNodes[DIR_LT] == nullptr)
 			{
@@ -59,10 +60,8 @@ QuadTreeNode* QuadTreeNode::AddRecursive(const gml::aabb2d& entityBound, g2d::En
 		}
 
 		//x-neg, y-neg
-		center = m_bounding.center();
-		center.x -= halfExtend;
-		center.y -= halfExtend;
-		if (Contains(center, halfExtend, entityBound))
+		bounding.move({ 0, -extend });
+		if (bounding.is_intersect(entityBound) == gml::it_contain)
 		{
 			if (m_directionNodes[DIR_LD] == nullptr)
 			{
@@ -72,10 +71,8 @@ QuadTreeNode* QuadTreeNode::AddRecursive(const gml::aabb2d& entityBound, g2d::En
 		}
 
 		//x-pos,y-pos
-		center = m_bounding.center();
-		center.x += halfExtend;
-		center.y += halfExtend;
-		if (Contains(center, halfExtend, entityBound))
+		bounding.move({ extend, extend });
+		if (bounding.is_intersect(entityBound) == gml::it_contain)
 		{
 			if (m_directionNodes[DIR_RT] == nullptr)
 			{
@@ -84,10 +81,9 @@ QuadTreeNode* QuadTreeNode::AddRecursive(const gml::aabb2d& entityBound, g2d::En
 			return m_directionNodes[DIR_RT]->AddRecursive(entityBound, entity);
 		}
 
-		center = m_bounding.center();
-		center.x += halfExtend;
-		center.y -= halfExtend;
-		if (Contains(center, halfExtend, entityBound))
+		//x-pos, y-neg
+		bounding.move({ 0, -extend });
+		if (bounding.is_intersect(entityBound) == gml::it_contain)
 		{
 			if (m_directionNodes[DIR_RD] == nullptr)
 			{
