@@ -30,15 +30,20 @@ SceneNode::SceneNode(::Scene* scene, SceneNode* parent, int childID, g2d::Entity
 
 SceneNode::~SceneNode()
 {
+
 	for (auto& child : m_children)
 	{
 		delete child;
 	}
 	m_children.clear();
 
-	if (m_autoRelease && m_entity)
+	if (m_entity)
 	{
-		m_entity->Release();
+		m_scene->GetSpatialGraph()->Remove(m_entity);
+		if (m_autoRelease)
+		{
+			m_entity->Release();
+		}
 	}
 }
 
@@ -122,6 +127,25 @@ void SceneNode::Update(unsigned int elpasedTime)
 	{
 		child->Update(elpasedTime);
 	}
+
+	for (auto removeChild : m_waitingRemove)
+	{
+		::SceneNode* c = removeChild;
+		auto cur = m_children.begin();
+		auto end = m_children.end();
+		while (cur != end)
+		{
+			if (*cur == c)
+			{
+				m_children.erase(cur);
+				delete c;
+				break;
+			}
+			cur++;
+		}
+	}
+	m_waitingRemove.clear();
+	AdjustRenderingOrder();
 }
 
 void SceneNode::Render(g2d::Camera* camera)
@@ -245,6 +269,18 @@ g2d::SceneNode* SceneNode::CreateSceneNode(g2d::Entity* e, bool autoRelease)
 	return rst;
 }
 
+void SceneNode::Remove()
+{
+	if (m_parent != nullptr)
+	{
+		m_parent->Remove(this);
+	}
+	else
+	{
+		//it is ROOT.
+	}
+}
+
 g2d::SceneNode* SceneNode::SetPivot(const gml::vec2& pivot)
 {
 	SetLocalMatrixDirty();
@@ -285,10 +321,12 @@ g2d::SceneNode* SceneNode::SetRotation(gml::radian r)
 	m_rotation = r;
 	return this;
 }
+
 void SceneNode::MovePrevToFront()
 {
 	MoveSelfTo(0);
 }
+
 void SceneNode::MovePrevToBack()
 {
 	if (m_parent)
@@ -296,10 +334,12 @@ void SceneNode::MovePrevToBack()
 		MoveSelfTo(m_parent->m_children.size() - 1);
 	}
 }
+
 void SceneNode::MovePrev()
 {
 	MoveSelfTo(m_childID - 1);
 }
+
 void SceneNode::MoveNext()
 {
 	MoveSelfTo(m_childID + 1);
@@ -338,7 +378,15 @@ void SceneNode::MoveSelfTo(int to)
 		siblings[newID] = this;
 		AdjustRenderingOrder();
 	}
-	
+
+}
+
+void SceneNode::Remove(::SceneNode* child)
+{
+	if (child != nullptr)
+	{
+		m_waitingRemove.push_back(child);
+	}
 }
 
 void SceneNode::SetStatic(bool s)

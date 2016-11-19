@@ -24,6 +24,7 @@ public:
 	virtual g2d::SceneNode* GetPrevSiblingNode() override;
 	virtual g2d::SceneNode* GetNextSiblingNode() override;
 	virtual g2d::SceneNode* CreateSceneNode(g2d::Entity* entity, bool autoRelease)override;
+	virtual void Remove() override;
 	virtual const gml::mat32& GetLocalMatrix() override;
 	virtual const gml::mat32& GetWorldMatrix() override;
 	virtual void SetVisibleMask(unsigned int mask, bool recursive) override;
@@ -52,6 +53,7 @@ private:
 	void AdjustSpatial();
 	void SetRenderingOrder(int& index);
 	void MoveSelfTo(int to);
+	void Remove(::SceneNode* child);
 	::SceneNode* GetPrevSibling();
 	::SceneNode* GetNextSibling();
 
@@ -77,6 +79,7 @@ private:
 	gml::mat32 m_matrixLocal;
 	gml::mat32 m_matrixWorld;
 	std::vector<::SceneNode*> m_children;
+	std::vector<::SceneNode*> m_waitingRemove;
 };
 
 class Scene : public g2d::Scene
@@ -97,6 +100,7 @@ public:
 	inline virtual SceneNode* GetPrevSiblingNode() override { return m_root->GetPrevSiblingNode(); }
 	inline virtual SceneNode* GetNextSiblingNode() override { return m_root->GetNextSiblingNode(); }
 	virtual g2d::SceneNode* CreateSceneNode(g2d::Entity* e, bool autoRelease) override;
+	inline virtual void Remove() override { }
 	inline virtual const gml::mat32& GetLocalMatrix() override { return m_root->GetLocalMatrix(); }
 	inline virtual const gml::mat32& GetWorldMatrix() override { return m_root->GetWorldMatrix(); }
 	inline virtual void SetVisibleMask(unsigned int mask, bool recursive) override { m_root->SetVisibleMask(mask, recursive); }

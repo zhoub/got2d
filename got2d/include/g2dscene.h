@@ -76,6 +76,7 @@ namespace g2d
 		virtual SceneNode* GetPrevSiblingNode() = 0;
 		virtual SceneNode* GetNextSiblingNode() = 0;
 		virtual SceneNode* CreateSceneNode(Entity*, bool autoRelease) = 0;
+		virtual void Remove() = 0;
 		virtual const gml::mat32& GetLocalMatrix() = 0;
 		virtual const gml::mat32& GetWorldMatrix() = 0;
 		virtual SceneNode* SetPosition(const gml::vec2& position) = 0;
