@@ -1,11 +1,13 @@
 #include "scene.h"
+#include "spatial_graph.h"
 #include <algorithm>
+#include <gmlconversion.h>
 
 g2d::SceneNode::~SceneNode() { }
 
 g2d::Scene::~Scene() { }
 
-SceneNode::SceneNode(g2d::Scene* scene, SceneNode* parent, g2d::Entity* entity, bool autoRelease)
+SceneNode::SceneNode(::Scene* scene, SceneNode* parent, g2d::Entity* entity, bool autoRelease)
 	: m_scene(scene)
 	, m_parent(parent)
 	, m_entity(entity)
@@ -31,6 +33,7 @@ SceneNode::~SceneNode()
 		delete child;
 	}
 	m_children.clear();
+
 	if (m_autoRelease && m_entity)
 	{
 		m_entity->Release();
@@ -91,6 +94,11 @@ void SceneNode::SetLocalMatrixDirty()
 	SetWorldMatrixDirty();
 }
 
+void SceneNode::AdjustSpatial()
+{
+	m_scene->GetSpatialGraph()->Add(m_entity);
+}
+
 void SceneNode::Update(unsigned int elpasedTime)
 {
 	if (m_entity)
@@ -98,6 +106,12 @@ void SceneNode::Update(unsigned int elpasedTime)
 		m_entity->OnUpdate(elpasedTime);
 		if (m_matrixDirtyUpdate)
 		{
+			//现在阶段只需要在test visible之前处理好就行.
+			//也就是 Scene::Render之前
+			if (IsStatic())
+			{
+				AdjustSpatial();
+			}
 			m_entity->OnUpdateMatrixChanged();
 			m_matrixDirtyUpdate = false;
 		}
@@ -108,21 +122,44 @@ void SceneNode::Update(unsigned int elpasedTime)
 	}
 }
 
-void SceneNode::Render(g2d::Camera* m_camera)
+void SceneNode::Render(g2d::Camera* camera)
 {
-	if (!IsVisible())
-		return;
-	if (m_entity)
+	RenderSingle(camera);
+	for (auto& child : m_children)
 	{
-		if (!m_camera || m_camera->TestVisible(m_entity))
+		child->Render(camera);
+	}
+}
+void SceneNode::RenderSingle(g2d::Camera* camera)
+{
+	if (IsVisible())
+	{
+		if (m_entity && camera->TestVisible(m_entity))
 		{
 			m_entity->OnRender();
 		}
 	}
+}
+
+void SceneNode::SetRenderingOrder(int& index)
+{
+	//for mulity-entity backup.
+	if (m_entity)
+	{
+		m_entity->SetRenderingOrder(index);
+		index++;
+	}
+	index++;
+
 	for (auto& child : m_children)
 	{
-		child->Render(m_camera);
+		child->SetRenderingOrder(index);
 	}
+}
+
+g2d::Scene* SceneNode::GetScene() const
+{
+	return m_scene;
 }
 
 g2d::SceneNode* SceneNode::CreateSceneNode(g2d::Entity* e, bool autoRelease)
@@ -132,8 +169,13 @@ g2d::SceneNode* SceneNode::CreateSceneNode(g2d::Entity* e, bool autoRelease)
 		return nullptr;
 	}
 
-	auto rst = new ::SceneNode(GetScene(), this, e, autoRelease);
+	auto rst = new ::SceneNode(m_scene, this, e, autoRelease);
 	m_children.push_back(rst);
+	m_scene->ResortNodesRenderingOrder();
+
+	auto scene = dynamic_cast<::Scene*>(GetScene());
+	assert(scene != nullptr);
+	scene->GetSpatialGraph()->Add(e);
 	return rst;
 }
 
@@ -178,7 +220,24 @@ g2d::SceneNode* SceneNode::SetRotation(gml::radian r)
 	return this;
 }
 
+void SceneNode::SetStatic(bool s)
+{
+	if (m_isStatic != s)
+	{
+		m_isStatic = s;
+		AdjustSpatial();
+	}
+}
+
+template<class T>
+constexpr T exp(T n, unsigned int iexp)
+{
+	return iexp == 0 ? T(1) : (iexp == 1 ? n : exp(n, iexp - 1) * n);
+}
+
+constexpr const float SCENE_SIZE = QuadTreeNode::MIN_SIZE * exp(2.0f, 8);
 Scene::Scene()
+	: m_spatial(SCENE_SIZE)
 {
 	m_root = new ::SceneNode(this, nullptr, nullptr, false);
 	CreateCameraNode();
@@ -189,16 +248,22 @@ Scene::~Scene()
 	delete m_root;
 }
 
-void Scene::SetRenderingOrderDirty()
+void Scene::SetCameraOrderDirty()
 {
-	m_renderingOrderDirty = true;
+	m_cameraOrderDirty = true;
 }
 
-void Scene::ResortCameraRenderingOrder()
+void Scene::ResortNodesRenderingOrder()
 {
-	if (m_renderingOrderDirty)
+	int index = 0;
+	m_root->SetRenderingOrder(index);
+}
+
+void Scene::ResortCameraOrder()
+{
+	if (m_cameraOrderDirty)
 	{
-		m_renderingOrderDirty = false;
+		m_cameraOrderDirty = false;
 		m_renderingOrder = m_cameras;
 
 		std::sort(m_renderingOrder.begin(), m_renderingOrder.end(),
@@ -220,17 +285,30 @@ void Scene::Render()
 {
 	GetRenderSystem()->FlushRequests();
 
-	ResortCameraRenderingOrder();
+	ResortCameraOrder();
 	for (size_t i = 0, n = m_renderingOrder.size(); i < n; i++)
 	{
 		auto& camera = m_renderingOrder[i];
 		if (!camera->IsActivity())
 			continue;
+
 		GetRenderSystem()->SetViewMatrix(camera->GetViewMatrix());
-		m_root->Render(camera);
+
+		std::vector<g2d::Entity*> visibleEntities;
+		m_spatial.FindVisible(camera, visibleEntities);
+
+		//sort visibleEntities by render order
+		std::sort(visibleEntities.begin(), visibleEntities.end(),
+			[](g2d::Entity* a, g2d::Entity* b) {
+			return a->GetRenderingOrder() < b->GetRenderingOrder();
+		});
+
+		for (auto& entity : visibleEntities)
+		{
+			entity->OnRender();
+		}
 		GetRenderSystem()->FlushRequests();
 	}
-
 }
 
 g2d::Camera* Scene::CreateCameraNode()
@@ -238,7 +316,7 @@ g2d::Camera* Scene::CreateCameraNode()
 	Camera* camera = new ::Camera();
 	if (CreateSceneNode(camera, true) != nullptr)
 	{
-		m_renderingOrderDirty = true;
+		m_cameraOrderDirty = true;
 		camera->SetID(static_cast<unsigned int>(m_cameras.size()));
 		m_cameras.push_back(camera);
 		return camera;
@@ -256,4 +334,9 @@ g2d::Camera* Scene::GetCamera(unsigned int index) const
 	if (index >= m_cameras.size())
 		return nullptr;
 	return m_cameras[index];
+}
+
+g2d::SceneNode* Scene::CreateSceneNode(g2d::Entity* e, bool autoRelease)
+{
+	return  m_root->CreateSceneNode(e, autoRelease);
 }

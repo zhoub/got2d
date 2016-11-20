@@ -45,6 +45,7 @@ public:
 	inline virtual g2d::Camera* SetScale(const gml::vec2& scale) override { GetSceneNode()->SetScale(scale); return this; }
 	inline virtual g2d::Camera* SetRotation(gml::radian r) override { GetSceneNode()->SetRotation(r); return this; }
 	virtual const gml::mat32& GetViewMatrix() const override { return m_matrix; }
+	virtual bool TestVisible(gml::aabb2d bounding) override;
 	virtual bool TestVisible(g2d::Entity* entity) override;
 	inline virtual unsigned int GetVisibleMask() const override { return m_visibleMask; }
 	inline virtual int GetRenderingOrder() const override { return m_renderingOrder; }
