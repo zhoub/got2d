@@ -72,13 +72,21 @@ namespace g2d
 	public:
 		virtual ~SceneNode();
 		virtual Scene* GetScene() const = 0;
+		virtual SceneNode* GetParentNode() = 0;
+		virtual SceneNode* GetPrevSiblingNode() = 0;
+		virtual SceneNode* GetNextSiblingNode() = 0;
 		virtual SceneNode* CreateSceneNode(Entity*, bool autoRelease) = 0;
+		virtual void Remove() = 0;
 		virtual const gml::mat32& GetLocalMatrix() = 0;
 		virtual const gml::mat32& GetWorldMatrix() = 0;
 		virtual SceneNode* SetPosition(const gml::vec2& position) = 0;
 		virtual SceneNode* SetPivot(const gml::vec2& pivot) = 0;
 		virtual SceneNode* SetScale(const gml::vec2& scale) = 0;
 		virtual SceneNode* SetRotation(gml::radian r) = 0;
+		virtual void MovePrevToFront() = 0;
+		virtual void MovePrevToBack() = 0;
+		virtual void MovePrev() = 0;
+		virtual void MoveNext() = 0;
 		virtual void SetVisible(bool) = 0;
 		virtual void SetStatic(bool) = 0;
 		virtual void SetVisibleMask(unsigned int mask, bool recursive) = 0;

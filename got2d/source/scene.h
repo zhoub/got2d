@@ -11,16 +11,20 @@ class Scene;
 class SceneNode : public g2d::SceneNode
 {
 public:
-	SceneNode(::Scene* scene, SceneNode* parent, g2d::Entity* entity, bool autoRelease);
+	SceneNode(::Scene* scene, SceneNode* parent, int childID, g2d::Entity* entity, bool autoRelease);
 	virtual ~SceneNode();
 	void Update(unsigned int elpasedTime);
 	void Render(g2d::Camera* camera);
 	void RenderSingle(g2d::Camera* camera);
-	void SetRenderingOrder(int& index);
+	void AdjustRenderingOrder();
 
 public:
 	virtual g2d::Scene* GetScene() const override;
+	virtual g2d::SceneNode* GetParentNode() override;
+	virtual g2d::SceneNode* GetPrevSiblingNode() override;
+	virtual g2d::SceneNode* GetNextSiblingNode() override;
 	virtual g2d::SceneNode* CreateSceneNode(g2d::Entity* entity, bool autoRelease)override;
+	virtual void Remove() override;
 	virtual const gml::mat32& GetLocalMatrix() override;
 	virtual const gml::mat32& GetWorldMatrix() override;
 	virtual void SetVisibleMask(unsigned int mask, bool recursive) override;
@@ -28,6 +32,10 @@ public:
 	virtual g2d::SceneNode* SetPivot(const gml::vec2& pivot) override;
 	virtual g2d::SceneNode* SetScale(const gml::vec2& scale) override;
 	virtual g2d::SceneNode* SetRotation(gml::radian r) override;
+	virtual void MovePrevToFront() override;
+	virtual void MovePrevToBack() override;
+	virtual void MovePrev() override;
+	virtual void MoveNext() override;
 	inline virtual void SetVisible(bool visible) override { m_isVisible = visible; }
 	virtual void SetStatic(bool s) override;
 	inline virtual const gml::vec2& GetPosition()  const override { return m_position; }
@@ -43,10 +51,18 @@ private:
 	void SetLocalMatrixDirty();
 	void SetWorldMatrixDirty();
 	void AdjustSpatial();
+	void SetRenderingOrder(int& index);
+	void MoveSelfTo(int to);
+	void Remove(::SceneNode* child);
+	void RemoveReleasedChildren();
+	::SceneNode* GetPrevSibling();
+	::SceneNode* GetNextSibling();
 
 	::Scene* m_scene = nullptr;
 	::SceneNode* m_parent = nullptr;
 	g2d::Entity* m_entity = nullptr;
+	int m_childID = 0;
+	int m_baseRenderingOrder = 0;
 
 	unsigned int m_visibleMask = g2d::DEFAULT_VISIBLE_MASK;
 	bool m_autoRelease = false;
@@ -64,6 +80,7 @@ private:
 	gml::mat32 m_matrixLocal;
 	gml::mat32 m_matrixWorld;
 	std::vector<::SceneNode*> m_children;
+	std::vector<::SceneNode*> m_pendingReleased;
 };
 
 class Scene : public g2d::Scene
@@ -76,12 +93,15 @@ public:
 	inline void Update(unsigned int elpasedTime) { return m_root->Update(elpasedTime); }
 	void Render();
 	void SetCameraOrderDirty();
-	void ResortNodesRenderingOrder();
 	SpatialGraph* GetSpatialGraph() { return &m_spatial; }
 
 public:
 	inline virtual g2d::Scene* GetScene() const override { return m_root->GetScene(); }
+	inline virtual SceneNode* GetParentNode() override { return m_root->GetParentNode(); }
+	inline virtual SceneNode* GetPrevSiblingNode() override { return m_root->GetPrevSiblingNode(); }
+	inline virtual SceneNode* GetNextSiblingNode() override { return m_root->GetNextSiblingNode(); }
 	virtual g2d::SceneNode* CreateSceneNode(g2d::Entity* e, bool autoRelease) override;
+	inline virtual void Remove() override { }
 	inline virtual const gml::mat32& GetLocalMatrix() override { return m_root->GetLocalMatrix(); }
 	inline virtual const gml::mat32& GetWorldMatrix() override { return m_root->GetWorldMatrix(); }
 	inline virtual void SetVisibleMask(unsigned int mask, bool recursive) override { m_root->SetVisibleMask(mask, recursive); }
@@ -89,6 +109,10 @@ public:
 	inline virtual g2d::SceneNode* SetPivot(const gml::vec2& pivot) override { m_root->SetPivot(pivot); return this; }
 	inline virtual g2d::SceneNode* SetScale(const gml::vec2& scale) override { m_root->SetScale(scale); return this; }
 	inline virtual g2d::SceneNode* SetRotation(gml::radian r) override { m_root->SetRotation(r); return this; }
+	virtual void MovePrevToFront() override { m_root->MovePrevToFront(); }
+	virtual void MovePrevToBack() override { m_root->MovePrevToBack(); }
+	virtual void MovePrev() override { m_root->MovePrev(); }
+	virtual void MoveNext() override { m_root->MoveNext(); }
 	inline virtual void SetVisible(bool visible) override { m_root->SetVisible(visible); }
 	inline virtual void SetStatic(bool visible) override { m_root->SetStatic(visible); }
 	inline virtual const gml::vec2& GetPosition()  const override { return m_root->GetPosition(); }

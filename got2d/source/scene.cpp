@@ -7,10 +7,12 @@ g2d::SceneNode::~SceneNode() { }
 
 g2d::Scene::~Scene() { }
 
-SceneNode::SceneNode(::Scene* scene, SceneNode* parent, g2d::Entity* entity, bool autoRelease)
+SceneNode::SceneNode(::Scene* scene, SceneNode* parent, int childID, g2d::Entity* entity, bool autoRelease)
 	: m_scene(scene)
 	, m_parent(parent)
 	, m_entity(entity)
+	, m_childID(childID)
+	, m_baseRenderingOrder(0)
 	, m_autoRelease(autoRelease)
 	, m_matrixLocal(gml::mat32::identity())
 	, m_position(gml::vec2::zero())
@@ -28,15 +30,20 @@ SceneNode::SceneNode(::Scene* scene, SceneNode* parent, g2d::Entity* entity, boo
 
 SceneNode::~SceneNode()
 {
+
 	for (auto& child : m_children)
 	{
 		delete child;
 	}
 	m_children.clear();
 
-	if (m_autoRelease && m_entity)
+	if (m_entity)
 	{
-		m_entity->Release();
+		m_scene->GetSpatialGraph()->Remove(m_entity);
+		if (m_autoRelease)
+		{
+			m_entity->Release();
+		}
 	}
 }
 
@@ -120,6 +127,30 @@ void SceneNode::Update(unsigned int elpasedTime)
 	{
 		child->Update(elpasedTime);
 	}
+
+	RemoveReleasedChildren();
+	AdjustRenderingOrder();
+}
+
+void SceneNode::RemoveReleasedChildren()
+{
+	for (auto removeChild : m_pendingReleased)
+	{
+		::SceneNode* c = removeChild;
+		std::replace_if(m_children.begin(), m_children.end(),
+			[&](::SceneNode* child)->bool {
+			if (c == child)
+			{
+				delete c;
+				return true;
+			}
+			return false;
+		}, nullptr);
+	}
+	m_pendingReleased.clear();
+
+	//remove null elements.
+	std::remove(m_children.begin(), m_children.end(), nullptr);
 }
 
 void SceneNode::Render(g2d::Camera* camera)
@@ -130,6 +161,7 @@ void SceneNode::Render(g2d::Camera* camera)
 		child->Render(camera);
 	}
 }
+
 void SceneNode::RenderSingle(g2d::Camera* camera)
 {
 	if (IsVisible())
@@ -144,16 +176,64 @@ void SceneNode::RenderSingle(g2d::Camera* camera)
 void SceneNode::SetRenderingOrder(int& index)
 {
 	//for mulity-entity backup.
+	m_baseRenderingOrder = index++;
 	if (m_entity)
 	{
 		m_entity->SetRenderingOrder(index);
 		index++;
 	}
-	index++;
 
 	for (auto& child : m_children)
 	{
 		child->SetRenderingOrder(index);
+	}
+}
+
+::SceneNode* SceneNode::GetPrevSibling()
+{
+	if (m_parent == nullptr || m_childID == 0)
+	{
+		return nullptr;
+	}
+	return m_parent->m_children[m_childID - 1];
+}
+
+::SceneNode* SceneNode::GetNextSibling()
+{
+	if (m_parent == nullptr || m_childID == m_parent->m_children.size() - 1)
+	{
+		return nullptr;
+	}
+	return m_parent->m_children[m_childID + 1];
+}
+
+void SceneNode::AdjustRenderingOrder()
+{
+	int curIndex = m_baseRenderingOrder + 1;
+	if (m_entity)
+	{
+		m_entity->SetRenderingOrder(curIndex);
+		curIndex++;
+	}
+
+	for (auto& child : m_children)
+	{
+		child->SetRenderingOrder(curIndex);
+	}
+
+	auto parent = m_parent;
+	auto current = this;
+	while (parent != nullptr)
+	{
+		auto& siblings = parent->m_children;
+		for (int i = m_childID + 1; i < siblings.size(); i++)
+		{
+			auto sibling = siblings[i];
+			sibling->SetRenderingOrder(curIndex);
+		}
+
+		current = parent;
+		parent = current->m_parent;
 	}
 }
 
@@ -162,21 +242,48 @@ g2d::Scene* SceneNode::GetScene() const
 	return m_scene;
 }
 
+g2d::SceneNode* SceneNode::GetParentNode()
+{
+	return m_parent;
+}
+
+g2d::SceneNode* SceneNode::GetPrevSiblingNode()
+{
+	return GetPrevSibling();
+}
+
+g2d::SceneNode* SceneNode::GetNextSiblingNode()
+{
+	return GetNextSibling();
+}
+
 g2d::SceneNode* SceneNode::CreateSceneNode(g2d::Entity* e, bool autoRelease)
 {
 	if (e == nullptr)
 	{
 		return nullptr;
 	}
-
-	auto rst = new ::SceneNode(m_scene, this, e, autoRelease);
+	int childID = static_cast<int>(m_children.size());
+	auto rst = new ::SceneNode(m_scene, this, childID, e, autoRelease);
 	m_children.push_back(rst);
-	m_scene->ResortNodesRenderingOrder();
+	AdjustRenderingOrder();
 
 	auto scene = dynamic_cast<::Scene*>(GetScene());
 	assert(scene != nullptr);
 	scene->GetSpatialGraph()->Add(e);
 	return rst;
+}
+
+void SceneNode::Remove()
+{
+	if (m_parent != nullptr)
+	{
+		m_parent->Remove(this);
+	}
+	else
+	{
+		//it is ROOT.
+	}
 }
 
 g2d::SceneNode* SceneNode::SetPivot(const gml::vec2& pivot)
@@ -220,6 +327,73 @@ g2d::SceneNode* SceneNode::SetRotation(gml::radian r)
 	return this;
 }
 
+void SceneNode::MovePrevToFront()
+{
+	MoveSelfTo(0);
+}
+
+void SceneNode::MovePrevToBack()
+{
+	if (m_parent)
+	{
+		MoveSelfTo(static_cast<int>(m_parent->m_children.size()) - 1);
+	}
+}
+
+void SceneNode::MovePrev()
+{
+	MoveSelfTo(m_childID - 1);
+}
+
+void SceneNode::MoveNext()
+{
+	MoveSelfTo(m_childID + 1);
+}
+
+void SceneNode::MoveSelfTo(int to)
+{
+	if (m_parent == nullptr || m_childID == to)
+	{
+		return;
+	}
+
+	auto& siblings = m_parent->m_children;
+	int siblingCount = static_cast<int>(siblings.size());
+	if (siblingCount > 1 && siblingCount > to)
+	{
+		auto oldID = m_childID;
+		auto newID = to;
+		if (newID > oldID)
+		{
+			for (int i = oldID; i < newID; i++)
+			{
+				siblings[i] = siblings[i + 1];
+				siblings[i]->m_childID = i;
+			}
+		}
+		else
+		{
+			for (int i = oldID; i > newID; i--)
+			{
+				siblings[i] = siblings[i - 1];
+				siblings[i]->m_childID = i;
+			}
+		}
+		m_childID = newID;
+		siblings[newID] = this;
+		AdjustRenderingOrder();
+	}
+
+}
+
+void SceneNode::Remove(::SceneNode* child)
+{
+	if (child != nullptr)
+	{
+		m_pendingReleased.push_back(child);
+	}
+}
+
 void SceneNode::SetStatic(bool s)
 {
 	if (m_isStatic != s)
@@ -239,7 +413,7 @@ constexpr const float SCENE_SIZE = QuadTreeNode::MIN_SIZE * exp(2.0f, 8);
 Scene::Scene()
 	: m_spatial(SCENE_SIZE)
 {
-	m_root = new ::SceneNode(this, nullptr, nullptr, false);
+	m_root = new ::SceneNode(this, nullptr, 0, nullptr, false);
 	CreateCameraNode();
 }
 
@@ -251,12 +425,6 @@ Scene::~Scene()
 void Scene::SetCameraOrderDirty()
 {
 	m_cameraOrderDirty = true;
-}
-
-void Scene::ResortNodesRenderingOrder()
-{
-	int index = 0;
-	m_root->SetRenderingOrder(index);
 }
 
 void Scene::ResortCameraOrder()
