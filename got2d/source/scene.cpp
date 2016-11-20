@@ -150,7 +150,8 @@ void SceneNode::RemoveReleasedChildren()
 	m_pendingReleased.clear();
 
 	//remove null elements.
-	std::remove(m_children.begin(), m_children.end(), nullptr);
+	auto tail = std::remove(m_children.begin(), m_children.end(), nullptr);
+	m_children.erase(tail, m_children.end());
 }
 
 void SceneNode::Render(g2d::Camera* camera)
