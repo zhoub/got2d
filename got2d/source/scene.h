@@ -54,6 +54,7 @@ private:
 	void SetRenderingOrder(int& index);
 	void MoveSelfTo(int to);
 	void Remove(::SceneNode* child);
+	void RemoveReleasedChildren();
 	::SceneNode* GetPrevSibling();
 	::SceneNode* GetNextSibling();
 
@@ -79,7 +80,7 @@ private:
 	gml::mat32 m_matrixLocal;
 	gml::mat32 m_matrixWorld;
 	std::vector<::SceneNode*> m_children;
-	std::vector<::SceneNode*> m_waitingRemove;
+	std::vector<::SceneNode*> m_pendingReleased;
 };
 
 class Scene : public g2d::Scene

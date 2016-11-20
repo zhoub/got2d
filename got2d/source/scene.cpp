@@ -128,24 +128,29 @@ void SceneNode::Update(unsigned int elpasedTime)
 		child->Update(elpasedTime);
 	}
 
-	for (auto removeChild : m_waitingRemove)
+	RemoveReleasedChildren();
+	AdjustRenderingOrder();
+}
+
+void SceneNode::RemoveReleasedChildren()
+{
+	for (auto removeChild : m_pendingReleased)
 	{
 		::SceneNode* c = removeChild;
-		auto cur = m_children.begin();
-		auto end = m_children.end();
-		while (cur != end)
-		{
-			if (*cur == c)
+		std::replace_if(m_children.begin(), m_children.end(),
+			[&](::SceneNode* child)->bool {
+			if (c == child)
 			{
-				m_children.erase(cur);
 				delete c;
-				break;
+				return true;
 			}
-			cur++;
-		}
+			return false;
+		}, nullptr);
 	}
-	m_waitingRemove.clear();
-	AdjustRenderingOrder();
+	m_pendingReleased.clear();
+
+	//remove null elements.
+	std::remove(m_children.begin(), m_children.end(), nullptr);
 }
 
 void SceneNode::Render(g2d::Camera* camera)
@@ -331,7 +336,7 @@ void SceneNode::MovePrevToBack()
 {
 	if (m_parent)
 	{
-		MoveSelfTo(m_parent->m_children.size() - 1);
+		MoveSelfTo(static_cast<int>(m_parent->m_children.size()) - 1);
 	}
 }
 
@@ -385,7 +390,7 @@ void SceneNode::Remove(::SceneNode* child)
 {
 	if (child != nullptr)
 	{
-		m_waitingRemove.push_back(child);
+		m_pendingReleased.push_back(child);
 	}
 }
 
