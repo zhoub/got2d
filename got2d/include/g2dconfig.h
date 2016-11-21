@@ -18,8 +18,7 @@
 #define SDA(x) if(x){ delete[] x; x=nullptr;}
 #endif
 
-struct CID { static unsigned Next() { static unsigned i = 0x1000; return i++; } };
-
+unsigned G2DAPI NextClassID();
 #define DECL_CLASSID virtual unsigned GetClassID() const = 0;
 #define IMPL_CLASSID public:\
-	inline unsigned GetClassID() const { static unsigned ClassID = CID::Next(); return ClassID; }
+	inline unsigned GetClassID() const { static unsigned ClassID = NextClassID(); return ClassID; }

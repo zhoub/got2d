@@ -1,5 +1,19 @@
 #include "engine.h"
 
+struct ClassIDGenerator
+{
+	static unsigned Next()
+	{
+		static unsigned i = 0x1000;
+		return i++;
+	}
+};
+unsigned G2DAPI NextClassID()
+{
+	return ClassIDGenerator::Next();
+}
+
+
 Engine* Engine::Instance = nullptr;
 
 g2d::Engine::~Engine() { }
