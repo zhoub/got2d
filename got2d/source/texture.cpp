@@ -151,23 +151,8 @@ bool TexturePool::LoadTextureFromFile(std::string resourcePath)
 
 	img_data img;
 	auto result = true;
-	auto ext = resourcePath.substr(resourcePath.length() - 3);
-	if (ext == "bmp")
-	{
-		result = read_bmp(f.buffer, img);
-	}
-	else if (ext == "png")
-	{
-		result = read_png(f.buffer, img);
-	}
-	else if (ext == "tga")
-	{
-		result = read_tga(f.buffer, img);
-	}
-	else
-	{
-		result = false;
-	}
+
+	result = read_image(f.buffer, img);
 	destroy_file_data(f);
 
 	if (result)
