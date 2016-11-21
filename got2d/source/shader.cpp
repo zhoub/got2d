@@ -383,11 +383,9 @@ bool Pass::IsSame(g2d::Pass* other) const
 {
 	if (other == nullptr)	return false;
 	if (this == other)		return true;
+	if (other->GetClassID() != GetClassID()) return false;
 
-	Pass* p = dynamic_cast<Pass*>(other);
-	if (p == nullptr)
-		return false;
-
+	Pass* p = reinterpret_cast<Pass*>(other);
 	if (m_blendMode != p->m_blendMode || m_vsName != m_vsName || m_psName != p->m_psName)
 		return false;
 
@@ -406,6 +404,8 @@ bool Pass::IsSame(g2d::Pass* other) const
 		}
 	}
 
+
+	//we have no idea how to deal with floats.
 	if (m_vsConstants.size() > 0 &&
 		0 != memcmp(&(m_vsConstants[0]), &(p->m_vsConstants[0]), m_vsConstants.size() * sizeof(float)))
 	{

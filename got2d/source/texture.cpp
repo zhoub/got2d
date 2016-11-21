@@ -16,10 +16,9 @@ bool Texture::IsSame(g2d::Texture* other) const
 {
 	if (other == nullptr)	return false;
 	if (this == other)		return true;
+	if (other->GetClassID() != GetClassID()) return false;
 
-	Texture* timpl = dynamic_cast<Texture*>(other);
-	if (timpl == nullptr)
-		return false;
+	Texture* timpl = reinterpret_cast<Texture*>(other);
 	return timpl->m_resPath == m_resPath;
 }
 
