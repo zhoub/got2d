@@ -5,6 +5,7 @@
 
 class Engine : public g2d::Engine
 {
+	IMPL_CLASSID;
 public:
 	static Engine* Instance;
 	~Engine();

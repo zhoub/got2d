@@ -10,6 +10,7 @@ class Scene;
 
 class SceneNode : public g2d::SceneNode
 {
+	IMPL_CLASSID;
 public:
 	SceneNode(::Scene* scene, SceneNode* parent, int childID, g2d::Entity* entity, bool autoRelease);
 	virtual ~SceneNode();
@@ -85,6 +86,7 @@ private:
 
 class Scene : public g2d::Scene
 {
+	IMPL_CLASSID;
 public:
 	Scene();
 	~Scene();

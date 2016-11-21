@@ -17,6 +17,7 @@ namespace g2d
 		DECL_CLASSID;
 		virtual void Release() = 0;
 		virtual gml::aabb2d GetLocalAABB() const = 0;
+
 	public:
 		virtual ~Entity();
 		virtual void OnInitial();
@@ -26,7 +27,6 @@ namespace g2d
 		virtual void OnScale(const gml::vec2 newScaler);
 		virtual void OnMove(const gml::vec2 newPos);
 		virtual void OnUpdateMatrixChanged();
-
 		virtual gml::aabb2d GetWorldAABB() const;
 
 	public:
@@ -35,6 +35,7 @@ namespace g2d
 		unsigned int GetVisibleMask() const;
 		SceneNode* GetSceneNode() const;
 		int GetRenderingOrder() const;
+
 	private:
 		SceneNode* m_sceneNode = nullptr;
 		int m_renderingOrder = 0;
@@ -45,6 +46,7 @@ namespace g2d
 	public:
 		static Quad* Create();
 
+		DECL_CLASSID;
 		virtual g2d::Entity* SetSize(const gml::vec2& size) = 0;
 		virtual const gml::vec2& GetSize()  const = 0;
 	};
@@ -52,6 +54,7 @@ namespace g2d
 	class G2DAPI Camera : public Entity
 	{
 	public:
+		DECL_CLASSID;
 		virtual unsigned int GetID() const = 0;
 		virtual Camera* SetPosition(const gml::vec2& position) = 0;
 		virtual Camera* SetScale(const gml::vec2& scale) = 0;
@@ -70,6 +73,7 @@ namespace g2d
 	class G2DAPI SceneNode
 	{
 	public:
+		DECL_CLASSID;
 		virtual ~SceneNode();
 		virtual Scene* GetScene() const = 0;
 		virtual SceneNode* GetParentNode() = 0;
@@ -109,6 +113,7 @@ namespace g2d
 	class G2DAPI Scene : public SceneNode
 	{
 	public:
+		DECL_CLASSID;
 		virtual ~Scene();
 		virtual Camera* CreateCameraNode() = 0;
 		virtual Camera* GetMainCamera() const = 0;

@@ -20,6 +20,7 @@ namespace g2d
 		static void Uninitialize();
 		static Engine* Instance();
 
+		DECL_CLASSID;
 		virtual ~Engine();
 		virtual bool Update(unsigned long elapsedTime) = 0;
 		virtual void Render() = 0;

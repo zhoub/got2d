@@ -27,6 +27,7 @@ namespace g2d
 	public:
 		static Mesh* Create(unsigned int vertexCount, unsigned int indexCount);
 
+		DECL_CLASSID;
 		virtual ~Mesh();
 		virtual GeometryVertex* GetRawVertices() = 0;
 		virtual unsigned int* GetRawIndices() = 0;
@@ -42,6 +43,7 @@ namespace g2d
 	public:
 		static Texture* LoadFromFile(const char* path);
 
+		DECL_CLASSID;
 		virtual ~Texture();
 		virtual bool IsSame(Texture* other) const = 0;
 		virtual void AddRef() = 0;
@@ -54,6 +56,7 @@ namespace g2d
 	class G2DAPI Pass
 	{
 	public:
+		DECL_CLASSID;
 		virtual ~Pass();
 		virtual const char* GetVertexShaderName() const = 0;
 		virtual const char* GetPixelShaderName() const = 0;
@@ -79,6 +82,7 @@ namespace g2d
 		static Material* CreateSimpleTexture();
 		static Material* CreateSimpleColor();
 
+		DECL_CLASSID;
 		virtual ~Material();
 		virtual Pass* GetPass(unsigned int index) const = 0;
 		virtual unsigned int GetPassCount() const = 0;
@@ -98,6 +102,7 @@ namespace g2d
 	class G2DAPI RenderSystem
 	{
 	public:
+		DECL_CLASSID;
 		virtual ~RenderSystem();
 		virtual bool OnResize(long width, long height) = 0;
 		virtual void BeginRender() = 0;

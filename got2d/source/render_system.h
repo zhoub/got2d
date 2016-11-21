@@ -28,6 +28,7 @@ public:
 
 class Mesh : public g2d::Mesh
 {
+	IMPL_CLASSID;
 public:
 	Mesh(unsigned int vertexCount, unsigned int indexCount);
 	bool Merge(g2d::Mesh* other, const gml::mat32& transform);
@@ -47,6 +48,7 @@ private:
 
 class Texture : public g2d::Texture
 {
+	IMPL_CLASSID;
 public:
 	static Texture* Default() { static Texture t(""); return &t; }
 	Texture(const char* resPath);
@@ -109,6 +111,7 @@ public:
 
 class Shader
 {
+	IMPL_CLASSID;
 public:
 	bool Create(const char* vsCode, unsigned int vcbLength, const char* psCode, unsigned int pcbLength);
 	void Destroy();
@@ -148,6 +151,7 @@ private:
 
 class Pass : public g2d::Pass
 {
+	IMPL_CLASSID;
 public:
 	inline Pass(const char* vsName, const char* psName) : m_vsName(vsName), m_psName(psName), m_blendMode(g2d::BLEND_NONE) {}
 	Pass(const Pass& other);
@@ -181,6 +185,7 @@ private:
 
 class Material : public g2d::Material
 {
+	IMPL_CLASSID;
 public:
 	Material(unsigned int passCount);
 	Material(const Material& other);
@@ -201,6 +206,7 @@ private:
 
 class RenderSystem : public g2d::RenderSystem
 {
+	IMPL_CLASSID;
 public:
 	static RenderSystem* Instance;
 	RenderSystem();
