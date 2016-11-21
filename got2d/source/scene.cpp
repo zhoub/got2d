@@ -227,7 +227,7 @@ void SceneNode::AdjustRenderingOrder()
 	while (parent != nullptr)
 	{
 		auto& siblings = parent->m_children;
-		for (int i = m_childID + 1; i < siblings.size(); i++)
+		for (size_t i = m_childID + 1; i < siblings.size(); i++)
 		{
 			auto sibling = siblings[i];
 			sibling->SetRenderingOrder(curIndex);
