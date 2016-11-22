@@ -418,6 +418,10 @@ Scene::Scene()
 	CreateCameraNode();
 }
 
+Scene::~Scene()
+{
+	delete m_root;
+}
 
 void Scene::SetCameraOrderDirty()
 {
