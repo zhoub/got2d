@@ -89,7 +89,6 @@ class Scene : public g2d::Scene
 	IMPL_CLASSID;
 public:
 	Scene();
-	~Scene();
 
 	inline ::SceneNode* GetRoot() { return m_root; }
 	inline void Update(unsigned int elpasedTime) { return m_root->Update(elpasedTime); }
@@ -133,7 +132,7 @@ public:
 private:
 	void ResortCameraOrder();
 
-	::SceneNode* m_root;
+	ptr_autod<::SceneNode> m_root;
 	SpatialGraph m_spatial;
 	std::vector<g2d::Camera*> m_cameras;
 	std::vector<g2d::Camera*> m_renderingOrder;

@@ -102,12 +102,6 @@ int g2d::Entity::GetRenderingOrder() const
 	return m_renderingOrder;
 }
 
-Quad::~Quad()
-{
-	m_mesh->Release();
-	m_material->Release();
-}
-
 void Quad::OnInitial()
 {
 	GetSceneNode()->SetPivot(gml::vec2(-0.5f, -0.5f));

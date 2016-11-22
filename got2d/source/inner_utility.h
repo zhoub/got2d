@@ -54,6 +54,7 @@ struct auto_kill_ptr
 
 	inline operator Pointer* &() { return pointer; }
 	inline Pointer* operator->() { return pointer; }
+	inline const Pointer* operator->() const { return pointer; }
 };
 
 template<typename T> using ptr_autor = auto_kill_ptr<T, PointerReleaser<T>>;

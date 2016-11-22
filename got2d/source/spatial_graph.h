@@ -2,6 +2,7 @@
 #include <vector>
 #include <map>
 #include <gmlaabb.h>
+#include "inner_utility.h"
 
 namespace g2d
 {
@@ -46,12 +47,12 @@ class SpatialGraph
 {
 public:
 	SpatialGraph(float boundSize);
-	~SpatialGraph();
+	
 	void Add(g2d::Entity* entity);
 	void Remove(g2d::Entity* entity);
 	void FindVisible(g2d::Camera* camera, std::vector<g2d::Entity*>& visibleEntities);
 
 private:
-	QuadTreeNode* m_root;
+	ptr_autod<QuadTreeNode> m_root;
 	std::map<g2d::Entity*, QuadTreeNode*> m_linkRef;
 };

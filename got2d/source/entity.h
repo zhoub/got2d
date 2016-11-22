@@ -1,5 +1,6 @@
 #pragma once
 #include "../include/g2dscene.h"
+#include "inner_utility.h"
 #include <gmlmatrix.h>
 #include <g2drender.h>
 
@@ -9,7 +10,6 @@ class Quad : public g2d::Quad
 	IMPL_CLASSID;
 public:
 	Quad();
-	~Quad();
 	virtual void OnInitial() override;
 	virtual void OnRender() override;
 
@@ -19,8 +19,8 @@ public:
 	inline virtual void Release() override { delete this; }
 	virtual gml::aabb2d GetLocalAABB() const override { return m_aabb; }
 
-	g2d::Mesh* m_mesh;
-	g2d::Material* m_material;
+	ptr_autor<g2d::Mesh> m_mesh = nullptr;
+	ptr_autor<g2d::Material> m_material = nullptr;
 	gml::vec2 m_size;
 	gml::aabb2d m_aabb;
 };

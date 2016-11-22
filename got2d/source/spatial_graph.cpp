@@ -173,11 +173,6 @@ SpatialGraph::SpatialGraph(float boundSize)
 	m_root = new QuadTreeNode(nullptr, gml::vec2::zero(), boundSize);
 }
 
-SpatialGraph::~SpatialGraph()
-{
-	delete m_root;
-}
-
 void SpatialGraph::Add(g2d::Entity* entity)
 {
 	if (entity == nullptr)
