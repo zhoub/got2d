@@ -56,6 +56,7 @@ bool Texture2D::Create(unsigned int width, unsigned int height)
 	texDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
 	texDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 	texDesc.MiscFlags = 0;
+
 	if (S_OK != GetRenderSystem()->GetDevice()->CreateTexture2D(&texDesc, nullptr, &m_texture))
 	{
 		return false;
@@ -67,6 +68,7 @@ bool Texture2D::Create(unsigned int width, unsigned int height)
 	viewDesc.ViewDimension = D3D_SRV_DIMENSION_TEXTURE2D;
 	viewDesc.Texture2D.MipLevels = -1;
 	viewDesc.Texture2D.MostDetailedMip = 0;
+	
 	if (S_OK != GetRenderSystem()->GetDevice()->CreateShaderResourceView(m_texture, &viewDesc, &m_shaderView))
 	{
 		Destroy();
@@ -112,7 +114,6 @@ void Texture2D::UploadImage(unsigned char* data, bool hasAlpha)
 		GetRenderSystem()->GetContext()->Unmap(m_texture, 0);
 		GetRenderSystem()->GetContext()->GenerateMips(m_shaderView);
 	}
-
 }
 
 void Texture2D::Destroy()

@@ -38,6 +38,7 @@ bool RenderSystem::OnResize(long width, long height)
 	{
 		return false;
 	}
+
 	if (S_OK != m_d3dDevice->CreateRenderTargetView(m_colorTexture, NULL, &m_rtView))
 	{
 		return false;
@@ -49,6 +50,7 @@ bool RenderSystem::OnResize(long width, long height)
 	{
 		return false;
 	}
+
 	if (S_OK != m_d3dDevice->CreateRenderTargetView(backBuffer, NULL, &m_bbView))
 	{
 		return false;
@@ -213,7 +215,6 @@ bool RenderSystem::Create(void* nativeWindow)
 			break;
 		}
 
-
 		if (!OnResize(m_windowWidth, m_windowHeight))
 		{
 			break;
@@ -271,14 +272,15 @@ void RenderSystem::Destroy()
 
 	m_geometry.Destroy();
 	m_texPool.Destroy();
-	SD(shaderlib);
+
 	SR(m_sceneConstBuffer);
+
+	SR(m_swapChain);
+	SR(m_d3dDevice);
+	SR(m_d3dContext);
 	SR(m_colorTexture);
 	SR(m_rtView);
 	SR(m_bbView);
-	SR(m_d3dDevice);
-	SR(m_d3dContext);
-	SR(m_swapChain);
 
 	if (Instance == this)
 	{
@@ -383,7 +385,7 @@ void RenderSystem::FlushBatch(Mesh& mesh, g2d::Material* material)
 		{
 			unsigned int stride = sizeof(g2d::GeometryVertex);
 			unsigned int offset = 0;
-			m_d3dContext->IASetVertexBuffers(0, 1, &(m_geometry.m_vertexBuffer), &stride, &offset);
+			m_d3dContext->IASetVertexBuffers(0, 1, &m_geometry.m_vertexBuffer, &stride, &offset);
 			m_d3dContext->IASetIndexBuffer(m_geometry.m_indexBuffer, DXGI_FORMAT_R32_UINT, 0);
 			m_d3dContext->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 			m_d3dContext->IASetInputLayout(shader->GetInputLayout());

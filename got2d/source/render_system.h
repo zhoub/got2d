@@ -1,5 +1,6 @@
 #pragma once
 #include "../include/g2drender.h"
+#include "inner_utility.h"
 #include <map>
 #include <vector>
 #include <windows.h>
@@ -126,7 +127,7 @@ public:
 
 private:
 	ID3D11InputLayout* m_shaderLayout = nullptr;
-	ID3D11VertexShader* m_vertexShader = nullptr;
+	ID3D11VertexShader*  m_vertexShader = nullptr;
 	ID3D11PixelShader* m_pixelShader = nullptr;
 	ID3D11Buffer* m_vertexConstBuffer = nullptr;
 	ID3D11Buffer* m_pixelConstBuffer = nullptr;
@@ -268,7 +269,7 @@ private:
 
 	Geometry m_geometry;
 	TexturePool m_texPool;
-	ShaderLib* shaderlib = nullptr;
+	ptr_autod<ShaderLib> shaderlib = nullptr;
 	ID3D11Buffer* m_sceneConstBuffer = nullptr;
 	gml::mat32 m_matView;
 	gml::mat44 m_matProj;

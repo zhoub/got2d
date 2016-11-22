@@ -37,11 +37,11 @@ bool Shader::Create(const char* vsCode, unsigned int vcbLength, const char* psCo
 	auto vsCodeLength = strlen(vsCode) + 1;
 	auto psCodeLength = strlen(psCode) + 1;
 
-	ID3DBlob* vsBlob = nullptr;
-	ID3DBlob* psBlob = nullptr;
-	ID3DBlob* errorBlob = nullptr;
 	do
 	{
+		ptr_autor<ID3DBlob> vsBlob = nullptr;
+		ptr_autor<ID3DBlob> psBlob = nullptr;
+		ptr_autor<ID3DBlob> errorBlob = nullptr;
 
 		//compile shader
 		auto ret = ::D3DCompile(
@@ -49,14 +49,12 @@ bool Shader::Create(const char* vsCode, unsigned int vcbLength, const char* psCo
 			NULL, NULL, NULL,
 			"VSMain", "vs_5_0",
 			0, 0,
-			&vsBlob, &errorBlob);
+			&vsBlob.pointer, &errorBlob.pointer);
 
 		if (S_OK != ret)
 		{
 			const char* reason = (const char*)errorBlob->GetBufferPointer();
 			assert(false);
-			errorBlob->Release();
-			errorBlob = nullptr;
 			break;
 		}
 
@@ -65,14 +63,12 @@ bool Shader::Create(const char* vsCode, unsigned int vcbLength, const char* psCo
 			NULL, NULL, NULL,
 			"PSMain", "ps_5_0",
 			0, 0,
-			&psBlob, &errorBlob);
+			&psBlob.pointer, &errorBlob.pointer);
 
 		if (S_OK != ret)
 		{
 			const char* reason = (const char*)errorBlob->GetBufferPointer();
 			assert(false);
-			errorBlob->Release();
-			errorBlob = nullptr;
 			break;
 		}
 
@@ -144,21 +140,17 @@ bool Shader::Create(const char* vsCode, unsigned int vcbLength, const char* psCo
 				break;
 		}
 
-		SR(vsBlob);
-		SR(psBlob);
 		return true;
 	} while (false);
 
-	SR(vsBlob);
-	SR(psBlob);
 	Destroy();
 	return false;
 }
 
 void Shader::Destroy()
 {
-	SR(m_vertexShader);
 	SR(m_pixelShader);
+	SR(m_vertexShader);
 	SR(m_shaderLayout);
 	SR(m_vertexConstBuffer);
 	SR(m_pixelConstBuffer);
