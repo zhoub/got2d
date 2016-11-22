@@ -1,4 +1,5 @@
 #include "engine.h"
+#include "inner_utility.h"
 
 struct ClassIDGenerator
 {

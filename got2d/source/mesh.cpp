@@ -1,4 +1,5 @@
 #include "render_system.h"
+#include "inner_utility.h"
 
 g2d::Mesh::~Mesh() { }
 

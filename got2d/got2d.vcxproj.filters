@@ -9,10 +9,6 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
     </Filter>
-    <Filter Include="资源文件">
-      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
-      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
-    </Filter>
     <Filter Include="源文件\render">
       <UniqueIdentifier>{a5b0682e-9e2b-4a70-8cfe-2b18918c02c8}</UniqueIdentifier>
     </Filter>
@@ -47,6 +43,9 @@
     </ClInclude>
     <ClInclude Include="source\spatial_graph.h">
       <Filter>源文件\scene</Filter>
+    </ClInclude>
+    <ClInclude Include="source\inner_utility.h">
+      <Filter>源文件</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

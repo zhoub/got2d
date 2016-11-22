@@ -1,4 +1,5 @@
 #include "render_system.h"
+#include "inner_utility.h"
 #include <string>
 
 RenderSystem* RenderSystem::Instance = nullptr;

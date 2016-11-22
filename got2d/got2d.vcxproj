@@ -172,6 +172,7 @@
     <ClInclude Include="include\g2dscene.h" />
     <ClInclude Include="source\engine.h" />
     <ClInclude Include="source\entity.h" />
+    <ClInclude Include="source\inner_utility.h" />
     <ClInclude Include="source\render_system.h" />
     <ClInclude Include="source\scene.h" />
     <ClInclude Include="source\spatial_graph.h" />
