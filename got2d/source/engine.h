@@ -15,18 +15,21 @@ public:
 
 public:
 	virtual g2d::Scene* CreateNewScene() override;
+	inline virtual g2d::RenderSystem* GetRenderSystem() override { return &m_renderSystem; }
 	inline virtual g2d::Scene* GetCurrentScene() override { return m_currentScene; }
 	//return lastActiveScene
 	virtual g2d::Scene* SetActiveScene(g2d::Scene* activeScene) override;
+	virtual void ReleaseScene(g2d::Scene* deletedScene) override;
 	virtual bool Update(unsigned long elapsedTime) override;
 	virtual void Render() override;
-	inline virtual g2d::RenderSystem* GetRenderSystem() override { return &m_renderSystem; }
+	
 	
 
 private:
 	void* nativeWindow = nullptr;
 	RenderSystem m_renderSystem;
 	Scene* m_currentScene = nullptr;
+	std::vector<Scene*> m_releasedScene;
 	std::vector<Scene*> m_sceneList;
 	std::string m_resourceRoot;
 };

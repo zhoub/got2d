@@ -1,6 +1,8 @@
 #include "engine.h"
 #include "inner_utility.h"
 
+#include <algorithm>
+
 struct ClassIDGenerator
 {
 	static unsigned Next()
@@ -65,7 +67,11 @@ Engine::~Engine()
 {
 	for (auto& s : m_sceneList)
 	{
-		SD(s);
+		delete s;
+	}
+	for (auto& rs : m_releasedScene)
+	{
+		delete rs;
 	}
 	m_renderSystem.Destroy();
 }
@@ -80,8 +86,36 @@ g2d::Scene* Engine::CreateNewScene()
 g2d::Scene* Engine::SetActiveScene(g2d::Scene* activeScene)
 {
 	auto rst = m_currentScene;
+	if (std::find(m_releasedScene.begin(), m_releasedScene.end(), m_currentScene) != m_releasedScene.end())
+	{
+		rst = nullptr;
+	}
 	m_currentScene = dynamic_cast<::Scene*>(activeScene);
 	return rst;
+}
+
+void Engine::ReleaseScene(g2d::Scene* deletedScene)
+{
+	::Scene* ds = dynamic_cast<::Scene*>(deletedScene);
+	if (m_currentScene != ds)
+	{
+		std::remove_if(m_sceneList.begin(), m_sceneList.end(), [&ds](const ::Scene* s)->bool {
+			if (s == ds)
+			{
+				delete s;
+				return true;
+			}
+			else
+			{
+				return false;
+			}
+		});
+	}
+	else if (ds != nullptr)
+	{
+		std::remove(m_sceneList.begin(), m_sceneList.end(), ds);
+		m_releasedScene.push_back(ds);
+	}
 }
 
 bool Engine::Update(unsigned long elapsedTime)
@@ -89,6 +123,20 @@ bool Engine::Update(unsigned long elapsedTime)
 	if (m_currentScene)
 	{
 		m_currentScene->Update(elapsedTime);
+	}
+
+	//ensure we delete a scene is not in a loop.
+	if (m_releasedScene.size() > 0)
+	{
+		for (auto& rs : m_releasedScene)
+		{
+			if (rs == m_currentScene)
+			{
+				m_currentScene = nullptr;
+			}
+			delete rs;
+		}
+		m_releasedScene.clear();
 	}
 	return true;
 }

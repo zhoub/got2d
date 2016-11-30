@@ -24,11 +24,12 @@ namespace g2d
 		virtual ~Engine();
 		virtual bool Update(unsigned long elapsedTime) = 0;
 		virtual void Render() = 0;
+		virtual RenderSystem* GetRenderSystem() = 0;
 		virtual Scene* CreateNewScene() = 0;
 		virtual Scene* GetCurrentScene() = 0;
 		//return lastActiveScene
 		virtual Scene* SetActiveScene(Scene* activeScene) = 0;
-		virtual RenderSystem* GetRenderSystem() = 0;
+		virtual void ReleaseScene(Scene* deletedScene) = 0;
 	};
 
 	inline Engine* GetEngine() { return g2d::Engine::Instance(); }
