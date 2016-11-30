@@ -36,7 +36,8 @@ bool g2d::Engine::Initialize(const Config& config)
 			break;
 		}
 
-		inst->CreateNewScene();
+		auto defaultScene = inst->CreateNewScene();
+		inst->SetActiveScene(defaultScene);
 
 		return true;
 	} while (false);
@@ -62,19 +63,42 @@ g2d::Engine* g2d::Engine::Instance()
 
 Engine::~Engine()
 {
-	SD(m_currentScene);
+	for (auto& s : m_sceneList)
+	{
+		SD(s);
+	}
 	m_renderSystem.Destroy();
+}
+
+g2d::Scene* Engine::CreateNewScene()
+{
+	auto newScenePtr = new Scene();
+	m_sceneList.push_back(newScenePtr);
+	return newScenePtr;
+}
+
+g2d::Scene* Engine::SetActiveScene(g2d::Scene* activeScene)
+{
+	auto rst = m_currentScene;
+	m_currentScene = dynamic_cast<::Scene*>(activeScene);
+	return rst;
 }
 
 bool Engine::Update(unsigned long elapsedTime)
 {
-	m_currentScene->Update(elapsedTime);
+	if (m_currentScene)
+	{
+		m_currentScene->Update(elapsedTime);
+	}
 	return true;
 }
 
 void Engine::Render()
 {
-	m_currentScene->Render();
+	if (m_currentScene)
+	{
+		m_currentScene->Render();
+	}
 }
 
 bool Engine::CreateRenderSystem(void* nativeWindow)
@@ -85,12 +109,6 @@ bool Engine::CreateRenderSystem(void* nativeWindow)
 		return false;
 	}
 	return true;
-}
-
-void Engine::CreateNewScene()
-{
-	SD(m_currentScene);
-	m_currentScene = new Scene();
 }
 
 void Engine::SetResourceRoot(const char* resPath)
