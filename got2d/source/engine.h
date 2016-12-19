@@ -14,7 +14,7 @@ public:
 	inline const std::string& GetResourceRoot() { return m_resourceRoot; }
 
 public:
-	virtual g2d::Scene* CreateNewScene() override;
+	virtual g2d::Scene* CreateNewScene(float boundSize) override;
 	inline virtual g2d::RenderSystem* GetRenderSystem() override { return &m_renderSystem; }
 	inline virtual g2d::Scene* GetCurrentScene() override { return m_currentScene; }
 	//return lastActiveScene
@@ -23,8 +23,6 @@ public:
 	virtual bool Update(unsigned long elapsedTime) override;
 	virtual void Render() override;
 	
-	
-
 private:
 	void* nativeWindow = nullptr;
 	RenderSystem m_renderSystem;

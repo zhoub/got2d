@@ -88,7 +88,7 @@ class Scene : public g2d::Scene
 {
 	IMPL_CLASSID;
 public:
-	Scene();
+	Scene(float boundSize);
 	~Scene();
 
 	inline ::SceneNode* GetRoot() { return m_root; }
@@ -133,7 +133,7 @@ public:
 private:
 	void ResortCameraOrder();
 
-	::SceneNode* m_root;
+	::SceneNode* m_root = nullptr;
 	SpatialGraph m_spatial;
 	std::vector<g2d::Camera*> m_cameras;
 	std::vector<g2d::Camera*> m_renderingOrder;

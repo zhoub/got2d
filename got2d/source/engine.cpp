@@ -38,7 +38,7 @@ bool g2d::Engine::Initialize(const Config& config)
 			break;
 		}
 
-		auto defaultScene = inst->CreateNewScene();
+		auto defaultScene = inst->CreateNewScene(config.defaultSceneBounding);
 		inst->SetActiveScene(defaultScene);
 
 		return true;
@@ -76,9 +76,9 @@ Engine::~Engine()
 	m_renderSystem.Destroy();
 }
 
-g2d::Scene* Engine::CreateNewScene()
+g2d::Scene* Engine::CreateNewScene(float boundSize)
 {
-	auto newScenePtr = new Scene();
+	auto newScenePtr = new Scene(boundSize);
 	m_sceneList.push_back(newScenePtr);
 	return newScenePtr;
 }

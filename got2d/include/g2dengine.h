@@ -14,6 +14,7 @@ namespace g2d
 		{
 			void* nativeWindow;
 			const char* resourceFolderPath;
+			float defaultSceneBounding = 2 << 8;
 		};
 
 		static bool Initialize(const Config& config);
@@ -25,7 +26,7 @@ namespace g2d
 		virtual bool Update(unsigned long elapsedTime) = 0;
 		virtual void Render() = 0;
 		virtual RenderSystem* GetRenderSystem() = 0;
-		virtual Scene* CreateNewScene() = 0;
+		virtual Scene* CreateNewScene(float boundSize) = 0;
 		virtual Scene* GetCurrentScene() = 0;
 		//return lastActiveScene
 		virtual Scene* SetActiveScene(Scene* activeScene) = 0;
