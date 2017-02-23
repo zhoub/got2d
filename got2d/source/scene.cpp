@@ -404,15 +404,8 @@ void SceneNode::SetStatic(bool s)
 	}
 }
 
-template<class T>
-constexpr T exp(T n, unsigned int iexp)
-{
-	return iexp == 0 ? T(1) : (iexp == 1 ? n : exp(n, iexp - 1) * n);
-}
-
-constexpr const float SCENE_SIZE = QuadTreeNode::MIN_SIZE * exp(2.0f, 8);
-Scene::Scene()
-	: m_spatial(SCENE_SIZE)
+Scene::Scene(float boundSize)
+	: m_spatial(boundSize)
 {
 	m_root = new ::SceneNode(this, nullptr, 0, nullptr, false);
 	CreateCameraNode();
