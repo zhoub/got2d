@@ -1,4 +1,5 @@
 #pragma once
+#include <cinttypes>
 
 #ifdef GOT2D_EXPORTS
 #define G2DAPI __declspec(dllexport)
@@ -6,7 +7,29 @@
 #define G2DAPI __declspec(dllimport)
 #endif
 
-unsigned G2DAPI NextClassID();
-#define DECL_CLASSID virtual unsigned GetClassID() const = 0;
-#define IMPL_CLASSID public:\
-	inline unsigned GetClassID() const { static unsigned ClassID = NextClassID(); return ClassID; }
+class G2DAPI GObject
+{
+public:
+	virtual ~GObject() { }
+
+	virtual uint32_t GetClassID() const = 0;
+
+	bool IsSameType(GObject* other) const
+	{
+		return GetClassID() == other->GetClassID();
+	}
+
+protected:
+	GObject() = default;
+
+	GObject(const GObject&) = delete;
+
+	GObject& operator=(const GObject&) = delete;
+};
+
+uint32_t G2DAPI NextClassID();
+#define RTTI_IMPL \
+public:\
+	virtual uint32_t GetClassID() const override \
+	{ static uint32_t s_ClassID = NextClassID(); return s_ClassID; }\
+private:

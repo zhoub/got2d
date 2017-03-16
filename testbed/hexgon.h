@@ -4,10 +4,10 @@
 
 class Hexgon : public g2d::Entity
 {
+	RTTI_IMPL;
 public://implement
-	IMPL_CLASSID;
 	virtual void Release() override { delete this; }
-	virtual gml::aabb2d GetLocalAABB() const override { return m_aabb; };
+	virtual const gml::aabb2d& GetLocalAABB() const override { return m_aabb; };
 
 public:
 	Hexgon()
@@ -18,7 +18,7 @@ public:
 
 			//indices;
 			{
-				unsigned int indices[] = {
+				uint32_t indices[] = {
 					0, 1, 2,
 					0, 2, 3,
 					0, 3, 4,
@@ -26,7 +26,7 @@ public:
 					0, 5, 6,
 					0, 6, 1 };
 				auto idx = m_mesh->GetRawIndices();
-				for (int i = 0; i < m_mesh->GetIndexCount(); i++)
+				for (uint32_t i = 0; i < m_mesh->GetIndexCount(); i++)
 				{
 					idx[i] = indices[i];
 				}
@@ -68,7 +68,7 @@ public:
 	virtual void OnRender() override
 	{
 		g2d::GetEngine()->GetRenderSystem()->RenderMesh(
-			g2d::RenderOrder::RORDER_DEFAULT,
+			g2d::RenderLayer::Default,
 			m_mesh, m_material,
 			GetSceneNode()->GetWorldMatrix());
 	}

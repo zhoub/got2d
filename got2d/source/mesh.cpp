@@ -1,37 +1,34 @@
 #include "render_system.h"
 #include "inner_utility.h"
 
-g2d::Mesh::~Mesh() { }
-
-g2d::Mesh* g2d::Mesh::Create(unsigned int vertexCount, unsigned int indexCount)
+g2d::Mesh* g2d::Mesh::Create(uint32_t vertexCount, uint32_t indexCount)
 {
 	return new ::Mesh(vertexCount, indexCount);
 }
 
-Mesh::Mesh(unsigned int vertexCount, unsigned int indexCount)
+Mesh::Mesh(uint32_t vertexCount, uint32_t indexCount)
 	: m_vertices(vertexCount), m_indices(indexCount)
-{
+{ }
 
-}
-
-bool Mesh::Merge(g2d::Mesh* other, const gml::mat32& transform)
+bool Mesh::Merge(const g2d::Mesh& other, const gml::mat32& transform)
 {
 	constexpr const int NUM_VERTEX_LIMITED = 32768;
 	auto numVertex = GetVertexCount();
-	if (numVertex + other->GetVertexCount() > NUM_VERTEX_LIMITED)
+	if (numVertex + other.GetVertexCount() > NUM_VERTEX_LIMITED)
 	{
 		return false;
 	}
 
-	auto vertices = other->GetRawVertices();
-	for (int i = 0, n = other->GetVertexCount(); i < n; i++)
+	auto vertices = other.GetRawVertices();
+	for (int i = 0, n = other.GetVertexCount(); i < n; i++)
 	{
 		m_vertices.push_back(vertices[i]);
 		auto& p = m_vertices.back().position;
 		p = gml::transform_point(transform, p);
 	}
-	auto indices = other->GetRawIndices();
-	for (int i = 0, n = other->GetIndexCount(); i < n; i++)
+
+	auto indices = other.GetRawIndices();
+	for (int i = 0, n = other.GetIndexCount(); i < n; i++)
 	{
 		m_indices.push_back(indices[i] + numVertex);
 	}
@@ -44,32 +41,42 @@ void Mesh::Clear()
 	m_indices.clear();
 }
 
+const g2d::GeometryVertex* Mesh::GetRawVertices() const
+{
+	return &(m_vertices[0]);
+}
+
 g2d::GeometryVertex* Mesh::GetRawVertices()
 {
 	return &(m_vertices[0]);
 }
 
-unsigned int* Mesh::GetRawIndices()
+const uint32_t* Mesh::GetRawIndices() const
 {
 	return &(m_indices[0]);
 }
 
-unsigned int Mesh::GetVertexCount()
+uint32_t* Mesh::GetRawIndices()
 {
-	return static_cast<unsigned int>(m_vertices.size());
+	return &(m_indices[0]);
 }
 
-unsigned int Mesh::GetIndexCount()
+uint32_t Mesh::GetVertexCount() const
 {
-	return static_cast<unsigned int>(m_indices.size());
+	return static_cast<uint32_t>(m_vertices.size());
 }
 
-void Mesh::ResizeVertexArray(unsigned int vertexCount)
+uint32_t Mesh::GetIndexCount() const
+{
+	return static_cast<uint32_t>(m_indices.size());
+}
+
+void Mesh::ResizeVertexArray(uint32_t vertexCount)
 {
 	m_vertices.resize(vertexCount);
 }
 
-void Mesh::ResizeIndexArray(unsigned int indexCount)
+void Mesh::ResizeIndexArray(uint32_t indexCount)
 {
 	m_indices.resize(indexCount);
 }
@@ -79,7 +86,7 @@ void Mesh::Release()
 	delete this;
 }
 
-bool Geometry::Create(unsigned int vertexCount, unsigned int indexCount)
+bool Geometry::Create(uint32_t vertexCount, uint32_t indexCount)
 {
 	if (vertexCount == 0 || indexCount == 0)
 		return false;
@@ -105,7 +112,7 @@ bool Geometry::Create(unsigned int vertexCount, unsigned int indexCount)
 	return false;
 }
 
-bool Geometry::MakeEnoughVertexArray(unsigned int numVertices)
+bool Geometry::MakeEnoughVertexArray(uint32_t numVertices)
 {
 	if (m_numVertices >= numVertices)
 	{
@@ -135,7 +142,7 @@ bool Geometry::MakeEnoughVertexArray(unsigned int numVertices)
 	return true;
 }
 
-bool Geometry::MakeEnoughIndexArray(unsigned int numIndices)
+bool Geometry::MakeEnoughIndexArray(uint32_t numIndices)
 {
 	if (m_numIndices >= numIndices)
 	{
@@ -144,7 +151,7 @@ bool Geometry::MakeEnoughIndexArray(unsigned int numIndices)
 
 	D3D11_BUFFER_DESC bufferDesc =
 	{
-		sizeof(unsigned int) * numIndices,//UINT ByteWidth;
+		sizeof(uint32_t) * numIndices,//UINT ByteWidth;
 		D3D11_USAGE_DYNAMIC,						//D3D11_USAGE Usage;
 		D3D11_BIND_INDEX_BUFFER,					//UINT BindFlags;
 		D3D11_CPU_ACCESS_WRITE,						//UINT CPUAccessFlags;
@@ -163,12 +170,9 @@ bool Geometry::MakeEnoughIndexArray(unsigned int numIndices)
 	return true;
 }
 
-void Geometry::UploadVertices(unsigned int offset, g2d::GeometryVertex* vertices, unsigned int count)
+void Geometry::UploadVertices(uint32_t offset, g2d::GeometryVertex* vertices, uint32_t count)
 {
-	if (vertices == nullptr || m_vertexBuffer == nullptr)
-	{
-		return;
-	}
+	ENSURE(vertices != nullptr && m_vertexBuffer != nullptr);
 
 	D3D11_MAPPED_SUBRESOURCE mappedResource;
 	if (S_OK == GetRenderSystem()->GetContext()->Map(m_vertexBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource))
@@ -180,19 +184,16 @@ void Geometry::UploadVertices(unsigned int offset, g2d::GeometryVertex* vertices
 	}
 }
 
-void Geometry::UploadIndices(unsigned int offset, unsigned int* indices, unsigned int count)
+void Geometry::UploadIndices(uint32_t offset, uint32_t* indices, uint32_t count)
 {
-	if (indices == nullptr || m_indexBuffer == nullptr)
-	{
-		return;
-	}
+	ENSURE(indices != nullptr && m_indexBuffer != nullptr);
 
 	D3D11_MAPPED_SUBRESOURCE mappedResource;
 	if (S_OK == GetRenderSystem()->GetContext()->Map(m_indexBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource))
 	{
 		count = __min(m_numIndices - offset, count);
-		unsigned int* data = reinterpret_cast<unsigned int*>(mappedResource.pData);
-		memcpy(data + offset, indices, sizeof(unsigned int) * count);
+		uint32_t* data = reinterpret_cast<uint32_t*>(mappedResource.pData);
+		memcpy(data + offset, indices, sizeof(uint32_t) * count);
 		GetRenderSystem()->GetContext()->Unmap(m_indexBuffer, 0);
 	}
 }

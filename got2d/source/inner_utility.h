@@ -1,18 +1,18 @@
 #pragma once
 #include <memory>
 
+#define SR(x)  if(x) { x->Release(); x=nullptr; }
+#define SD(x)  if(x) { delete x; x=nullptr; }
+#define SDA(x) if(x) { delete[] x; x=nullptr; }
 
-#ifndef SR
-#define SR(x) if(x){ x->Release(); x=nullptr;}
-#endif
-
-#ifndef SD
-#define SD(x) if(x){ delete x; x=nullptr;}
-#endif
-
-#ifndef SDA
-#define SDA(x) if(x){ delete[] x; x=nullptr;}
-#endif
+#define RTTI_INNER_IMPL \
+public:\
+	uint32_t GetClassID() const\
+	{\
+		static uint32_t ClassID = NextClassID();\
+		return ClassID;\
+	}\
+private:
 
 template<typename T> struct PointerReleaser { void operator()(T* pointer) { pointer->Release(); } };
 template<typename T> struct PointerDeleter { void operator()(T* pointer) { delete pointer; } };
@@ -26,13 +26,13 @@ struct auto_kill_ptr
 {
 	Pointer* pointer;
 
-	inline auto_kill_ptr() : pointer(nullptr) { }
+	auto_kill_ptr() : pointer(nullptr) { }
 
-	inline auto_kill_ptr(Pointer* ptr) : pointer(ptr) {}
+	auto_kill_ptr(Pointer* ptr) : pointer(ptr) {}
 
-	inline auto_kill_ptr(const auto_kill_ptr&) = delete;
+	auto_kill_ptr(const auto_kill_ptr&) = delete;
 
-	inline auto_kill_ptr& operator=(Pointer* ptr)
+	auto_kill_ptr& operator=(Pointer* ptr)
 	{
 		if (ptr != pointer)
 			release();
@@ -40,9 +40,9 @@ struct auto_kill_ptr
 		return *this;
 	}
 
-	inline ~auto_kill_ptr() { release(); }
+	~auto_kill_ptr() { release(); }
 
-	inline void release()
+	void release()
 	{
 		if (pointer != nullptr)
 		{
@@ -52,12 +52,32 @@ struct auto_kill_ptr
 		}
 	}
 
-	inline operator Pointer* &() { return pointer; }
-	inline Pointer* operator->() { return pointer; }
-	inline const Pointer* operator->() const { return pointer; }
+	operator Pointer* &() { return pointer; }
+	Pointer* operator->() { return pointer; }
+	const Pointer* operator->() const { return pointer; }
 };
 
 template<typename T> using ptr_autor = auto_kill_ptr<T, PointerReleaser<T>>;
 template<typename T> using ptr_autod = auto_kill_ptr<T, PointerDeleter<T>>;
 
+#include <cassert>
+#define ENSURE(b) { assert(b); if (b); else throw; }
 
+template<typename T1, typename T2>
+bool same_type(T1* a, T2* b)
+{
+	return (a->GetClassID() == b->GetClassID());
+}
+
+namespace g2d
+{
+	class Engine;
+	class RenderSystem;
+
+	class SceneNode;
+	class Scene;
+
+	class Entity;
+	class Camera;
+	class Quad;
+}

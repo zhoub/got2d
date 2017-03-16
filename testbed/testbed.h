@@ -8,6 +8,7 @@ extern HWND hWnd;
 namespace g2d
 {
 	class Mesh;
+	class Scene;
 }
 
 class Testbed
@@ -27,6 +28,7 @@ protected:
 	unsigned long GetFrameCount() const;
 	unsigned long GetElapsedTime() const;
 
+
 	virtual void Start();
 	virtual void End();
 	virtual bool Update(unsigned long);
@@ -37,4 +39,6 @@ private:
 	unsigned long m_lastTimeStamp;
 	unsigned long m_tickInterval;
 	bool m_running = true;
+
+	g2d::Scene* mainScene = nullptr;
 };

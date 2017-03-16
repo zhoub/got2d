@@ -7,17 +7,23 @@
 
 class Quad : public g2d::Quad
 {
-	IMPL_CLASSID;
+	RTTI_IMPL;
 public:
 	Quad();
+
+public:	//g2d::Entity
+	virtual void Release() override { delete this; }
+
+	virtual const gml::aabb2d& GetLocalAABB() const override { return m_aabb; }
+
 	virtual void OnInitial() override;
+
 	virtual void OnRender() override;
 
-public:
-	inline virtual g2d::Entity* SetSize(const gml::vec2& size) override;
-	inline virtual const gml::vec2& GetSize() const override { return m_size; }
-	inline virtual void Release() override { delete this; }
-	virtual gml::aabb2d GetLocalAABB() const override { return m_aabb; }
+public:	//g2d::Quad
+	virtual g2d::Quad* SetSize(const gml::vec2& size) override;
+
+	virtual const gml::vec2& GetSize() const override { return m_size; }
 
 	ptr_autor<g2d::Mesh> m_mesh = nullptr;
 	ptr_autor<g2d::Material> m_material = nullptr;
@@ -27,34 +33,50 @@ public:
 
 class Camera : public g2d::Camera
 {
-	IMPL_CLASSID;
+	RTTI_IMPL;
 public:
-	void SetID(unsigned int index) { m_id = index; }
-public:
-	virtual void OnUpdate(unsigned int elapsedTime) override;
+	void SetID(uint32_t index) { m_id = index; }
+
+public:	//g2d::entity
+	virtual void Release() override { delete this; }
+
+	virtual const gml::aabb2d& GetLocalAABB() const override { return m_aabb; }
+
+	virtual void OnUpdate(uint32_t elapsedTime) override;
+
 	virtual void OnUpdateMatrixChanged() override;
 
-public:
-	inline virtual void Release() override { delete this; }
-	virtual gml::aabb2d GetLocalAABB() const override { return gml::aabb2d(); }
-	inline virtual unsigned int GetID() const override { return m_id; }
-	inline virtual void SetActivity(bool activity) override { m_activity = activity; }
-	inline virtual void SetVisibleMask(unsigned int mask) override { m_visibleMask = mask; }
+public:	//g2d::camera
+	virtual uint32_t GetID() const override { return m_id; }
+
+	virtual g2d::Camera* SetPosition(const gml::vec2& position) override { GetSceneNode()->SetPosition(position); return this; }
+
+	virtual g2d::Camera* SetScale(const gml::vec2& scale) override { GetSceneNode()->SetScale(scale); return this; }
+
+	virtual g2d::Camera* SetRotation(gml::radian r) override { GetSceneNode()->SetRotation(r); return this; }
+
 	virtual void SetRenderingOrder(int renderingOrder) override;
-	inline virtual g2d::Camera* SetPosition(const gml::vec2& position) override { GetSceneNode()->SetPosition(position); return this; }
-	inline virtual g2d::Camera* SetScale(const gml::vec2& scale) override { GetSceneNode()->SetScale(scale); return this; }
-	inline virtual g2d::Camera* SetRotation(gml::radian r) override { GetSceneNode()->SetRotation(r); return this; }
+
+	virtual void SetVisibleMask(uint32_t mask) override { m_visibleMask = mask; }
+
+	virtual void SetActivity(bool activity) override { m_activity = activity; }
+
 	virtual const gml::mat32& GetViewMatrix() const override { return m_matrix; }
-	virtual bool TestVisible(gml::aabb2d bounding) override;
-	virtual bool TestVisible(g2d::Entity* entity) override;
-	inline virtual unsigned int GetVisibleMask() const override { return m_visibleMask; }
-	inline virtual int GetRenderingOrder() const override { return m_renderingOrder; }
-	inline virtual bool IsActivity() const override { return m_activity; }
+
+	virtual bool TestVisible(const gml::aabb2d& bounding) const override;
+
+	virtual bool TestVisible(g2d::Entity& entity) const override;
+
+	virtual uint32_t GetVisibleMask() const override { return m_visibleMask; }
+
+	virtual int GetRenderingOrder() const override { return m_renderingOrder; }
+
+	virtual bool IsActivity() const override { return m_activity; }
 
 private:
-	unsigned int m_id;
-	unsigned int m_visibleMask = g2d::DEFAULT_VISIBLE_MASK;
-	int m_renderingOrder;
+	uint32_t m_id;
+	uint32_t m_visibleMask = g2d::DEFAULT_VISIBLE_MASK;
+	int m_renderingOrder = 0;
 	bool m_activity = true;
 	gml::mat32 m_matrix;
 	gml::aabb2d m_aabb;

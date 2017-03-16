@@ -1,19 +1,14 @@
 #include "render_system.h"
 #include "inner_utility.h"
 #include <d3dcompiler.h>
-#include <assert.h>
 
 #pragma comment(lib,"d3dcompiler.lib")
-
-g2d::Pass::~Pass() {}
-
-g2d::Material::~Material() {}
 
 g2d::Material* g2d::Material::CreateColorTexture()
 {
 	auto mat = new ::Material(1);
 	mat->SetPass(0, new ::Pass("default", "color.texture"));
-	mat->GetPass(0)->SetTexture(0, ::Texture::Default(), false);
+	mat->GetPassByIndex(0)->SetTexture(0, &::Texture::Default(), false);
 	return mat;
 }
 
@@ -21,7 +16,7 @@ g2d::Material* g2d::Material::CreateSimpleTexture()
 {
 	auto mat = new ::Material(1);
 	mat->SetPass(0, new ::Pass("default", "simple.texture"));
-	mat->GetPass(0)->SetTexture(0, ::Texture::Default(), false);
+	mat->GetPassByIndex(0)->SetTexture(0, &::Texture::Default(), false);
 	return mat;
 }
 
@@ -32,10 +27,10 @@ g2d::Material* g2d::Material::CreateSimpleColor()
 	return mat;
 }
 
-bool Shader::Create(const char* vsCode, unsigned int vcbLength, const char* psCode, unsigned int pcbLength)
+bool Shader::Create(const std::string& vsCode, uint32_t vcbLength, const std::string& psCode, uint32_t pcbLength)
 {
-	auto vsCodeLength = strlen(vsCode) + 1;
-	auto psCodeLength = strlen(psCode) + 1;
+	auto vsCodeLength = vsCode.size();
+	auto psCodeLength = psCode.size();
 
 	do
 	{
@@ -45,7 +40,7 @@ bool Shader::Create(const char* vsCode, unsigned int vcbLength, const char* psCo
 
 		//compile shader
 		auto ret = ::D3DCompile(
-			vsCode, vsCodeLength,
+			vsCode.c_str(), vsCodeLength,
 			NULL, NULL, NULL,
 			"VSMain", "vs_5_0",
 			0, 0,
@@ -59,7 +54,7 @@ bool Shader::Create(const char* vsCode, unsigned int vcbLength, const char* psCo
 		}
 
 		ret = ::D3DCompile(
-			psCode, psCodeLength,
+			psCode.c_str(), psCodeLength,
 			NULL, NULL, NULL,
 			"PSMain", "ps_5_0",
 			0, 0,
@@ -196,7 +191,7 @@ public:
 			}
 		)";
 	}
-	virtual unsigned int GetConstBufferLength() override { return 0; }
+	virtual uint32_t GetConstBufferLength() override { return 0; }
 };
 
 class SimpleColorPSData : public PSData
@@ -217,7 +212,7 @@ class SimpleColorPSData : public PSData
 			}
 		)";
 	}
-	virtual unsigned int GetConstBufferLength() override { return 0; }
+	virtual uint32_t GetConstBufferLength() override { return 0; }
 };
 
 class SimpleTexturePSData : public PSData
@@ -240,7 +235,7 @@ class SimpleTexturePSData : public PSData
 			}
 		)";
 	}
-	virtual unsigned int GetConstBufferLength() override { return 0; }
+	virtual uint32_t GetConstBufferLength() override { return 0; }
 };
 
 class ColorTexturePSData : public PSData
@@ -263,7 +258,7 @@ class ColorTexturePSData : public PSData
 			}
 		)";
 	}
-	virtual unsigned int GetConstBufferLength() override { return 0; }
+	virtual uint32_t GetConstBufferLength() override { return 0; }
 };
 
 ShaderLib::ShaderLib()
@@ -375,12 +370,18 @@ Pass* Pass::Clone()
 
 bool Pass::IsSame(g2d::Pass* other) const
 {
-	if (other == nullptr)	return false;
-	if (this == other)		return true;
-	if (other->GetClassID() != GetClassID()) return false;
+	ENSURE(other != nullptr);
+	if (!IsSameType(other))
+		return false;
 
-	Pass* p = reinterpret_cast<Pass*>(other);
-	if (m_blendMode != p->m_blendMode || m_vsName != m_vsName || m_psName != p->m_psName)
+	Pass* p = reinterpret_cast<Pass*>(&other);
+
+	if (this == p)		
+		return true;
+
+	if (m_blendMode != p->m_blendMode ||
+		m_vsName != p->m_vsName ||
+		m_psName != p->m_psName)
 		return false;
 
 	if (m_textures.size() != p->m_textures.size() ||
@@ -398,7 +399,6 @@ bool Pass::IsSame(g2d::Pass* other) const
 		}
 	}
 
-
 	//we have no idea how to deal with floats.
 	if (m_vsConstants.size() > 0 &&
 		0 != memcmp(&(m_vsConstants[0]), &(p->m_vsConstants[0]), m_vsConstants.size() * sizeof(float)))
@@ -411,12 +411,10 @@ bool Pass::IsSame(g2d::Pass* other) const
 	{
 		return false;
 	}
-
-
 	return true;
 }
 
-void Pass::SetTexture(unsigned int index, g2d::Texture* tex, bool autoRelease)
+void Pass::SetTexture(uint32_t index, g2d::Texture* tex, bool autoRelease)
 {
 	size_t size = m_textures.size();
 	if (index >= size)
@@ -439,7 +437,7 @@ void Pass::SetTexture(unsigned int index, g2d::Texture* tex, bool autoRelease)
 	}
 }
 
-void Pass::SetVSConstant(unsigned int index, float* data, unsigned int size, unsigned int count)
+void Pass::SetVSConstant(uint32_t index, float* data, uint32_t size, uint32_t count)
 {
 	if (count == 0)
 		return;
@@ -449,13 +447,13 @@ void Pass::SetVSConstant(unsigned int index, float* data, unsigned int size, uns
 		m_vsConstants.resize(index + count);
 	}
 
-	for (unsigned int i = 0; i < count; i++)
+	for (uint32_t i = 0; i < count; i++)
 	{
 		memcpy(&(m_vsConstants[index + i]), data + i*size, size);
 	}
 }
 
-void Pass::SetPSConstant(unsigned int index, float* data, unsigned int size, unsigned int count)
+void Pass::SetPSConstant(uint32_t index, float* data, uint32_t size, uint32_t count)
 {
 	if (count == 0)
 		return;
@@ -465,18 +463,13 @@ void Pass::SetPSConstant(unsigned int index, float* data, unsigned int size, uns
 		m_psConstants.resize(index + count);
 	}
 
-	for (unsigned int i = 0; i < count; i++)
+	for (uint32_t i = 0; i < count; i++)
 	{
 		memcpy(&(m_psConstants[index + i]), data + i*size, size);
 	}
 }
 
-g2d::BlendMode Pass::GetBlendMode() const
-{
-	return m_blendMode;
-}
-
-Material::Material(unsigned int passCount)
+Material::Material(uint32_t passCount)
 	: m_passes(passCount)
 {
 
@@ -491,9 +484,9 @@ Material::Material(const Material& other)
 	}
 }
 
-void Material::SetPass(unsigned int index, Pass* p)
+void Material::SetPass(uint32_t index, Pass* p)
 {
-	assert(index < m_passes.size());
+	ENSURE(index < m_passes.size());
 	m_passes[index] = p;
 }
 
@@ -506,29 +499,33 @@ Material::~Material()
 	m_passes.clear();
 }
 
-g2d::Pass* Material::GetPass(unsigned int index) const
+g2d::Pass* Material::GetPassByIndex(uint32_t index) const
 {
-	if (m_passes.size() <= index)
-		return nullptr;
+	ENSURE(index < m_passes.size());
 	return m_passes[index];
 }
 
-unsigned int Material::GetPassCount() const
+uint32_t Material::GetPassCount() const
 {
-	return static_cast<unsigned int>(m_passes.size());
+	return static_cast<uint32_t>(m_passes.size());
 }
 
 bool Material::IsSame(g2d::Material* other) const
 {
-	if (other == nullptr)	return false;
-	if (this == other)		return true;
+	ENSURE(other != nullptr);
+
+	if (this == other)
+		return true;
+
+	if (!IsSameType(other))
+		return false;
 
 	if (other->GetPassCount() != GetPassCount())
 		return false;
 
-	for (unsigned int i = 0; i < GetPassCount(); i++)
+	for (uint32_t i = 0; i < GetPassCount(); i++)
 	{
-		if (!GetPass(i)->IsSame(other->GetPass(i)))
+		if (!m_passes[i]->IsSame(other->GetPassByIndex(i)))
 		{
 			return false;
 		}

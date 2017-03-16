@@ -1,6 +1,6 @@
 #include "spatial_graph.h"
 #include "../include/g2dscene.h"
-#include <assert.h>
+#include <algorithm>
 
 QuadTreeNode::QuadTreeNode(QuadTreeNode* parent, const gml::vec2& center, float gridSize)
 	: m_bounding(
@@ -21,6 +21,7 @@ QuadTreeNode::~QuadTreeNode()
 		if (dirNode)
 		{
 			delete dirNode;
+			dirNode = nullptr;
 		}
 	}
 }
@@ -32,10 +33,10 @@ inline bool Contains(const gml::vec2& center, float gridSize, const gml::aabb2d&
 		gml::vec2(center.x + gridSize, center.y + gridSize)
 		);
 
-	return bounding.is_intersect(nodeAABB) == gml::it_contain;
+	return bounding.is_intersect(nodeAABB) == gml::it_mode::contain;
 }
 
-QuadTreeNode* QuadTreeNode::AddRecursive(const gml::aabb2d& entityBound, g2d::Entity* entity)
+QuadTreeNode* QuadTreeNode::AddRecursive(const gml::aabb2d& entityBound, g2d::Entity& entity)
 {
 	m_isEmpty = false;
 	if (m_kCanBranch)
@@ -52,46 +53,46 @@ QuadTreeNode* QuadTreeNode::AddRecursive(const gml::aabb2d& entityBound, g2d::En
 			gml::vec2(center.x - extend, center.y + extend),
 			m_bounding.center());
 
-		if (bounding.is_intersect(entityBound) == gml::it_contain)
+		if (bounding.is_intersect(entityBound) == gml::it_mode::contain)
 		{
-			if (m_directionNodes[DIR_LT] == nullptr)
+			if (m_directionNodes[Direction::LeftTop] == nullptr)
 			{
-				m_directionNodes[DIR_LT] = new QuadTreeNode(this, center, halfExtend);
+				m_directionNodes[Direction::LeftTop] = new QuadTreeNode(this, center, halfExtend);
 			}
-			return m_directionNodes[DIR_LT]->AddRecursive(entityBound, entity);
+			return m_directionNodes[Direction::LeftTop]->AddRecursive(entityBound, entity);
 		}
 
 		//x-neg, y-neg
 		bounding.move({ 0, -extend });
-		if (bounding.is_intersect(entityBound) == gml::it_contain)
+		if (bounding.is_intersect(entityBound) == gml::it_mode::contain)
 		{
-			if (m_directionNodes[DIR_LD] == nullptr)
+			if (m_directionNodes[Direction::LeftDown] == nullptr)
 			{
-				m_directionNodes[DIR_LD] = new QuadTreeNode(this, center, halfExtend);
+				m_directionNodes[Direction::LeftDown] = new QuadTreeNode(this, center, halfExtend);
 			}
-			return  m_directionNodes[DIR_LD]->AddRecursive(entityBound, entity);
+			return  m_directionNodes[Direction::LeftDown]->AddRecursive(entityBound, entity);
 		}
 
 		//x-pos,y-pos
 		bounding.move({ extend, extend });
-		if (bounding.is_intersect(entityBound) == gml::it_contain)
+		if (bounding.is_intersect(entityBound) == gml::it_mode::contain)
 		{
-			if (m_directionNodes[DIR_RT] == nullptr)
+			if (m_directionNodes[Direction::RightTop] == nullptr)
 			{
-				m_directionNodes[DIR_RT] = new QuadTreeNode(this, center, halfExtend);
+				m_directionNodes[Direction::RightTop] = new QuadTreeNode(this, center, halfExtend);
 			}
-			return m_directionNodes[DIR_RT]->AddRecursive(entityBound, entity);
+			return m_directionNodes[Direction::RightTop]->AddRecursive(entityBound, entity);
 		}
 
 		//x-pos, y-neg
 		bounding.move({ 0, -extend });
-		if (bounding.is_intersect(entityBound) == gml::it_contain)
+		if (bounding.is_intersect(entityBound) == gml::it_mode::contain)
 		{
-			if (m_directionNodes[DIR_RD] == nullptr)
+			if (m_directionNodes[Direction::RightDown] == nullptr)
 			{
-				m_directionNodes[DIR_RD] = new QuadTreeNode(this, center, halfExtend);
+				m_directionNodes[Direction::RightDown] = new QuadTreeNode(this, center, halfExtend);
 			}
-			return m_directionNodes[DIR_RD]->AddRecursive(entityBound, entity);
+			return m_directionNodes[Direction::RightDown]->AddRecursive(entityBound, entity);
 		}
 
 		return AddToDynamicList(entity);
@@ -102,11 +103,12 @@ QuadTreeNode* QuadTreeNode::AddRecursive(const gml::aabb2d& entityBound, g2d::En
 	}
 }
 
-QuadTreeNode* QuadTreeNode::AddToDynamicList(g2d::Entity* entity)
+QuadTreeNode* QuadTreeNode::AddToDynamicList(g2d::Entity& entity)
 {
-	m_dynamicEntities.push_back(entity);
+	m_dynamicEntities.push_back(&entity);
 	return this;
 }
+
 void QuadTreeNode::TryMarkEmpty()
 {
 	if (m_dynamicEntities.size() > 0)
@@ -131,29 +133,26 @@ void QuadTreeNode::TryMarkEmpty()
 		}
 	}
 }
-void QuadTreeNode::Remove(g2d::Entity* entity)
+void QuadTreeNode::Remove(g2d::Entity& entity)
 {
-	for (auto it = m_dynamicEntities.begin(), end = m_dynamicEntities.end(); it != end; it++)
-	{
-		if (*it == entity)
-		{
-			*it = m_dynamicEntities.back();
-			m_dynamicEntities.pop_back();
-			break;
-		}
-	}
+	auto newEnd = std::remove(
+		std::begin(m_dynamicEntities),
+		std::end(m_dynamicEntities),
+		&entity);
+
+	m_dynamicEntities.erase(newEnd, std::end(m_dynamicEntities));
 
 	TryMarkEmpty();
 }
 
-void QuadTreeNode::FindVisible(g2d::Camera* camera, std::vector<g2d::Entity*>& outVisibleList)
+void QuadTreeNode::FindVisible(const g2d::Camera& camera, std::vector<g2d::Entity*>& outVisibleList)
 {
 	if (IsEmpty())
 		return;
 
 	for (auto& entity : m_dynamicEntities)
 	{
-		if (entity->GetSceneNode()->IsVisible() && camera->TestVisible(entity))
+		if (entity->GetSceneNode()->IsVisible() && camera.TestVisible(*entity))
 		{
 			outVisibleList.push_back(entity);
 		}
@@ -161,7 +160,7 @@ void QuadTreeNode::FindVisible(g2d::Camera* camera, std::vector<g2d::Entity*>& o
 
 	for (auto& child : m_directionNodes)
 	{
-		if (child != nullptr && camera->TestVisible(child->GetBounding()))
+		if (child != nullptr && camera.TestVisible(child->GetBounding()))
 		{
 			child->FindVisible(camera, outVisibleList);
 		}
@@ -173,37 +172,34 @@ SpatialGraph::SpatialGraph(float boundSize)
 	m_root = new QuadTreeNode(nullptr, gml::vec2::zero(), boundSize);
 }
 
-void SpatialGraph::Add(g2d::Entity* entity)
+void SpatialGraph::Add(g2d::Entity& entity)
 {
-	if (entity == nullptr)
-		return;
-
 	Remove(entity);
 
 	QuadTreeNode* node = nullptr;
-	if (entity->GetSceneNode()->IsStatic())
+	if (entity.GetSceneNode()->IsStatic())
 	{
-		gml::aabb2d nodeAABB = entity->GetWorldAABB();
+		gml::aabb2d nodeAABB = entity.GetWorldAABB();
 		node = m_root->AddRecursive(nodeAABB, entity);
 	}
 	else
 	{
 		node = m_root->AddToDynamicList(entity);
 	}
-	m_linkRef[entity] = node;
+	m_linkRef[&entity] = node;
 }
 
-void SpatialGraph::Remove(g2d::Entity* entity)
+void SpatialGraph::Remove(g2d::Entity& entity)
 {
-	if (entity && m_linkRef.count(entity))
+	if (m_linkRef.count(&entity))
 	{
-		auto& node = m_linkRef[entity];
+		auto& node = m_linkRef[&entity];
 		node->Remove(entity);
-		m_linkRef.erase(entity);
+		m_linkRef.erase(&entity);
 	}
 }
 
-void SpatialGraph::FindVisible(g2d::Camera* camera, std::vector<g2d::Entity*>& outVisibleList)
+void SpatialGraph::FindVisible(const g2d::Camera& camera, std::vector<g2d::Entity*>& outVisibleList)
 {
 	m_root->FindVisible(camera, outVisibleList);
 }

@@ -2,23 +2,24 @@
 #include "engine.h"
 #include "inner_utility.h"
 
-g2d::Texture::~Texture() {}
-
 g2d::Texture* g2d::Texture::LoadFromFile(const char* path)
 {
-	std::string resourcePath = ::GetEngine()->GetResourceRoot() + path;
+	std::string resourcePath = ::GetEngineImpl()->GetResourceRoot() + path;
 	return ::GetRenderSystem()->CreateTextureFromFile(resourcePath.c_str());
 }
 
-Texture::Texture(const char* resPath) : m_resPath(resPath)
+Texture::Texture(std::string resPath) : m_resPath(std::move(resPath))
 {
 
 }
 bool Texture::IsSame(g2d::Texture* other) const
 {
-	if (other == nullptr)	return false;
-	if (this == other)		return true;
-	if (other->GetClassID() != GetClassID()) return false;
+	ENSURE(other != nullptr);
+	if (this == other)
+		return true;
+
+	if (!same_type(other, this))
+		return false;
 
 	Texture* timpl = reinterpret_cast<Texture*>(other);
 	return timpl->m_resPath == m_resPath;
@@ -38,7 +39,7 @@ void Texture::Release()
 }
 
 
-bool Texture2D::Create(unsigned int width, unsigned int height)
+bool Texture2D::Create(uint32_t width, uint32_t height)
 {
 	if (width == 0 || height == 0)
 		return false;
@@ -80,16 +81,16 @@ bool Texture2D::Create(unsigned int width, unsigned int height)
 	return true;
 }
 
-void Texture2D::UploadImage(unsigned char* data, bool hasAlpha)
+void Texture2D::UploadImage(uint8_t* data, bool hasAlpha)
 {
 	D3D11_MAPPED_SUBRESOURCE mappedRes;
 	if (S_OK == GetRenderSystem()->GetContext()->Map(m_texture, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedRes))
 	{
-		unsigned char* colorBuffer = static_cast<unsigned char*>(mappedRes.pData);
+		uint8_t* colorBuffer = static_cast<uint8_t*>(mappedRes.pData);
 		if (hasAlpha)
 		{
 			int srcPitch = m_width * 4;
-			for (unsigned int i = 0; i < m_height; i++)
+			for (uint32_t i = 0; i < m_height; i++)
 			{
 				auto dstPtr = colorBuffer + i * mappedRes.RowPitch;
 				auto srcPtr = data + i * srcPitch;
@@ -99,11 +100,11 @@ void Texture2D::UploadImage(unsigned char* data, bool hasAlpha)
 		else
 		{
 			int srcPitch = m_width * 3;
-			for (unsigned int i = 0; i < m_height; i++)
+			for (uint32_t i = 0; i < m_height; i++)
 			{
 				auto dstPtr = colorBuffer + i * mappedRes.RowPitch;
 				auto srcPtr = data + i * srcPitch;
-				for (unsigned int j = 0; j < m_width; j++)
+				for (uint32_t j = 0; j < m_width; j++)
 				{
 					memcpy(dstPtr + j * 4, srcPtr + j * 3, 3);
 					dstPtr[3 + j * 4] = 255;
@@ -132,7 +133,7 @@ bool TexturePool::CreateDefaultTexture()
 {
 	if (m_defaultTexture.Create(2, 2))
 	{
-		unsigned char boardData[] =
+		uint8_t boardData[] =
 		{
 			0,0,0,255,255,255,
 			255,255,255,0,0,0
@@ -190,7 +191,7 @@ Texture2D* TexturePool::GetTexture(const std::string& resource)
 	{
 		if (!LoadTextureFromFile(resource))
 		{
-			return GetDefaultTexture();
+			return nullptr;
 		}
 	}
 

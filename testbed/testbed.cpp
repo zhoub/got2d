@@ -54,7 +54,7 @@ void Testbed::FirstTick()
 void Testbed::OnResize(long width, long height)
 {
 	//要在初始化之后再做这件事情
-	if (g2d::GetEngine())
+	if (g2d::IsEngineInitialized())
 	{
 		g2d::GetEngine()->GetRenderSystem()->OnResize(width, height);
 	}
@@ -92,26 +92,29 @@ unsigned long Testbed::GetElapsedTime() const
 
 void Testbed::Start()
 {
-	g2d::Entity* quad = g2d::Quad::Create()->SetSize(gml::vec2(100, 120));
-	auto* node = g2d::GetEngine()->GetCurrentScene()->CreateSceneNode(quad, true)->SetPosition(gml::vec2(100, 100));
-	node->SetVisibleMask(3, true);
+	mainScene = g2d::GetEngine()->CreateNewScene(2 << 10);
+
+	auto quad = g2d::Quad::Create()->SetSize(gml::vec2(100, 120));
+	auto node = mainScene->CreateSceneNodeChild(quad, true)->SetPosition(gml::vec2(100, 100));
+
+	//node.SetVisibleMask(3, true);
 	node->SetStatic(true);
-	for (int i = 0; i < 4; i++)
+	for (int i = 0; i <= 4; i++)
 	{
-		g2d::Entity* quad = g2d::Quad::Create()->SetSize(gml::vec2(100, 120));
-		auto* child = node->CreateSceneNode(quad, true)->SetPosition(gml::vec2(50, 50));
+		auto quad = g2d::Quad::Create()->SetSize(gml::vec2(100, 120));
+		auto child = node->CreateSceneNodeChild(quad, true)->SetPosition(gml::vec2(50, 50));
 		child->SetVisibleMask((i % 2) ? 1 : 2, true);
 		child->SetStatic(true);
 
 		node = child;
 	}
-
-	if (0)//测试spatial tree 不需要
+	
+	if (false)//测试spatial tree 不需要
 	{
-		auto camera = g2d::GetEngine()->GetCurrentScene()->GetMainCamera();
-		camera->SetActivity(true);
+		auto mainCamera = mainScene->GetMainCamera();
+		mainCamera->SetActivity(true);
 
-		camera = g2d::GetEngine()->GetCurrentScene()->CreateCameraNode();
+		auto camera = mainScene->CreateCameraNode();
 		if (camera)
 		{
 			camera->SetPosition(gml::vec2(220, 100));
@@ -119,7 +122,7 @@ void Testbed::Start()
 			camera->SetActivity(false);
 		}
 
-		camera = g2d::GetEngine()->GetCurrentScene()->CreateCameraNode();
+		camera = mainScene->CreateCameraNode();
 		if (camera)
 		{
 			camera->SetPosition(gml::vec2(220, 100));
@@ -130,22 +133,22 @@ void Testbed::Start()
 	}
 
 	Hexgon* hexgonEntity = new Hexgon();
-	auto hexgonNode = g2d::GetEngine()->GetCurrentScene()->CreateSceneNode(hexgonEntity, true);
+	auto hexgonNode = mainScene->CreateSceneNodeChild(hexgonEntity, true);
 	hexgonNode->SetPosition({ 10,10 });
 }
 
 void Testbed::End()
 {
-
+	mainScene->Release();
+	mainScene = nullptr;
 }
 
 bool Testbed::Update(unsigned long elapsedTime)
 {
-	if (!g2d::GetEngine()->Update(elapsedTime))
-		return false;
+	mainScene->Update(elapsedTime);
 
 	g2d::GetEngine()->GetRenderSystem()->BeginRender();
-	g2d::GetEngine()->Render();
+	mainScene->Render();
 	g2d::GetEngine()->GetRenderSystem()->EndRender();
 	return true;
 

@@ -4,14 +4,12 @@
 
 RenderSystem* RenderSystem::Instance = nullptr;
 
-g2d::RenderSystem::~RenderSystem() { }
-
 RenderSystem::RenderSystem() :m_bkColor(gml::color4::blue())
 {
 	m_matView.identity();
 }
 
-bool RenderSystem::OnResize(long width, long height)
+bool RenderSystem::OnResize(uint32_t width, uint32_t height)
 {
 	//though we create an individual render target
 	//we do not use it for rendering, for now.
@@ -68,7 +66,7 @@ bool RenderSystem::CreateBlendModes()
 	HRESULT hr = S_OK;
 	ID3D11BlendState* blendState = nullptr;
 	D3D11_BLEND_DESC blendDesc;
-	m_blendModes[g2d::BLEND_NONE] = nullptr;
+	m_blendModes[g2d::BlendMode::None] = nullptr;
 
 	blendDesc.AlphaToCoverageEnable = FALSE;
 	blendDesc.IndependentBlendEnable = FALSE;
@@ -87,7 +85,7 @@ bool RenderSystem::CreateBlendModes()
 	hr = m_d3dDevice->CreateBlendState(&blendDesc, &blendState);
 	if (hr != S_OK)
 		return false;
-	m_blendModes[g2d::BLEND_NORMAL] = blendState;
+	m_blendModes[g2d::BlendMode::Normal] = blendState;
 
 	for (int i = 0; i < D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT; i++)
 	{
@@ -104,7 +102,7 @@ bool RenderSystem::CreateBlendModes()
 	hr = m_d3dDevice->CreateBlendState(&blendDesc, &blendState);
 	if (hr != S_OK)
 		return false;
-	m_blendModes[g2d::BLEND_ADD] = blendState;
+	m_blendModes[g2d::BlendMode::Additve] = blendState;
 
 	for (int i = 0; i < D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT; i++)
 	{
@@ -121,7 +119,7 @@ bool RenderSystem::CreateBlendModes()
 	hr = m_d3dDevice->CreateBlendState(&blendDesc, &blendState);
 	if (hr != S_OK)
 		return false;
-	m_blendModes[g2d::BLEND_SCREEN] = blendState;
+	m_blendModes[g2d::BlendMode::Screen] = blendState;
 
 	return true;
 }
@@ -237,7 +235,7 @@ bool RenderSystem::Create(void* nativeWindow)
 
 		m_d3dContext->OMSetRenderTargets(1, &m_bbView, nullptr);
 		m_d3dContext->RSSetViewports(1, &m_viewport);
-		SetBlendMode(g2d::BLEND_NONE);
+		SetBlendMode(g2d::BlendMode::None);
 		Instance = this;
 
 		//all creation using RenderSystem should be start here.
@@ -335,12 +333,12 @@ Texture* RenderSystem::CreateTextureFromFile(const char* resPath)
 	return new Texture(resPath);
 }
 
-void RenderSystem::UpdateConstBuffer(ID3D11Buffer* cbuffer, const void* data, unsigned int length)
+void RenderSystem::UpdateConstBuffer(ID3D11Buffer* cbuffer, const void* data, uint32_t length)
 {
 	D3D11_MAPPED_SUBRESOURCE mappedData;
 	if (S_OK == m_d3dContext->Map(cbuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData))
 	{
-		unsigned char*  dstBuffre = reinterpret_cast<unsigned char*>(mappedData.pData);
+		uint8_t*  dstBuffre = reinterpret_cast<uint8_t*>(mappedData.pData);
 		memcpy(dstBuffre, data, length);
 		m_d3dContext->Unmap(cbuffer, 0);
 	}
@@ -355,7 +353,7 @@ void RenderSystem::UpdateSceneConstBuffer()
 	D3D11_MAPPED_SUBRESOURCE mappedData;
 	if (S_OK == m_d3dContext->Map(m_sceneConstBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData))
 	{
-		unsigned char*  dstBuffer = reinterpret_cast<unsigned char*>(mappedData.pData);
+		uint8_t*  dstBuffer = reinterpret_cast<uint8_t*>(mappedData.pData);
 		if (m_matrixViewDirty)
 		{
 			memcpy(dstBuffer, &(m_matView.row[0]), sizeof(gml::vec3));
@@ -367,9 +365,9 @@ void RenderSystem::UpdateSceneConstBuffer()
 	}
 }
 
-void RenderSystem::FlushBatch(Mesh& mesh, g2d::Material* material)
+void RenderSystem::FlushBatch(Mesh& mesh, g2d::Material& material)
 {
-	if (mesh.GetIndexCount() == 0 || material == nullptr)
+	if (mesh.GetIndexCount() == 0)
 		return;
 
 	m_geometry.MakeEnoughVertexArray(mesh.GetVertexCount());
@@ -377,14 +375,14 @@ void RenderSystem::FlushBatch(Mesh& mesh, g2d::Material* material)
 	m_geometry.UploadVertices(0, mesh.GetRawVertices(), mesh.GetVertexCount());
 	m_geometry.UploadIndices(0, mesh.GetRawIndices(), mesh.GetIndexCount());
 
-	for (unsigned int i = 0; i < material->GetPassCount(); i++)
+	for (uint32_t i = 0; i < material.GetPassCount(); i++)
 	{
-		auto pass = material->GetPass(i);
+		auto pass = material.GetPassByIndex(i);
 		auto shader = shaderlib->GetShaderByName(pass->GetVertexShaderName(), pass->GetPixelShaderName());
 		if (shader)
 		{
-			unsigned int stride = sizeof(g2d::GeometryVertex);
-			unsigned int offset = 0;
+			uint32_t stride = sizeof(g2d::GeometryVertex);
+			uint32_t offset = 0;
 			m_d3dContext->IASetVertexBuffers(0, 1, &m_geometry.m_vertexBuffer, &stride, &offset);
 			m_d3dContext->IASetIndexBuffer(m_geometry.m_indexBuffer, DXGI_FORMAT_R32_UINT, 0);
 			m_d3dContext->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
@@ -426,11 +424,11 @@ void RenderSystem::FlushBatch(Mesh& mesh, g2d::Material* material)
 			{
 				std::vector<ID3D11ShaderResourceView*> views(pass->GetTextureCount());
 				std::vector<ID3D11SamplerState*> samplerstates(pass->GetTextureCount());
-				for (unsigned int i = 0; i < pass->GetTextureCount(); i++)
+				for (uint32_t i = 0; i < pass->GetTextureCount(); i++)
 				{
-					::Texture* timpl = dynamic_cast<::Texture*>(pass->GetTexture(i));
+					::Texture* timpl = reinterpret_cast<::Texture*>(pass->GetTextureByIndex(i));
 					std::string textureName = (timpl == nullptr) ? "" : timpl->GetResourceName();
-					Texture2D* texture = m_texPool.GetTexture(textureName);
+					auto texture = m_texPool.GetTexture(textureName);
 					if (texture)
 					{
 						views[i] = texture->m_shaderView;
@@ -468,35 +466,36 @@ void RenderSystem::FlushRequests()
 
 		for (auto& request : list)
 		{
-			if (!request.material->IsSame(material))//material may be nullptr.
+			if (material == nullptr)
 			{
-				FlushBatch(batchMesh, material);
-				material = request.material;
+				material = &(request.material);
+			}
+			else if (!request.material.IsSame(material))//material may be nullptr.
+			{
+				FlushBatch(batchMesh, *material);
+				material = &(request.material);
 			}
 
 			if (!batchMesh.Merge(request.mesh, request.worldMatrix))
 			{
-				FlushBatch(batchMesh, material);
+				FlushBatch(batchMesh, *material);
 				//de factor, no need to Merge when there is only ONE MESH each drawcall.
 				batchMesh.Merge(request.mesh, request.worldMatrix);
 			}
 		}
 		list.clear();
 	}
-	FlushBatch(batchMesh, material);
+	FlushBatch(batchMesh, *material);
 }
 
-void RenderSystem::RenderMesh(unsigned int layer, g2d::Mesh* mesh, g2d::Material* material, const gml::mat32& worldMatrix)
+void RenderSystem::RenderMesh(uint32_t layer, g2d::Mesh* mesh, g2d::Material* material, const gml::mat32& worldMatrix)
 {
-	if (mesh == nullptr || material == nullptr)
-		return;
 	if (m_renderRequests.count(layer) == 0)
 	{
 		m_renderRequests[layer] = new ReqList();
 	}
-
 	ReqList* list = m_renderRequests[layer];
-	list->push_back({ mesh, material, worldMatrix });
+	list->push_back({ *mesh, *material, worldMatrix });
 }
 
 void RenderSystem::BeginRender()
