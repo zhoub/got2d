@@ -1,6 +1,7 @@
 #pragma once
 #include "../include/g2dscene.h"
 #include "inner_utility.h"
+#include "scope_utility.h"
 #include <gmlmatrix.h>
 #include <g2drender.h>
 
@@ -25,8 +26,8 @@ public:	//g2d::Quad
 
 	virtual const gml::vec2& GetSize() const override { return m_size; }
 
-	ptr_autor<g2d::Mesh> m_mesh = nullptr;
-	ptr_autor<g2d::Material> m_material = nullptr;
+	autor<g2d::Mesh> m_mesh = nullptr;
+	autor<g2d::Material> m_material = nullptr;
 	gml::vec2 m_size;
 	gml::aabb2d m_aabb;
 };

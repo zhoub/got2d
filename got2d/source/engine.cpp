@@ -1,6 +1,6 @@
 #include "engine.h"
 #include "inner_utility.h"
-
+#include "scope_utility.h"
 #include <algorithm>
 
 uint32_t G2DAPI NextClassID()
@@ -25,20 +25,21 @@ bool g2d::Engine::Initialize(const Config& config)
 	if (instance == nullptr)
 		return false;
 
-	do
+	auto fb = create_fallback([&]
 	{
-		instance->SetResourceRoot(config.resourceFolderPath);
+		delete instance;
+		instance = nullptr;
+	});
 
-		if (!instance->CreateRenderSystem(config.nativeWindow))
-		{
-			break;
-		}
-		return true;
-	} while (false);
 
-	delete instance;
-	instance = nullptr;
-	return false;
+	instance->SetResourceRoot(config.resourceFolderPath);
+	if (!instance->CreateRenderSystem(config.nativeWindow))
+	{
+		return false;
+	}
+
+	fb.cancel();
+	return true;	
 }
 
 void g2d::Engine::Uninitialize()

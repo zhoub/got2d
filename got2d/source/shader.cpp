@@ -1,5 +1,6 @@
 #include "render_system.h"
 #include "inner_utility.h"
+#include "scope_utility.h"
 #include <d3dcompiler.h>
 
 #pragma comment(lib,"d3dcompiler.lib")
@@ -32,114 +33,110 @@ bool Shader::Create(const std::string& vsCode, uint32_t vcbLength, const std::st
 	auto vsCodeLength = vsCode.size();
 	auto psCodeLength = psCode.size();
 
-	do
+	auto fb = create_fallback([&] { Destroy(); });
+
+
+	autor<ID3DBlob> vsBlob = nullptr;
+	autor<ID3DBlob> psBlob = nullptr;
+	autor<ID3DBlob> errorBlob = nullptr;
+
+	//compile shader
+	auto ret = ::D3DCompile(
+		vsCode.c_str(), vsCodeLength,
+		NULL, NULL, NULL,
+		"VSMain", "vs_5_0",
+		0, 0,
+		&vsBlob.pointer, &errorBlob.pointer);
+
+	if (S_OK != ret)
 	{
-		ptr_autor<ID3DBlob> vsBlob = nullptr;
-		ptr_autor<ID3DBlob> psBlob = nullptr;
-		ptr_autor<ID3DBlob> errorBlob = nullptr;
+		const char* reason = (const char*)errorBlob->GetBufferPointer();
+		ENSURE(false);
+	}
 
-		//compile shader
-		auto ret = ::D3DCompile(
-			vsCode.c_str(), vsCodeLength,
-			NULL, NULL, NULL,
-			"VSMain", "vs_5_0",
-			0, 0,
-			&vsBlob.pointer, &errorBlob.pointer);
+	ret = ::D3DCompile(
+		psCode.c_str(), psCodeLength,
+		NULL, NULL, NULL,
+		"PSMain", "ps_5_0",
+		0, 0,
+		&psBlob.pointer, &errorBlob.pointer);
 
-		if (S_OK != ret)
-		{
-			const char* reason = (const char*)errorBlob->GetBufferPointer();
-			assert(false);
-			break;
-		}
+	if (S_OK != ret)
+	{
+		const char* reason = (const char*)errorBlob->GetBufferPointer();
+		ENSURE(false);
+	}
 
-		ret = ::D3DCompile(
-			psCode.c_str(), psCodeLength,
-			NULL, NULL, NULL,
-			"PSMain", "ps_5_0",
-			0, 0,
-			&psBlob.pointer, &errorBlob.pointer);
+	// create shader
+	ret = GetRenderSystem()->GetDevice()->CreateVertexShader(
+		vsBlob->GetBufferPointer(),
+		vsBlob->GetBufferSize(),
+		NULL,
+		&m_vertexShader);
 
-		if (S_OK != ret)
-		{
-			const char* reason = (const char*)errorBlob->GetBufferPointer();
-			assert(false);
-			break;
-		}
+	if (S_OK != ret)
+		return false;
 
-		// create shader
-		ret = GetRenderSystem()->GetDevice()->CreateVertexShader(
-			vsBlob->GetBufferPointer(),
-			vsBlob->GetBufferSize(),
-			NULL,
-			&m_vertexShader);
+	ret = GetRenderSystem()->GetDevice()->CreatePixelShader(
+		psBlob->GetBufferPointer(),
+		psBlob->GetBufferSize(),
+		NULL,
+		&m_pixelShader);
 
-		if (S_OK != ret)
-			break;
+	if (S_OK != ret)
+		return false;
 
-		ret = GetRenderSystem()->GetDevice()->CreatePixelShader(
-			psBlob->GetBufferPointer(),
-			psBlob->GetBufferSize(),
-			NULL,
-			&m_pixelShader);
+	D3D11_INPUT_ELEMENT_DESC layoutDesc[3];
+	::ZeroMemory(layoutDesc, sizeof(layoutDesc));
 
-		if (S_OK != ret)
-			break;
+	layoutDesc[0].SemanticName = "POSITION";
+	layoutDesc[0].Format = DXGI_FORMAT_R32G32_FLOAT;
+	layoutDesc[0].AlignedByteOffset = 0;
+	layoutDesc[0].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
 
-		D3D11_INPUT_ELEMENT_DESC layoutDesc[3];
-		::ZeroMemory(layoutDesc, sizeof(layoutDesc));
+	layoutDesc[1].SemanticName = "TEXCOORD";
+	layoutDesc[1].Format = DXGI_FORMAT_R32G32_FLOAT;
+	layoutDesc[1].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
+	layoutDesc[1].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
 
-		layoutDesc[0].SemanticName = "POSITION";
-		layoutDesc[0].Format = DXGI_FORMAT_R32G32_FLOAT;
-		layoutDesc[0].AlignedByteOffset = 0;
-		layoutDesc[0].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
+	layoutDesc[2].SemanticName = "COLOR";
+	layoutDesc[2].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	layoutDesc[2].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
+	layoutDesc[2].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
 
-		layoutDesc[1].SemanticName = "TEXCOORD";
-		layoutDesc[1].Format = DXGI_FORMAT_R32G32_FLOAT;
-		layoutDesc[1].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
-		layoutDesc[1].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
+	ret = GetRenderSystem()->GetDevice()->CreateInputLayout(
+		layoutDesc, sizeof(layoutDesc) / sizeof(layoutDesc[0]),
+		vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(),
+		&m_shaderLayout);
 
-		layoutDesc[2].SemanticName = "COLOR";
-		layoutDesc[2].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-		layoutDesc[2].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
-		layoutDesc[2].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
+	if (S_OK != ret)
+		return false;
 
-		ret = GetRenderSystem()->GetDevice()->CreateInputLayout(
-			layoutDesc, sizeof(layoutDesc) / sizeof(layoutDesc[0]),
-			vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(),
-			&m_shaderLayout);
+	D3D11_BUFFER_DESC cbDesc =
+	{
+		0,							//UINT ByteWidth;
+		D3D11_USAGE_DYNAMIC,		//D3D11_USAGE Usage;
+		D3D11_BIND_CONSTANT_BUFFER,	//UINT BindFlags;
+		D3D11_CPU_ACCESS_WRITE,		//UINT CPUAccessFlags;
+		0,							//UINT MiscFlags;
+		0							//UINT StructureByteStride;
+	};
+	if (vcbLength > 0)
+	{
+		cbDesc.ByteWidth = m_vertexConstBufferLength = vcbLength;
+		if (S_OK != GetRenderSystem()->GetDevice()->CreateBuffer(&cbDesc, NULL, &m_vertexConstBuffer))
+			return false;
+	}
 
-		if (S_OK != ret)
-			break;
+	if (pcbLength > 0)
+	{
+		cbDesc.ByteWidth = m_pixelConstBufferLength = pcbLength;
+		if (S_OK != GetRenderSystem()->GetDevice()->CreateBuffer(&cbDesc, NULL, &m_pixelConstBuffer))
+			return false;
+	}
 
-		D3D11_BUFFER_DESC cbDesc =
-		{
-			0,							//UINT ByteWidth;
-			D3D11_USAGE_DYNAMIC,		//D3D11_USAGE Usage;
-			D3D11_BIND_CONSTANT_BUFFER,	//UINT BindFlags;
-			D3D11_CPU_ACCESS_WRITE,		//UINT CPUAccessFlags;
-			0,							//UINT MiscFlags;
-			0							//UINT StructureByteStride;
-		};
-		if (vcbLength > 0)
-		{
-			cbDesc.ByteWidth = m_vertexConstBufferLength = vcbLength;
-			if (S_OK != GetRenderSystem()->GetDevice()->CreateBuffer(&cbDesc, NULL, &m_vertexConstBuffer))
-				break;
-		}
-
-		if (pcbLength > 0)
-		{
-			cbDesc.ByteWidth = m_pixelConstBufferLength = pcbLength;
-			if (S_OK != GetRenderSystem()->GetDevice()->CreateBuffer(&cbDesc, NULL, &m_pixelConstBuffer))
-				break;
-		}
-
-		return true;
-	} while (false);
-
-	Destroy();
-	return false;
+	fb.cancel();
+	return true;
 }
 
 void Shader::Destroy()
@@ -376,7 +373,7 @@ bool Pass::IsSame(g2d::Pass* other) const
 
 	Pass* p = reinterpret_cast<Pass*>(&other);
 
-	if (this == p)		
+	if (this == p)
 		return true;
 
 	if (m_blendMode != p->m_blendMode ||

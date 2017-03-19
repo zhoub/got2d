@@ -36,23 +36,26 @@ bool RenderSystem::OnResize(uint32_t width, uint32_t height)
 	{
 		return false;
 	}
+	ENSURE(m_colorTexture != nullptr);
 
 	if (S_OK != m_d3dDevice->CreateRenderTargetView(m_colorTexture, NULL, &m_rtView))
 	{
 		return false;
 	}
+	ENSURE(m_rtView != nullptr);
 
 	ID3D11Texture2D* backBuffer = nullptr;
-	if (S_OK != m_swapChain->GetBuffer(0, _uuidof(ID3D11Texture2D), reinterpret_cast<void**>(&backBuffer))
-		|| backBuffer == nullptr)
+	if (S_OK != m_swapChain->GetBuffer(0, _uuidof(ID3D11Texture2D), reinterpret_cast<void**>(&backBuffer)))
 	{
 		return false;
 	}
+	ENSURE(backBuffer != nullptr);
 
 	if (S_OK != m_d3dDevice->CreateRenderTargetView(backBuffer, NULL, &m_bbView))
 	{
 		return false;
 	}
+	ENSURE(m_bbView != nullptr);
 
 	m_matrixProjDirty = true;
 	m_windowWidth = width;
@@ -131,124 +134,126 @@ bool RenderSystem::Create(void* nativeWindow)
 		return Instance == this;
 	}
 
-	do
+	auto fb = create_fallback([&] { Destroy(); });
+
+	HRESULT hr;
+
+	//Create Device
+	D3D_DRIVER_TYPE driverType = D3D_DRIVER_TYPE_HARDWARE;
+	D3D11_CREATE_DEVICE_FLAG deviceFlag = D3D11_CREATE_DEVICE_SINGLETHREADED;
+	D3D_FEATURE_LEVEL featureLevel = D3D_FEATURE_LEVEL_11_0;
+	hr = ::D3D11CreateDevice(NULL, driverType, NULL, deviceFlag, &featureLevel, 1, D3D11_SDK_VERSION, &m_d3dDevice, NULL, &m_d3dContext);
+	if (S_OK != hr)
 	{
-		HRESULT hr;
+		return false;
+	}
+	ENSURE(m_d3dDevice != nullptr && m_d3dContext != nullptr);
 
-		//Create Device
-		D3D_DRIVER_TYPE driverType = D3D_DRIVER_TYPE_HARDWARE;
-		D3D11_CREATE_DEVICE_FLAG deviceFlag = D3D11_CREATE_DEVICE_SINGLETHREADED;
-		D3D_FEATURE_LEVEL featureLevel = D3D_FEATURE_LEVEL_11_0;
-		hr = ::D3D11CreateDevice(NULL, driverType, NULL, deviceFlag, &featureLevel, 1, D3D11_SDK_VERSION, &m_d3dDevice, NULL, &m_d3dContext);
-		if (S_OK != hr)
-		{
-			break;
-		}
+	IDXGIDevice * dxgiDevice = nullptr;
+	hr = m_d3dDevice->QueryInterface(__uuidof(IDXGIDevice), (void **)&dxgiDevice);
+	if (S_OK != hr)
+	{
+		return false;
+	}
+	ENSURE(dxgiDevice != nullptr);
 
-		IDXGIDevice * dxgiDevice = nullptr;
-		hr = m_d3dDevice->QueryInterface(__uuidof(IDXGIDevice), (void **)&dxgiDevice);
-		if (S_OK != hr || dxgiDevice == nullptr)
-		{
-			break;
-		}
+	IDXGIAdapter * adapter = nullptr;
+	hr = dxgiDevice->GetParent(__uuidof(IDXGIAdapter), (void **)&adapter);
+	if (S_OK != hr)
+	{
+		return false;
+	}
+	ENSURE(adapter != nullptr);
 
-		IDXGIAdapter * adapter = nullptr;
-		hr = dxgiDevice->GetParent(__uuidof(IDXGIAdapter), (void **)&adapter);
-		if (S_OK != hr || adapter == nullptr)
-		{
-			break;
-		}
+	//CreateSwapChain
+	IDXGIFactory* factory = nullptr;
+	hr = adapter->GetParent(__uuidof(IDXGIFactory), (void **)&factory);
+	if (S_OK != hr || factory == nullptr)
+	{
+		return false;
+	}
+	ENSURE(factory != nullptr);
 
-		//CreateSwapChain
-		IDXGIFactory* factory = nullptr;
-		hr = adapter->GetParent(__uuidof(IDXGIFactory), (void **)&factory);
-		if (S_OK != hr || factory == nullptr)
-		{
-			break;
-		}
+	DXGI_SWAP_CHAIN_DESC scDesc;
+	scDesc.BufferDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+	scDesc.BufferDesc.Width = m_windowWidth;
+	scDesc.BufferDesc.Height = m_windowHeight;
+	scDesc.BufferDesc.RefreshRate.Numerator = 60;
+	scDesc.BufferDesc.RefreshRate.Denominator = 1;
+	scDesc.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
+	scDesc.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
+	scDesc.BufferCount = 1;
+	scDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
 
-		DXGI_SWAP_CHAIN_DESC scDesc;
-		scDesc.BufferDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
-		scDesc.BufferDesc.Width = m_windowWidth;
-		scDesc.BufferDesc.Height = m_windowHeight;
-		scDesc.BufferDesc.RefreshRate.Numerator = 60;
-		scDesc.BufferDesc.RefreshRate.Denominator = 1;
-		scDesc.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
-		scDesc.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
-		scDesc.BufferCount = 1;
-		scDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+	scDesc.OutputWindow = reinterpret_cast<HWND>(nativeWindow);
+	scDesc.Windowed = true;
+	scDesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
 
-		scDesc.OutputWindow = reinterpret_cast<HWND>(nativeWindow);
-		scDesc.Windowed = true;
-		scDesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
+	scDesc.SampleDesc.Count = 1;
+	scDesc.SampleDesc.Quality = 0;
+	scDesc.Flags = 0;
 
-		scDesc.SampleDesc.Count = 1;
-		scDesc.SampleDesc.Quality = 0;
-		scDesc.Flags = 0;
+	hr = factory->CreateSwapChain(m_d3dDevice, &scDesc, &m_swapChain);
+	factory->Release();
+	if (S_OK != hr)
+	{
+		return false;
+	}
+	ENSURE(m_swapChain != nullptr);
 
-		hr = factory->CreateSwapChain(m_d3dDevice, &scDesc, &m_swapChain);
-		factory->Release();
-		if (S_OK != hr)
-		{
-			break;
-		}
+	m_swapChain->GetDesc(&scDesc);
+	m_windowWidth = scDesc.BufferDesc.Width;
+	m_windowHeight = scDesc.BufferDesc.Height;
 
-		m_swapChain->GetDesc(&scDesc);
-		m_windowWidth = scDesc.BufferDesc.Width;
-		m_windowHeight = scDesc.BufferDesc.Height;
+	D3D11_BUFFER_DESC bufferDesc =
+	{
+		sizeof(gml::vec4) * 6,			//UINT ByteWidth;
+		D3D11_USAGE_DYNAMIC,			//D3D11_USAGE Usage;
+		D3D11_BIND_CONSTANT_BUFFER,		//UINT BindFlags;
+		D3D11_CPU_ACCESS_WRITE,			//UINT CPUAccessFlags;
+		0,								//UINT MiscFlags;
+		0								//UINT StructureByteStride;
+	};
 
-		D3D11_BUFFER_DESC bufferDesc =
-		{
-			sizeof(gml::vec4) * 6,			//UINT ByteWidth;
-			D3D11_USAGE_DYNAMIC,			//D3D11_USAGE Usage;
-			D3D11_BIND_CONSTANT_BUFFER,		//UINT BindFlags;
-			D3D11_CPU_ACCESS_WRITE,			//UINT CPUAccessFlags;
-			0,								//UINT MiscFlags;
-			0								//UINT StructureByteStride;
-		};
+	hr = m_d3dDevice->CreateBuffer(&bufferDesc, NULL, &m_sceneConstBuffer);
+	if (S_OK != hr)
+	{
+		return false;
+	}
+	ENSURE(m_sceneConstBuffer != nullptr);
 
-		hr = m_d3dDevice->CreateBuffer(&bufferDesc, NULL, &m_sceneConstBuffer);
-		if (S_OK != hr)
-		{
-			break;
-		}
+	if (!OnResize(m_windowWidth, m_windowHeight))
+	{
+		return false;
+	}
 
-		if (!OnResize(m_windowWidth, m_windowHeight))
-		{
-			break;
-		}
+	if (!CreateBlendModes())
+	{
+		return false;
+	}
 
-		if (!CreateBlendModes())
-		{
-			break;
-		}
+	m_viewport =
+	{
+		0.0f,//FLOAT TopLeftX;
+		0.0f,//FLOAT TopLeftY;
+		(FLOAT)m_windowWidth,//FLOAT Width;
+		(FLOAT)m_windowHeight,//FLOAT Height;
+		0.0f,//FLOAT MinDepth;
+		1.0f,//FLOAT MaxDepth;
+	};
 
-		m_viewport =
-		{
-			0.0f,//FLOAT TopLeftX;
-			0.0f,//FLOAT TopLeftY;
-			(FLOAT)m_windowWidth,//FLOAT Width;
-			(FLOAT)m_windowHeight,//FLOAT Height;
-			0.0f,//FLOAT MinDepth;
-			1.0f,//FLOAT MaxDepth;
-		};
+	m_d3dContext->OMSetRenderTargets(1, &m_bbView, nullptr);
+	m_d3dContext->RSSetViewports(1, &m_viewport);
+	SetBlendMode(g2d::BlendMode::None);
+	Instance = this;
 
-		m_d3dContext->OMSetRenderTargets(1, &m_bbView, nullptr);
-		m_d3dContext->RSSetViewports(1, &m_viewport);
-		SetBlendMode(g2d::BlendMode::None);
-		Instance = this;
+	//all creation using RenderSystem should be start here.
+	if (!m_texPool.CreateDefaultTexture())
+		return false;
 
-		//all creation using RenderSystem should be start here.
-		if (!m_texPool.CreateDefaultTexture())
-			break;
-
-		shaderlib = new ShaderLib();
-		return true;
-	} while (false);
-
-
-	Destroy();
-	return false;
+	m_shaderlib = new ShaderLib();
+	fb.cancel();
+	return true;
 }
 
 void RenderSystem::Destroy()
@@ -378,12 +383,12 @@ void RenderSystem::FlushBatch(Mesh& mesh, g2d::Material& material)
 	for (uint32_t i = 0; i < material.GetPassCount(); i++)
 	{
 		auto pass = material.GetPassByIndex(i);
-		auto shader = shaderlib->GetShaderByName(pass->GetVertexShaderName(), pass->GetPixelShaderName());
+		auto shader = m_shaderlib->GetShaderByName(pass->GetVertexShaderName(), pass->GetPixelShaderName());
 		if (shader)
 		{
 			uint32_t stride = sizeof(g2d::GeometryVertex);
 			uint32_t offset = 0;
-			m_d3dContext->IASetVertexBuffers(0, 1, &m_geometry.m_vertexBuffer, &stride, &offset);
+			m_d3dContext->IASetVertexBuffers(0, 1, &(m_geometry.m_vertexBuffer.pointer), &stride, &offset);
 			m_d3dContext->IASetIndexBuffer(m_geometry.m_indexBuffer, DXGI_FORMAT_R32_UINT, 0);
 			m_d3dContext->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 			m_d3dContext->IASetInputLayout(shader->GetInputLayout());

@@ -1,5 +1,6 @@
 #include "render_system.h"
 #include "inner_utility.h"
+#include "scope_utility.h"
 
 g2d::Mesh* g2d::Mesh::Create(uint32_t vertexCount, uint32_t indexCount)
 {
@@ -94,22 +95,19 @@ bool Geometry::Create(uint32_t vertexCount, uint32_t indexCount)
 	m_numVertices = vertexCount;
 	m_numIndices = indexCount;
 
-	do
+	auto fb = create_fallback([&] { Destroy(); });
+
+	if (!MakeEnoughVertexArray(vertexCount))
 	{
-		if (!MakeEnoughVertexArray(vertexCount))
-		{
-			break;
-		}
+		return false;
+	}
 
-		if (!MakeEnoughIndexArray(indexCount))
-		{
-			break;
-		}
-
-		return true;
-	} while (false);
-	Destroy();
-	return false;
+	if (!MakeEnoughIndexArray(indexCount))
+	{
+		return false;
+	}
+	fb.cancel();
+	return true;
 }
 
 bool Geometry::MakeEnoughVertexArray(uint32_t numVertices)
@@ -118,7 +116,6 @@ bool Geometry::MakeEnoughVertexArray(uint32_t numVertices)
 	{
 		return true;
 	}
-
 
 	D3D11_BUFFER_DESC bufferDesc =
 	{
@@ -137,7 +134,6 @@ bool Geometry::MakeEnoughVertexArray(uint32_t numVertices)
 	}
 
 	m_numVertices = numVertices;
-	SR(m_vertexBuffer);
 	m_vertexBuffer = vertexBuffer;
 	return true;
 }
@@ -165,7 +161,6 @@ bool Geometry::MakeEnoughIndexArray(uint32_t numIndices)
 		return false;
 	}
 	m_numIndices = numIndices;
-	SR(m_indexBuffer);
 	m_indexBuffer = indexBuffer;
 	return true;
 }
@@ -200,8 +195,8 @@ void Geometry::UploadIndices(uint32_t offset, uint32_t* indices, uint32_t count)
 
 void Geometry::Destroy()
 {
-	SR(m_vertexBuffer);
-	SR(m_indexBuffer);
+	m_vertexBuffer = nullptr;
+	m_indexBuffer = nullptr;
 	m_numVertices = 0;
 	m_numIndices = 0;
 }

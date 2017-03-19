@@ -1,6 +1,7 @@
 #pragma once
 #include "../include/g2drender.h"
 #include "inner_utility.h"
+#include "scope_utility.h"
 #include <map>
 #include <vector>
 #include <windows.h>
@@ -26,8 +27,8 @@ public:
 
 	void Destroy();
 
-	ID3D11Buffer* m_vertexBuffer = nullptr;
-	ID3D11Buffer* m_indexBuffer = nullptr;
+	autor<ID3D11Buffer> m_vertexBuffer = nullptr;
+	autor<ID3D11Buffer> m_indexBuffer = nullptr;
 	uint32_t m_numVertices = 0;
 	uint32_t m_numIndices = 0;
 };
@@ -358,7 +359,7 @@ private:
 
 	Geometry m_geometry;
 	TexturePool m_texPool;
-	ptr_autod<ShaderLib> shaderlib = nullptr;
+	autod<ShaderLib> m_shaderlib = nullptr;
 	ID3D11Buffer* m_sceneConstBuffer = nullptr;
 	gml::mat32 m_matView;
 	gml::mat44 m_matProj;

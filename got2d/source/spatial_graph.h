@@ -3,6 +3,7 @@
 #include <map>
 #include <gmlaabb.h>
 #include "inner_utility.h"
+#include "scope_utility.h"
 
 class QuadTreeNode
 {
@@ -58,6 +59,6 @@ public:
 	void FindVisible(const g2d::Camera& camera, std::vector<g2d::Entity*>& visibleEntities);
 
 private:
-	ptr_autod<QuadTreeNode> m_root;
+	autod<QuadTreeNode> m_root;
 	std::map<g2d::Entity*, QuadTreeNode*> m_linkRef;
 };
