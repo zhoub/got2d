@@ -1,5 +1,7 @@
 #pragma once
+#include <functional>
 #include <string>
+#include <cinttypes>
 #include <windows.h>
 
 extern HINSTANCE hInst;
@@ -13,6 +15,11 @@ namespace g2d
 
 class Testbed
 {
+public:
+	std::function<void()> OnStart = nullptr;
+	std::function<void()> OnFinish = nullptr;
+	std::function<bool(uint32_t)> OnUpdate = nullptr;
+
 public:
 	const std::wstring& GetWindowClassName();
 	const std::wstring& GetWindowTitle();
@@ -28,17 +35,10 @@ protected:
 	unsigned long GetFrameCount() const;
 	unsigned long GetElapsedTime() const;
 
-
-	virtual void Start();
-	virtual void End();
-	virtual bool Update(unsigned long);
-	
 private:
 	unsigned long m_frameCount = 0;
 	unsigned long m_elapsedTime = 0;
 	unsigned long m_lastTimeStamp;
 	unsigned long m_tickInterval;
 	bool m_running = true;
-
-	g2d::Scene* mainScene = nullptr;
 };
