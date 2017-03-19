@@ -1,19 +1,15 @@
 #include "render_system.h"
 #include "inner_utility.h"
+#include "scope_utility.h"
 #include <d3dcompiler.h>
-#include <assert.h>
 
 #pragma comment(lib,"d3dcompiler.lib")
-
-g2d::Pass::~Pass() {}
-
-g2d::Material::~Material() {}
 
 g2d::Material* g2d::Material::CreateColorTexture()
 {
 	auto mat = new ::Material(1);
 	mat->SetPass(0, new ::Pass("default", "color.texture"));
-	mat->GetPass(0)->SetTexture(0, ::Texture::Default(), false);
+	mat->GetPassByIndex(0)->SetTexture(0, &::Texture::Default(), false);
 	return mat;
 }
 
@@ -21,7 +17,7 @@ g2d::Material* g2d::Material::CreateSimpleTexture()
 {
 	auto mat = new ::Material(1);
 	mat->SetPass(0, new ::Pass("default", "simple.texture"));
-	mat->GetPass(0)->SetTexture(0, ::Texture::Default(), false);
+	mat->GetPassByIndex(0)->SetTexture(0, &::Texture::Default(), false);
 	return mat;
 }
 
@@ -32,119 +28,115 @@ g2d::Material* g2d::Material::CreateSimpleColor()
 	return mat;
 }
 
-bool Shader::Create(const char* vsCode, unsigned int vcbLength, const char* psCode, unsigned int pcbLength)
+bool Shader::Create(const std::string& vsCode, uint32_t vcbLength, const std::string& psCode, uint32_t pcbLength)
 {
-	auto vsCodeLength = strlen(vsCode) + 1;
-	auto psCodeLength = strlen(psCode) + 1;
+	auto vsCodeLength = vsCode.size();
+	auto psCodeLength = psCode.size();
 
-	do
+	auto fb = create_fallback([&] { Destroy(); });
+
+
+	autor<ID3DBlob> vsBlob = nullptr;
+	autor<ID3DBlob> psBlob = nullptr;
+	autor<ID3DBlob> errorBlob = nullptr;
+
+	//compile shader
+	auto ret = ::D3DCompile(
+		vsCode.c_str(), vsCodeLength,
+		NULL, NULL, NULL,
+		"VSMain", "vs_5_0",
+		0, 0,
+		&vsBlob.pointer, &errorBlob.pointer);
+
+	if (S_OK != ret)
 	{
-		ptr_autor<ID3DBlob> vsBlob = nullptr;
-		ptr_autor<ID3DBlob> psBlob = nullptr;
-		ptr_autor<ID3DBlob> errorBlob = nullptr;
+		const char* reason = (const char*)errorBlob->GetBufferPointer();
+		ENSURE(false);
+	}
 
-		//compile shader
-		auto ret = ::D3DCompile(
-			vsCode, vsCodeLength,
-			NULL, NULL, NULL,
-			"VSMain", "vs_5_0",
-			0, 0,
-			&vsBlob.pointer, &errorBlob.pointer);
+	ret = ::D3DCompile(
+		psCode.c_str(), psCodeLength,
+		NULL, NULL, NULL,
+		"PSMain", "ps_5_0",
+		0, 0,
+		&psBlob.pointer, &errorBlob.pointer);
 
-		if (S_OK != ret)
-		{
-			const char* reason = (const char*)errorBlob->GetBufferPointer();
-			assert(false);
-			break;
-		}
+	if (S_OK != ret)
+	{
+		const char* reason = (const char*)errorBlob->GetBufferPointer();
+		ENSURE(false);
+	}
 
-		ret = ::D3DCompile(
-			psCode, psCodeLength,
-			NULL, NULL, NULL,
-			"PSMain", "ps_5_0",
-			0, 0,
-			&psBlob.pointer, &errorBlob.pointer);
+	// create shader
+	ret = GetRenderSystem()->GetDevice()->CreateVertexShader(
+		vsBlob->GetBufferPointer(),
+		vsBlob->GetBufferSize(),
+		NULL,
+		&m_vertexShader);
 
-		if (S_OK != ret)
-		{
-			const char* reason = (const char*)errorBlob->GetBufferPointer();
-			assert(false);
-			break;
-		}
+	if (S_OK != ret)
+		return false;
 
-		// create shader
-		ret = GetRenderSystem()->GetDevice()->CreateVertexShader(
-			vsBlob->GetBufferPointer(),
-			vsBlob->GetBufferSize(),
-			NULL,
-			&m_vertexShader);
+	ret = GetRenderSystem()->GetDevice()->CreatePixelShader(
+		psBlob->GetBufferPointer(),
+		psBlob->GetBufferSize(),
+		NULL,
+		&m_pixelShader);
 
-		if (S_OK != ret)
-			break;
+	if (S_OK != ret)
+		return false;
 
-		ret = GetRenderSystem()->GetDevice()->CreatePixelShader(
-			psBlob->GetBufferPointer(),
-			psBlob->GetBufferSize(),
-			NULL,
-			&m_pixelShader);
+	D3D11_INPUT_ELEMENT_DESC layoutDesc[3];
+	::ZeroMemory(layoutDesc, sizeof(layoutDesc));
 
-		if (S_OK != ret)
-			break;
+	layoutDesc[0].SemanticName = "POSITION";
+	layoutDesc[0].Format = DXGI_FORMAT_R32G32_FLOAT;
+	layoutDesc[0].AlignedByteOffset = 0;
+	layoutDesc[0].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
 
-		D3D11_INPUT_ELEMENT_DESC layoutDesc[3];
-		::ZeroMemory(layoutDesc, sizeof(layoutDesc));
+	layoutDesc[1].SemanticName = "TEXCOORD";
+	layoutDesc[1].Format = DXGI_FORMAT_R32G32_FLOAT;
+	layoutDesc[1].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
+	layoutDesc[1].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
 
-		layoutDesc[0].SemanticName = "POSITION";
-		layoutDesc[0].Format = DXGI_FORMAT_R32G32_FLOAT;
-		layoutDesc[0].AlignedByteOffset = 0;
-		layoutDesc[0].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
+	layoutDesc[2].SemanticName = "COLOR";
+	layoutDesc[2].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	layoutDesc[2].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
+	layoutDesc[2].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
 
-		layoutDesc[1].SemanticName = "TEXCOORD";
-		layoutDesc[1].Format = DXGI_FORMAT_R32G32_FLOAT;
-		layoutDesc[1].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
-		layoutDesc[1].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
+	ret = GetRenderSystem()->GetDevice()->CreateInputLayout(
+		layoutDesc, sizeof(layoutDesc) / sizeof(layoutDesc[0]),
+		vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(),
+		&m_shaderLayout);
 
-		layoutDesc[2].SemanticName = "COLOR";
-		layoutDesc[2].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-		layoutDesc[2].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
-		layoutDesc[2].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
+	if (S_OK != ret)
+		return false;
 
-		ret = GetRenderSystem()->GetDevice()->CreateInputLayout(
-			layoutDesc, sizeof(layoutDesc) / sizeof(layoutDesc[0]),
-			vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(),
-			&m_shaderLayout);
+	D3D11_BUFFER_DESC cbDesc =
+	{
+		0,							//UINT ByteWidth;
+		D3D11_USAGE_DYNAMIC,		//D3D11_USAGE Usage;
+		D3D11_BIND_CONSTANT_BUFFER,	//UINT BindFlags;
+		D3D11_CPU_ACCESS_WRITE,		//UINT CPUAccessFlags;
+		0,							//UINT MiscFlags;
+		0							//UINT StructureByteStride;
+	};
+	if (vcbLength > 0)
+	{
+		cbDesc.ByteWidth = m_vertexConstBufferLength = vcbLength;
+		if (S_OK != GetRenderSystem()->GetDevice()->CreateBuffer(&cbDesc, NULL, &m_vertexConstBuffer))
+			return false;
+	}
 
-		if (S_OK != ret)
-			break;
+	if (pcbLength > 0)
+	{
+		cbDesc.ByteWidth = m_pixelConstBufferLength = pcbLength;
+		if (S_OK != GetRenderSystem()->GetDevice()->CreateBuffer(&cbDesc, NULL, &m_pixelConstBuffer))
+			return false;
+	}
 
-		D3D11_BUFFER_DESC cbDesc =
-		{
-			0,							//UINT ByteWidth;
-			D3D11_USAGE_DYNAMIC,		//D3D11_USAGE Usage;
-			D3D11_BIND_CONSTANT_BUFFER,	//UINT BindFlags;
-			D3D11_CPU_ACCESS_WRITE,		//UINT CPUAccessFlags;
-			0,							//UINT MiscFlags;
-			0							//UINT StructureByteStride;
-		};
-		if (vcbLength > 0)
-		{
-			cbDesc.ByteWidth = m_vertexConstBufferLength = vcbLength;
-			if (S_OK != GetRenderSystem()->GetDevice()->CreateBuffer(&cbDesc, NULL, &m_vertexConstBuffer))
-				break;
-		}
-
-		if (pcbLength > 0)
-		{
-			cbDesc.ByteWidth = m_pixelConstBufferLength = pcbLength;
-			if (S_OK != GetRenderSystem()->GetDevice()->CreateBuffer(&cbDesc, NULL, &m_pixelConstBuffer))
-				break;
-		}
-
-		return true;
-	} while (false);
-
-	Destroy();
-	return false;
+	fb.cancel();
+	return true;
 }
 
 void Shader::Destroy()
@@ -196,7 +188,7 @@ public:
 			}
 		)";
 	}
-	virtual unsigned int GetConstBufferLength() override { return 0; }
+	virtual uint32_t GetConstBufferLength() override { return 0; }
 };
 
 class SimpleColorPSData : public PSData
@@ -217,7 +209,7 @@ class SimpleColorPSData : public PSData
 			}
 		)";
 	}
-	virtual unsigned int GetConstBufferLength() override { return 0; }
+	virtual uint32_t GetConstBufferLength() override { return 0; }
 };
 
 class SimpleTexturePSData : public PSData
@@ -240,7 +232,7 @@ class SimpleTexturePSData : public PSData
 			}
 		)";
 	}
-	virtual unsigned int GetConstBufferLength() override { return 0; }
+	virtual uint32_t GetConstBufferLength() override { return 0; }
 };
 
 class ColorTexturePSData : public PSData
@@ -263,7 +255,7 @@ class ColorTexturePSData : public PSData
 			}
 		)";
 	}
-	virtual unsigned int GetConstBufferLength() override { return 0; }
+	virtual uint32_t GetConstBufferLength() override { return 0; }
 };
 
 ShaderLib::ShaderLib()
@@ -375,12 +367,18 @@ Pass* Pass::Clone()
 
 bool Pass::IsSame(g2d::Pass* other) const
 {
-	if (other == nullptr)	return false;
-	if (this == other)		return true;
-	if (other->GetClassID() != GetClassID()) return false;
+	ENSURE(other != nullptr);
+	if (!IsSameType(other))
+		return false;
 
-	Pass* p = reinterpret_cast<Pass*>(other);
-	if (m_blendMode != p->m_blendMode || m_vsName != m_vsName || m_psName != p->m_psName)
+	Pass* p = reinterpret_cast<Pass*>(&other);
+
+	if (this == p)
+		return true;
+
+	if (m_blendMode != p->m_blendMode ||
+		m_vsName != p->m_vsName ||
+		m_psName != p->m_psName)
 		return false;
 
 	if (m_textures.size() != p->m_textures.size() ||
@@ -398,7 +396,6 @@ bool Pass::IsSame(g2d::Pass* other) const
 		}
 	}
 
-
 	//we have no idea how to deal with floats.
 	if (m_vsConstants.size() > 0 &&
 		0 != memcmp(&(m_vsConstants[0]), &(p->m_vsConstants[0]), m_vsConstants.size() * sizeof(float)))
@@ -411,12 +408,10 @@ bool Pass::IsSame(g2d::Pass* other) const
 	{
 		return false;
 	}
-
-
 	return true;
 }
 
-void Pass::SetTexture(unsigned int index, g2d::Texture* tex, bool autoRelease)
+void Pass::SetTexture(uint32_t index, g2d::Texture* tex, bool autoRelease)
 {
 	size_t size = m_textures.size();
 	if (index >= size)
@@ -439,7 +434,7 @@ void Pass::SetTexture(unsigned int index, g2d::Texture* tex, bool autoRelease)
 	}
 }
 
-void Pass::SetVSConstant(unsigned int index, float* data, unsigned int size, unsigned int count)
+void Pass::SetVSConstant(uint32_t index, float* data, uint32_t size, uint32_t count)
 {
 	if (count == 0)
 		return;
@@ -449,13 +444,13 @@ void Pass::SetVSConstant(unsigned int index, float* data, unsigned int size, uns
 		m_vsConstants.resize(index + count);
 	}
 
-	for (unsigned int i = 0; i < count; i++)
+	for (uint32_t i = 0; i < count; i++)
 	{
 		memcpy(&(m_vsConstants[index + i]), data + i*size, size);
 	}
 }
 
-void Pass::SetPSConstant(unsigned int index, float* data, unsigned int size, unsigned int count)
+void Pass::SetPSConstant(uint32_t index, float* data, uint32_t size, uint32_t count)
 {
 	if (count == 0)
 		return;
@@ -465,18 +460,13 @@ void Pass::SetPSConstant(unsigned int index, float* data, unsigned int size, uns
 		m_psConstants.resize(index + count);
 	}
 
-	for (unsigned int i = 0; i < count; i++)
+	for (uint32_t i = 0; i < count; i++)
 	{
 		memcpy(&(m_psConstants[index + i]), data + i*size, size);
 	}
 }
 
-g2d::BlendMode Pass::GetBlendMode() const
-{
-	return m_blendMode;
-}
-
-Material::Material(unsigned int passCount)
+Material::Material(uint32_t passCount)
 	: m_passes(passCount)
 {
 
@@ -491,9 +481,9 @@ Material::Material(const Material& other)
 	}
 }
 
-void Material::SetPass(unsigned int index, Pass* p)
+void Material::SetPass(uint32_t index, Pass* p)
 {
-	assert(index < m_passes.size());
+	ENSURE(index < m_passes.size());
 	m_passes[index] = p;
 }
 
@@ -506,29 +496,33 @@ Material::~Material()
 	m_passes.clear();
 }
 
-g2d::Pass* Material::GetPass(unsigned int index) const
+g2d::Pass* Material::GetPassByIndex(uint32_t index) const
 {
-	if (m_passes.size() <= index)
-		return nullptr;
+	ENSURE(index < m_passes.size());
 	return m_passes[index];
 }
 
-unsigned int Material::GetPassCount() const
+uint32_t Material::GetPassCount() const
 {
-	return static_cast<unsigned int>(m_passes.size());
+	return static_cast<uint32_t>(m_passes.size());
 }
 
 bool Material::IsSame(g2d::Material* other) const
 {
-	if (other == nullptr)	return false;
-	if (this == other)		return true;
+	ENSURE(other != nullptr);
+
+	if (this == other)
+		return true;
+
+	if (!IsSameType(other))
+		return false;
 
 	if (other->GetPassCount() != GetPassCount())
 		return false;
 
-	for (unsigned int i = 0; i < GetPassCount(); i++)
+	for (uint32_t i = 0; i < GetPassCount(); i++)
 	{
-		if (!GetPass(i)->IsSame(other->GetPass(i)))
+		if (!m_passes[i]->IsSame(other->GetPassByIndex(i)))
 		{
 			return false;
 		}

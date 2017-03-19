@@ -47,6 +47,9 @@
     <ClInclude Include="source\inner_utility.h">
       <Filter>源文件</Filter>
     </ClInclude>
+    <ClInclude Include="source\scope_utility.h">
+      <Filter>源文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="source\engine.cpp">

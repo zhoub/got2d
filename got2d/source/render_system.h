@@ -1,6 +1,7 @@
 #pragma once
 #include "../include/g2drender.h"
 #include "inner_utility.h"
+#include "scope_utility.h"
 #include <map>
 #include <vector>
 #include <windows.h>
@@ -14,51 +15,76 @@
 class Geometry
 {
 public:
-	bool Create(unsigned int vertexCount, unsigned int indexCount);
-	bool MakeEnoughVertexArray(unsigned int numVertices);
-	bool MakeEnoughIndexArray(unsigned int numIndices);
-	void UploadVertices(unsigned int offset, g2d::GeometryVertex*, unsigned int count);
-	void UploadIndices(unsigned int offset, unsigned int*, unsigned int count);
+	bool Create(uint32_t vertexCount, uint32_t indexCount);
+
+	bool MakeEnoughVertexArray(uint32_t numVertices);
+
+	bool MakeEnoughIndexArray(uint32_t numIndices);
+
+	void UploadVertices(uint32_t offset, g2d::GeometryVertex*, uint32_t count);
+
+	void UploadIndices(uint32_t offset, uint32_t* indices, uint32_t count);
+
 	void Destroy();
 
-	ID3D11Buffer* m_vertexBuffer = nullptr;
-	ID3D11Buffer* m_indexBuffer = nullptr;
-	unsigned int m_numVertices = 0;
-	unsigned int m_numIndices = 0;
+	autor<ID3D11Buffer> m_vertexBuffer = nullptr;
+	autor<ID3D11Buffer> m_indexBuffer = nullptr;
+	uint32_t m_numVertices = 0;
+	uint32_t m_numIndices = 0;
 };
 
 class Mesh : public g2d::Mesh
 {
-	IMPL_CLASSID;
+	RTTI_IMPL;
 public:
-	Mesh(unsigned int vertexCount, unsigned int indexCount);
-	bool Merge(g2d::Mesh* other, const gml::mat32& transform);
+	Mesh(uint32_t vertexCount, uint32_t indexCount);
+
+	bool Merge(const g2d::Mesh& other, const gml::mat32& transform);
+
 	void Clear();
 
+	virtual const g2d::GeometryVertex* GetRawVertices() const override;
+
 	virtual g2d::GeometryVertex* GetRawVertices() override;
-	virtual unsigned int* GetRawIndices() override;
-	virtual unsigned int GetVertexCount() override;
-	virtual unsigned int GetIndexCount() override;
-	virtual void ResizeVertexArray(unsigned int vertexCount) override;
-	virtual void ResizeIndexArray(unsigned int indexCount) override;
+
+	virtual const uint32_t* GetRawIndices() const override;
+
+	virtual uint32_t* GetRawIndices() override;
+
+	virtual uint32_t GetVertexCount() const override;
+
+	virtual uint32_t GetIndexCount() const override;
+
+	virtual void ResizeVertexArray(uint32_t vertexCount) override;
+
+	virtual void ResizeIndexArray(uint32_t indexCount) override;
+
 	virtual void Release() override;
+
 private:
 	std::vector<g2d::GeometryVertex> m_vertices;
-	std::vector<unsigned int> m_indices;
+	std::vector<uint32_t> m_indices;
 };
 
 class Texture : public g2d::Texture
 {
-	IMPL_CLASSID;
+	RTTI_IMPL;
 public:
-	static Texture* Default() { static Texture t(""); return &t; }
-	Texture(const char* resPath);
-	inline const std::string& GetResourceName() { return m_resPath; }
+	static Texture& Default() { static Texture t(""); return t; }
 
-public:
-	virtual bool IsSame(g2d::Texture* other) const override;
-	virtual void AddRef() override;
+	Texture(std::string resPath);
+
+	const std::string& GetResourceName() const{ return m_resPath; }
+
+public: // g2d::Texture
 	virtual void Release() override;
+
+	virtual const char* Identifier() const override { return m_resPath.c_str(); }
+
+	virtual bool IsSame(g2d::Texture* other) const override;
+
+	virtual void AddRef() override;
+
 private:
 	int m_refCount = 1;
 	std::string m_resPath;
@@ -67,23 +93,28 @@ private:
 class Texture2D
 {
 public:
-	bool Create(unsigned int width, unsigned int height);
-	void UploadImage(unsigned char* data, bool hasAlpha);
+	bool Create(uint32_t width, uint32_t height);
+
+	void UploadImage(uint8_t* data, bool hasAlpha);
+
 	void Destroy();
 
 	ID3D11Texture2D* m_texture = nullptr;
 	ID3D11ShaderResourceView* m_shaderView = nullptr;
-	unsigned int m_width = 0;
-	unsigned int m_height = 0;
+	uint32_t m_width = 0;
+	uint32_t m_height = 0;
 };
 
 class TexturePool
 {
 public:
 	bool CreateDefaultTexture();
+
 	void Destroy();
+
 	Texture2D* GetTexture(const std::string& resource);
-	inline Texture2D* GetDefaultTexture() { return &m_defaultTexture; }
+
+	Texture2D& GetDefaultTexture() { return m_defaultTexture; }
 
 private:
 	bool LoadTextureFromFile(std::string resourcePath);
@@ -96,34 +127,47 @@ class VSData
 {
 public:
 	virtual ~VSData() {}
+
 	virtual const char* GetName() = 0;
+
 	virtual const char* GetCode() = 0;
-	virtual unsigned int GetConstBufferLength() = 0;
+
+	virtual uint32_t GetConstBufferLength() = 0;
 };
 
 class PSData
 {
 public:
 	virtual ~PSData() {}
+
 	virtual const char* GetName() = 0;
+
 	virtual const char* GetCode() = 0;
-	virtual unsigned int GetConstBufferLength() = 0;
+
+	virtual uint32_t GetConstBufferLength() = 0;
 };
 
 class Shader
 {
-	IMPL_CLASSID;
+	RTTI_INNER_IMPL;
 public:
-	bool Create(const char* vsCode, unsigned int vcbLength, const char* psCode, unsigned int pcbLength);
+	bool Create(const std::string& vsCode, uint32_t vcbLength, const std::string& psCode, uint32_t pcbLength);
+
 	void Destroy();
 
 	ID3D11VertexShader* GetVertexShader() { return m_vertexShader; }
+
 	ID3D11PixelShader* GetPixelShader() { return m_pixelShader; }
+
 	ID3D11InputLayout* GetInputLayout() { return m_shaderLayout; }
+
 	ID3D11Buffer* GetVertexConstBuffer() { return m_vertexConstBuffer; }
+
 	ID3D11Buffer* GetPixelConstBuffer() { return m_pixelConstBuffer; }
-	unsigned int GetVertexConstBufferLength() { return m_vertexConstBufferLength; }
-	unsigned int GetPixelConstBufferLength() { return m_pixelConstBufferLength; }
+
+	uint32_t GetVertexConstBufferLength() { return m_vertexConstBufferLength; }
+
+	uint32_t GetPixelConstBufferLength() { return m_pixelConstBufferLength; }
 
 private:
 	ID3D11InputLayout* m_shaderLayout = nullptr;
@@ -131,20 +175,24 @@ private:
 	ID3D11PixelShader* m_pixelShader = nullptr;
 	ID3D11Buffer* m_vertexConstBuffer = nullptr;
 	ID3D11Buffer* m_pixelConstBuffer = nullptr;
-	unsigned int m_vertexConstBufferLength = 0;
-	unsigned int m_pixelConstBufferLength = 0;
+	uint32_t m_vertexConstBufferLength = 0;
+	uint32_t m_pixelConstBufferLength = 0;
 };
 
 class ShaderLib
 {
 public:
 	ShaderLib();
+
 	~ShaderLib();
+
 	Shader* GetShaderByName(const std::string& vsName, const std::string& psName);
 
 private:
 	bool BuildShader(const std::string& effectName, const std::string& vsName, const std::string& psName);
+
 	std::string GetEffectName(const std::string& vsName, const std::string& psName);
+
 	std::map<std::string, VSData*> m_vsSources;
 	std::map<std::string, PSData*>  m_psSources;
 	std::map<std::string, Shader*> m_shaders;
@@ -152,28 +200,49 @@ private:
 
 class Pass : public g2d::Pass
 {
-	IMPL_CLASSID;
+	RTTI_IMPL;
 public:
-	inline Pass(const char* vsName, const char* psName) : m_vsName(vsName), m_psName(psName), m_blendMode(g2d::BLEND_NONE) {}
+	Pass(std::string vsName, std::string psName)
+		: m_vsName(std::move(vsName))
+		, m_psName(std::move(psName))
+		, m_blendMode(g2d::BlendMode::None) {}
+
 	Pass(const Pass& other);
+
 	~Pass();
+
 	Pass* Clone();
 
-	inline virtual const char* GetVertexShaderName() const override { return m_vsName.c_str(); }
-	inline virtual const char* GetPixelShaderName() const override { return m_psName.c_str(); }
+	void Release() { delete this; }
+
+public:
+	virtual const char* GetVertexShaderName() const override { return m_vsName.c_str(); }
+
+	virtual const char* GetPixelShaderName() const override { return m_psName.c_str(); }
+
 	virtual bool IsSame(g2d::Pass* other) const override;
-	virtual void SetTexture(unsigned int index, g2d::Texture*, bool autoRelease) override;
-	virtual void SetVSConstant(unsigned int index, float* data, unsigned int size, unsigned int count) override;
-	virtual void SetPSConstant(unsigned int index, float* data, unsigned int size, unsigned int count) override;
-	inline virtual void SetBlendMode(g2d::BlendMode blendMode) override { m_blendMode = blendMode; }
-	virtual g2d::Texture* GetTexture(unsigned int index) const override { return m_textures[index]; }
-	inline virtual unsigned int GetTextureCount() const override { return static_cast<unsigned int>(m_textures.size()); }
-	inline virtual const float* GetVSConstant() const override { return reinterpret_cast<const float*>(&(m_vsConstants[0])); }
-	inline virtual unsigned int GetVSConstantLength() const override { return static_cast<unsigned int>(m_vsConstants.size()) * 4 * sizeof(float); }
-	inline virtual const float* GetPSConstant() const override { return reinterpret_cast<const float*>(&(m_psConstants[0])); }
-	inline virtual unsigned int GetPSConstantLength() const override { return static_cast<unsigned int>(m_psConstants.size()) * 4 * sizeof(float); }
-	inline virtual void Release() override { delete this; }
-	virtual g2d::BlendMode GetBlendMode() const override;
+
+	virtual void SetTexture(uint32_t index, g2d::Texture*, bool autoRelease) override;
+
+	virtual void SetVSConstant(uint32_t index, float* data, uint32_t size, uint32_t count) override;
+
+	virtual void SetPSConstant(uint32_t index, float* data, uint32_t size, uint32_t count) override;
+
+	virtual void SetBlendMode(g2d::BlendMode blendMode) override { m_blendMode = blendMode; }
+
+	virtual g2d::Texture* GetTextureByIndex(uint32_t index) const override { return m_textures[index]; }
+
+	virtual uint32_t GetTextureCount() const override { return static_cast<uint32_t>(m_textures.size()); }
+
+	virtual const float* GetVSConstant() const override { return reinterpret_cast<const float*>(&(m_vsConstants[0])); }
+
+	virtual uint32_t GetVSConstantLength() const override { return static_cast<uint32_t>(m_vsConstants.size()) * 4 * sizeof(float); }
+
+	virtual const float* GetPSConstant() const override { return reinterpret_cast<const float*>(&(m_psConstants[0])); }
+
+	virtual uint32_t GetPSConstantLength() const override { return static_cast<uint32_t>(m_psConstants.size()) * 4 * sizeof(float); }
+
+	virtual g2d::BlendMode GetBlendMode() const override { return m_blendMode; }
 
 private:
 	std::string m_vsName;
@@ -186,18 +255,25 @@ private:
 
 class Material : public g2d::Material
 {
-	IMPL_CLASSID;
+	RTTI_IMPL;
 public:
-	Material(unsigned int passCount);
+	Material(uint32_t passCount);
+
 	Material(const Material& other);
+
 	~Material();
-	void SetPass(unsigned int index, Pass* p);
+
+	void SetPass(uint32_t index, Pass* p);
 
 public:
-	virtual g2d::Pass* GetPass(unsigned int index) const override;
-	virtual unsigned int GetPassCount() const override;
+	virtual g2d::Pass* GetPassByIndex(uint32_t index) const override;
+
+	virtual uint32_t GetPassCount() const override;
+
 	virtual bool IsSame(g2d::Material* other) const override;
+
 	virtual g2d::Material* Clone() const override;
+
 	virtual void Release()  override;
 
 private:
@@ -207,36 +283,54 @@ private:
 
 class RenderSystem : public g2d::RenderSystem
 {
-	IMPL_CLASSID;
+	RTTI_IMPL;
 public:
 	static RenderSystem* Instance;
+
 	RenderSystem();
+
 	bool Create(void* nativeWindow);
+
 	void Destroy();
+
 	void Clear();
+
 	void FlushRequests();
+
 	void Present();
+
 	void SetBlendMode(g2d::BlendMode blendMode);
+
 	void SetViewMatrix(const gml::mat32& viewMatrix);
+
 	const gml::mat44& GetProjectionMatrix();
 
 	Texture* CreateTextureFromFile(const char* resPath);
 
-	inline ID3D11Device* GetDevice() { return m_d3dDevice; }
-	inline ID3D11DeviceContext* GetContext() { return m_d3dContext; }
+	ID3D11Device* GetDevice() { return m_d3dDevice; }
+
+	ID3D11DeviceContext* GetContext() { return m_d3dContext; }
 
 public:
-	virtual bool OnResize(long width, long height) override;
+	virtual bool OnResize(uint32_t width, uint32_t height) override;
+
 	virtual void BeginRender() override;
+
 	virtual void EndRender() override;
-	virtual void RenderMesh(unsigned int layer, g2d::Mesh*, g2d::Material*, const gml::mat32&) override;
-	inline virtual long GetWindowWidth() const override { return m_windowWidth; }
-	inline virtual long GetWindowHeight() const override { return m_windowHeight; }
+
+	virtual void RenderMesh(uint32_t layer, g2d::Mesh*, g2d::Material*, const gml::mat32&) override;
+
+	virtual uint32_t GetWindowWidth() const override { return m_windowWidth; }
+
+	virtual uint32_t GetWindowHeight() const override { return m_windowHeight; }
 
 private:
 	bool CreateBlendModes();
-	void FlushBatch(Mesh& mesh, g2d::Material*);
-	void UpdateConstBuffer(ID3D11Buffer* cbuffer, const void* data, unsigned int length);
+
+	void FlushBatch(Mesh& mesh, g2d::Material&);
+
+	void UpdateConstBuffer(ID3D11Buffer* cbuffer, const void* data, uint32_t length);
+
 	void UpdateSceneConstBuffer();
 
 	IDXGISwapChain* m_swapChain = nullptr;
@@ -252,24 +346,20 @@ private:
 
 	//render request
 	struct RenderRequest {
-		RenderRequest(g2d::Mesh* inMesh, g2d::Material* inMaterial, const gml::mat32& inWorldMatrix)
-			: mesh(inMesh)
-			, material(inMaterial)
-			, worldMatrix(inWorldMatrix)
-		{
-
-		}
-		g2d::Mesh* mesh;
-		g2d::Material* material;
+		RenderRequest(g2d::Mesh& inMesh, g2d::Material& inMaterial, const gml::mat32& inWorldMatrix)
+			: mesh(inMesh) , material(inMaterial) , worldMatrix(inWorldMatrix)
+		{	}
+		g2d::Mesh& mesh;
+		g2d::Material& material;
 		gml::mat32 worldMatrix;
 	};
 
 	typedef std::vector<RenderRequest> ReqList;
-	std::map<unsigned int, ReqList*> m_renderRequests;
+	std::map<uint32_t, ReqList*> m_renderRequests;
 
 	Geometry m_geometry;
 	TexturePool m_texPool;
-	ptr_autod<ShaderLib> shaderlib = nullptr;
+	autod<ShaderLib> m_shaderlib = nullptr;
 	ID3D11Buffer* m_sceneConstBuffer = nullptr;
 	gml::mat32 m_matView;
 	gml::mat44 m_matProj;
@@ -277,8 +367,8 @@ private:
 	bool m_matrixConstBufferDirty = true;
 	bool m_matrixViewDirty = true;
 	bool m_matrixProjDirty = true;
-	long m_windowWidth = 0;
-	long m_windowHeight = 0;
+	uint32_t m_windowWidth = 0;
+	uint32_t m_windowHeight = 0;
 };
 
 

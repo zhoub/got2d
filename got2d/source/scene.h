@@ -6,136 +6,282 @@
 #include <vector>
 
 class SpatialGraph;
+class SceneNode;
 class Scene;
 
-class SceneNode : public g2d::SceneNode
+class BaseNode
 {
-	IMPL_CLASSID;
-public:
-	SceneNode(::Scene* scene, SceneNode* parent, int childID, g2d::Entity* entity, bool autoRelease);
-	virtual ~SceneNode();
-	void Update(unsigned int elpasedTime);
-	void Render(g2d::Camera* camera);
-	void RenderSingle(g2d::Camera* camera);
-	void AdjustRenderingOrder();
+	friend class SceneNode;
+	friend class Scene;
+protected:
+	BaseNode();
 
-public:
-	virtual g2d::Scene* GetScene() const override;
-	virtual g2d::SceneNode* GetParentNode() override;
-	virtual g2d::SceneNode* GetPrevSiblingNode() override;
-	virtual g2d::SceneNode* GetNextSiblingNode() override;
-	virtual g2d::SceneNode* CreateSceneNode(g2d::Entity* entity, bool autoRelease)override;
-	virtual void Remove() override;
-	virtual const gml::mat32& GetLocalMatrix() override;
-	virtual const gml::mat32& GetWorldMatrix() override;
-	virtual void SetVisibleMask(unsigned int mask, bool recursive) override;
-	virtual g2d::SceneNode* SetPosition(const gml::vec2& position) override;
-	virtual g2d::SceneNode* SetPivot(const gml::vec2& pivot) override;
-	virtual g2d::SceneNode* SetScale(const gml::vec2& scale) override;
-	virtual g2d::SceneNode* SetRotation(gml::radian r) override;
-	virtual void MovePrevToFront() override;
-	virtual void MovePrevToBack() override;
-	virtual void MovePrev() override;
-	virtual void MoveNext() override;
-	inline virtual void SetVisible(bool visible) override { m_isVisible = visible; }
-	virtual void SetStatic(bool s) override;
-	inline virtual const gml::vec2& GetPosition()  const override { return m_position; }
-	inline virtual const gml::vec2& GetPivot() const override { return m_pivot; }
-	inline virtual const gml::vec2& GetScale() const override { return m_scale; }
-	inline virtual gml::radian GetRotation() const override { return m_rotation; }
-	inline virtual g2d::Entity* GetEntity() const override { return m_entity; }
-	inline virtual bool IsVisible() const override { return m_isVisible; }
-	inline virtual bool IsStatic() const override { return m_isStatic; }
-	inline virtual unsigned int GetVisibleMask() const override { return m_visibleMask; }
+	~BaseNode();
+
+	g2d::SceneNode* _CreateSceneNodeChild(::Scene& scene, ::SceneNode& parent, g2d::Entity& e, bool autoRelease);
+
+	g2d::SceneNode* _CreateSceneNodeChild(::Scene& scene, g2d::Entity& e, bool autoRelease);
+
+	const gml::mat32& _GetLocalMatrix();
+
+	void _SetVisibleMask(uint32_t mask, bool recursive);
+
+	const gml::vec2& _GetPosition() const { return m_position; }
+
+	const gml::vec2& _GetPivot() const { return m_pivot; }
+
+	const gml::vec2& _GetScale() const { return m_scale; }
+
+	gml::radian _GetRotation() const { return m_rotation; }
+
+	uint32_t _GetVisibleMask() const { return m_visibleMask; }
+
+	bool _IsVisible() const { return m_isVisible; }
+
+	void _SetPosition(const gml::vec2& position);
+
+	void _SetPivot(const gml::vec2& pivot);
+
+	void _SetScale(const gml::vec2& scale);
+
+	void _SetRotation(gml::radian r);
+
+	void _SetVisible(bool visible) { m_isVisible = visible; }
+
+	void _Update(uint32_t elpasedTime);
+
+	::SceneNode* GetChildByIndex(uint32_t index) const;
+
+	uint32_t GetChildCount() const { return static_cast<uint32_t>(m_children.size()); }
+
+	void MoveChild(uint32_t from, uint32_t to);
+
+	void Remove(::SceneNode* child);
+
+	void EmptyChildren();
+
+	template<typename FUNC>
+	void TraversalChildrenByIndex(uint32_t startIndex, FUNC func)
+	{
+		for(uint32_t size = static_cast<uint32_t>(m_children.size()); startIndex < size; startIndex++)
+			func(startIndex, m_children[startIndex]);
+	}
+
+	template<typename FUNC>
+	void TraversalChildren(FUNC func)
+	{
+		for (auto& child : m_children) func(child);
+	}
+
+	virtual BaseNode* _GetParent() = 0;
 
 private:
+	void OnCreateChild(::Scene&, ::SceneNode&);
+
 	void SetLocalMatrixDirty();
-	void SetWorldMatrixDirty();
-	void AdjustSpatial();
-	void SetRenderingOrder(int& index);
-	void MoveSelfTo(int to);
-	void Remove(::SceneNode* child);
+
 	void RemoveReleasedChildren();
-	::SceneNode* GetPrevSibling();
-	::SceneNode* GetNextSibling();
 
-	::Scene* m_scene = nullptr;
-	::SceneNode* m_parent = nullptr;
-	g2d::Entity* m_entity = nullptr;
-	int m_childID = 0;
-	int m_baseRenderingOrder = 0;
-
-	unsigned int m_visibleMask = g2d::DEFAULT_VISIBLE_MASK;
-	bool m_autoRelease = false;
-	bool m_isVisible = true;
-	bool m_isStatic = false;
+	virtual void AdjustRenderingOrder() = 0;
 
 	gml::vec2 m_position;
 	gml::vec2 m_pivot;
 	gml::vec2 m_scale;
 	gml::radian m_rotation;
-
-	bool m_matrixDirtyUpdate = false;
-	bool m_matrixLocalDirty = false;
-	bool m_matrixWorldDirty = true;
 	gml::mat32 m_matrixLocal;
-	gml::mat32 m_matrixWorld;
+	bool m_matrixLocalDirty = false;
+
+	bool m_isVisible = true;
+	uint32_t m_visibleMask = g2d::DEFAULT_VISIBLE_MASK;
+
 	std::vector<::SceneNode*> m_children;
 	std::vector<::SceneNode*> m_pendingReleased;
 };
 
-class Scene : public g2d::Scene
+class SceneNode : public g2d::SceneNode, public BaseNode
 {
-	IMPL_CLASSID;
+	RTTI_IMPL;
+public:
+	SceneNode(::Scene& scene, ::SceneNode& parent, uint32_t childID, g2d::Entity* entity, bool autoRelease);
+
+	SceneNode(::Scene& parent, uint32_t childID, g2d::Entity* entity, bool autoRelease);
+
+	~SceneNode();
+
+	void Update(uint32_t elpasedTime);
+
+	void SetChildIndex(uint32_t index) { m_childID = index; }
+
+	void SetRenderingOrder(uint32_t& index);
+	
+public:	//g2d::SceneNode
+	virtual g2d::Scene* GetScene() const override;
+
+	virtual g2d::SceneNode* GetParentNode() const override { return &m_iparent; }
+
+	virtual g2d::SceneNode* GetPrevSiblingNode() const override { return GetPrevSibling(); }
+
+	virtual g2d::SceneNode* GetNextSiblingNode() const override { return GetNextSibling(); }
+
+	virtual g2d::SceneNode* CreateSceneNodeChild(g2d::Entity* entity, bool autoRelease) override { return _CreateSceneNodeChild(m_scene, *this, *entity, autoRelease); }
+
+	virtual void RemoveFromParent() override { m_bparent.Remove(this); }
+
+	virtual void MoveToFront() override;
+
+	virtual void MoveToBack() override;
+
+	virtual void MovePrev() override;
+
+	virtual void MoveNext() override;
+
+	virtual const gml::mat32& GetLocalMatrix() override { return _GetLocalMatrix(); }
+
+	virtual const gml::mat32& GetWorldMatrix() override;
+
+	virtual g2d::SceneNode* SetPosition(const gml::vec2& position) override;
+
+	virtual g2d::SceneNode* SetPivot(const gml::vec2& pivot) override;
+
+	virtual g2d::SceneNode* SetScale(const gml::vec2& scale) override;
+
+	virtual g2d::SceneNode* SetRotation(gml::radian r) override;
+
+	virtual void SetVisible(bool visible) override { _SetVisible(visible); }
+
+	virtual void SetStatic(bool s) override;
+
+	virtual void SetVisibleMask(uint32_t mask, bool recursive) override { _SetVisibleMask(mask, recursive); }
+
+	virtual const gml::vec2& GetPosition()  const override { return _GetPosition(); }
+
+	virtual const gml::vec2& GetPivot() const override { return _GetPivot(); }
+
+	virtual const gml::vec2& GetScale() const override { return _GetScale(); }
+
+	virtual gml::radian GetRotation() const override { return _GetRotation(); }
+
+	virtual g2d::Entity* GetEntity() const override { return m_entity; }
+
+	virtual bool IsVisible() const override { return _IsVisible(); }
+
+	virtual bool IsStatic() const override { return m_isStatic; }
+
+	virtual uint32_t GetVisibleMask() const override { return _GetVisibleMask(); }
+
+private:
+	void SetWorldMatrixDirty();
+
+	void AdjustSpatial();
+
+	::SceneNode* GetPrevSibling() const;
+
+	::SceneNode* GetNextSibling() const;
+
+	virtual void AdjustRenderingOrder() override;
+
+	virtual ::BaseNode* _GetParent() override { return &m_bparent; }
+
+	::Scene& m_scene;
+	::BaseNode& m_bparent;
+	g2d::SceneNode& m_iparent;
+	g2d::Entity* m_entity = nullptr;
+	bool m_autoRelease = false;
+	uint32_t m_childID = 0;
+	uint32_t m_baseRenderingOrder = 0;
+	bool m_isStatic = false;
+	bool m_matrixDirtyUpdate = false;
+	bool m_matrixWorldDirty = true;
+	gml::mat32 m_matrixWorld;
+};
+
+class Scene : public g2d::Scene, public BaseNode
+{
+	RTTI_IMPL;
 public:
 	Scene(float boundSize);
-	~Scene();
 
-	inline ::SceneNode* GetRoot() { return m_root; }
-	inline void Update(unsigned int elpasedTime) { return m_root->Update(elpasedTime); }
-	void Render();
-	void SetCameraOrderDirty();
+	void SetCameraOrderDirty() { m_cameraOrderDirty = true; }
+
 	SpatialGraph* GetSpatialGraph() { return &m_spatial; }
 
-public:
-	inline virtual g2d::Scene* GetScene() const override { return m_root->GetScene(); }
-	inline virtual SceneNode* GetParentNode() override { return m_root->GetParentNode(); }
-	inline virtual SceneNode* GetPrevSiblingNode() override { return m_root->GetPrevSiblingNode(); }
-	inline virtual SceneNode* GetNextSiblingNode() override { return m_root->GetNextSiblingNode(); }
-	virtual g2d::SceneNode* CreateSceneNode(g2d::Entity* e, bool autoRelease) override;
-	inline virtual void Remove() override { }
-	inline virtual const gml::mat32& GetLocalMatrix() override { return m_root->GetLocalMatrix(); }
-	inline virtual const gml::mat32& GetWorldMatrix() override { return m_root->GetWorldMatrix(); }
-	inline virtual void SetVisibleMask(unsigned int mask, bool recursive) override { m_root->SetVisibleMask(mask, recursive); }
-	inline virtual g2d::SceneNode* SetPosition(const gml::vec2& position) override { m_root->SetPosition(position); return this; }
-	inline virtual g2d::SceneNode* SetPivot(const gml::vec2& pivot) override { m_root->SetPivot(pivot); return this; }
-	inline virtual g2d::SceneNode* SetScale(const gml::vec2& scale) override { m_root->SetScale(scale); return this; }
-	inline virtual g2d::SceneNode* SetRotation(gml::radian r) override { m_root->SetRotation(r); return this; }
-	virtual void MovePrevToFront() override { m_root->MovePrevToFront(); }
-	virtual void MovePrevToBack() override { m_root->MovePrevToBack(); }
-	virtual void MovePrev() override { m_root->MovePrev(); }
-	virtual void MoveNext() override { m_root->MoveNext(); }
-	inline virtual void SetVisible(bool visible) override { m_root->SetVisible(visible); }
-	inline virtual void SetStatic(bool visible) override { m_root->SetStatic(visible); }
-	inline virtual const gml::vec2& GetPosition()  const override { return m_root->GetPosition(); }
-	inline virtual const gml::vec2& GetPivot() const override { return m_root->GetPivot(); }
-	inline virtual const gml::vec2& GetScale() const override { return m_root->GetScale(); }
-	inline virtual gml::radian GetRotation() const override { return m_root->GetRotation(); }
-	inline virtual g2d::Entity* GetEntity() const override { return m_root->GetEntity(); }
-	inline virtual bool IsVisible() const override { return m_root->IsVisible(); }
-	inline virtual bool IsStatic() const override { return m_root->IsStatic(); }
-	inline virtual unsigned int GetVisibleMask() const override { return m_root->GetVisibleMask(); }
-public:
+public: //g2d::SceneNode
+	virtual g2d::Scene* GetScene() const override { return const_cast<::Scene*>(this); }
+
+	virtual SceneNode* GetParentNode() const override { return nullptr; }
+
+	virtual SceneNode* GetPrevSiblingNode() const override { return nullptr; }
+
+	virtual SceneNode* GetNextSiblingNode() const override { return nullptr; }
+
+	virtual g2d::SceneNode* CreateSceneNodeChild(g2d::Entity* entity, bool autoRelease) override { return _CreateSceneNodeChild(*this, *entity, autoRelease); }
+
+	virtual void RemoveFromParent() override { }
+
+	virtual void MoveToFront() override { }
+
+	virtual void MoveToBack() override { }
+
+	virtual void MovePrev() override { }
+
+	virtual void MoveNext() override { }
+
+	virtual const gml::mat32& GetLocalMatrix() override { return _GetLocalMatrix(); }
+
+	virtual const gml::mat32& GetWorldMatrix() override { return _GetLocalMatrix(); }
+
+	virtual void SetVisibleMask(uint32_t mask, bool recursive) override { _SetVisibleMask(mask, recursive); }
+
+	virtual g2d::SceneNode* SetPosition(const gml::vec2& position) override { _SetPosition(position); return this; }
+
+	virtual g2d::SceneNode* SetPivot(const gml::vec2& pivot) override { _SetPivot(pivot); return this; }
+
+	virtual g2d::SceneNode* SetScale(const gml::vec2& scale) override { _SetScale(scale); return this; }
+
+	virtual g2d::SceneNode* SetRotation(gml::radian r) override { _SetRotation(r); return this; }
+
+	virtual void SetVisible(bool visible) override { _SetVisible(visible); }
+
+	virtual void SetStatic(bool visible) override { }
+
+	virtual const gml::vec2& GetPosition()  const override { return _GetPosition(); }
+
+	virtual const gml::vec2& GetPivot() const override { return _GetPivot(); }
+
+	virtual const gml::vec2& GetScale() const override { return _GetScale(); }
+
+	virtual gml::radian GetRotation() const override { return _GetRotation(); }
+
+	virtual g2d::Entity* GetEntity() const override { return nullptr; }
+
+	virtual bool IsVisible() const override { return _IsVisible(); }
+
+	virtual bool IsStatic() const override { return true; }
+
+	virtual uint32_t GetVisibleMask() const override { return _GetVisibleMask(); }
+
+public:	//g2d::Scene
+	virtual void Release() override;
+
 	virtual g2d::Camera* CreateCameraNode() override;
-	virtual g2d::Camera* GetMainCamera() const override { return GetCamera(0); }
-	virtual g2d::Camera* GetCamera(unsigned int index) const override;
+
+	virtual g2d::Camera* GetMainCamera() const override { return GetCameraByIndex(0); }
+
+	virtual g2d::Camera* GetCameraByIndex(uint32_t) const override;
+
+	virtual void Render() override;
+
+	virtual void Update(uint32_t elpasedTime) override;
 
 private:
 	void ResortCameraOrder();
 
-	::SceneNode* m_root = nullptr;
+	virtual ::BaseNode* _GetParent() override { return nullptr; }
+
+	virtual void AdjustRenderingOrder() override;
+
 	SpatialGraph m_spatial;
 	std::vector<g2d::Camera*> m_cameras;
-	std::vector<g2d::Camera*> m_renderingOrder;
+	std::vector<g2d::Camera*> m_cameraOrder;
 	bool m_cameraOrderDirty;
 };

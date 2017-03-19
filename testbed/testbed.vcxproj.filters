@@ -14,10 +14,10 @@
     <ClInclude Include="stdafx.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="testbed.h">
+    <ClInclude Include="hexgon.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="hexgon.h">
+    <ClInclude Include="framework.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
@@ -28,7 +28,7 @@
     <ClCompile Include="winmain.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="testbed.cpp">
+    <ClCompile Include="framework.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

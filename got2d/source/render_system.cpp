@@ -4,14 +4,12 @@
 
 RenderSystem* RenderSystem::Instance = nullptr;
 
-g2d::RenderSystem::~RenderSystem() { }
-
 RenderSystem::RenderSystem() :m_bkColor(gml::color4::blue())
 {
 	m_matView.identity();
 }
 
-bool RenderSystem::OnResize(long width, long height)
+bool RenderSystem::OnResize(uint32_t width, uint32_t height)
 {
 	//though we create an individual render target
 	//we do not use it for rendering, for now.
@@ -38,23 +36,26 @@ bool RenderSystem::OnResize(long width, long height)
 	{
 		return false;
 	}
+	ENSURE(m_colorTexture != nullptr);
 
 	if (S_OK != m_d3dDevice->CreateRenderTargetView(m_colorTexture, NULL, &m_rtView))
 	{
 		return false;
 	}
+	ENSURE(m_rtView != nullptr);
 
 	ID3D11Texture2D* backBuffer = nullptr;
-	if (S_OK != m_swapChain->GetBuffer(0, _uuidof(ID3D11Texture2D), reinterpret_cast<void**>(&backBuffer))
-		|| backBuffer == nullptr)
+	if (S_OK != m_swapChain->GetBuffer(0, _uuidof(ID3D11Texture2D), reinterpret_cast<void**>(&backBuffer)))
 	{
 		return false;
 	}
+	ENSURE(backBuffer != nullptr);
 
 	if (S_OK != m_d3dDevice->CreateRenderTargetView(backBuffer, NULL, &m_bbView))
 	{
 		return false;
 	}
+	ENSURE(m_bbView != nullptr);
 
 	m_matrixProjDirty = true;
 	m_windowWidth = width;
@@ -68,7 +69,7 @@ bool RenderSystem::CreateBlendModes()
 	HRESULT hr = S_OK;
 	ID3D11BlendState* blendState = nullptr;
 	D3D11_BLEND_DESC blendDesc;
-	m_blendModes[g2d::BLEND_NONE] = nullptr;
+	m_blendModes[g2d::BlendMode::None] = nullptr;
 
 	blendDesc.AlphaToCoverageEnable = FALSE;
 	blendDesc.IndependentBlendEnable = FALSE;
@@ -87,7 +88,7 @@ bool RenderSystem::CreateBlendModes()
 	hr = m_d3dDevice->CreateBlendState(&blendDesc, &blendState);
 	if (hr != S_OK)
 		return false;
-	m_blendModes[g2d::BLEND_NORMAL] = blendState;
+	m_blendModes[g2d::BlendMode::Normal] = blendState;
 
 	for (int i = 0; i < D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT; i++)
 	{
@@ -104,7 +105,7 @@ bool RenderSystem::CreateBlendModes()
 	hr = m_d3dDevice->CreateBlendState(&blendDesc, &blendState);
 	if (hr != S_OK)
 		return false;
-	m_blendModes[g2d::BLEND_ADD] = blendState;
+	m_blendModes[g2d::BlendMode::Additve] = blendState;
 
 	for (int i = 0; i < D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT; i++)
 	{
@@ -121,7 +122,7 @@ bool RenderSystem::CreateBlendModes()
 	hr = m_d3dDevice->CreateBlendState(&blendDesc, &blendState);
 	if (hr != S_OK)
 		return false;
-	m_blendModes[g2d::BLEND_SCREEN] = blendState;
+	m_blendModes[g2d::BlendMode::Screen] = blendState;
 
 	return true;
 }
@@ -133,124 +134,126 @@ bool RenderSystem::Create(void* nativeWindow)
 		return Instance == this;
 	}
 
-	do
+	auto fb = create_fallback([&] { Destroy(); });
+
+	HRESULT hr;
+
+	//Create Device
+	D3D_DRIVER_TYPE driverType = D3D_DRIVER_TYPE_HARDWARE;
+	D3D11_CREATE_DEVICE_FLAG deviceFlag = D3D11_CREATE_DEVICE_SINGLETHREADED;
+	D3D_FEATURE_LEVEL featureLevel = D3D_FEATURE_LEVEL_11_0;
+	hr = ::D3D11CreateDevice(NULL, driverType, NULL, deviceFlag, &featureLevel, 1, D3D11_SDK_VERSION, &m_d3dDevice, NULL, &m_d3dContext);
+	if (S_OK != hr)
 	{
-		HRESULT hr;
+		return false;
+	}
+	ENSURE(m_d3dDevice != nullptr && m_d3dContext != nullptr);
 
-		//Create Device
-		D3D_DRIVER_TYPE driverType = D3D_DRIVER_TYPE_HARDWARE;
-		D3D11_CREATE_DEVICE_FLAG deviceFlag = D3D11_CREATE_DEVICE_SINGLETHREADED;
-		D3D_FEATURE_LEVEL featureLevel = D3D_FEATURE_LEVEL_11_0;
-		hr = ::D3D11CreateDevice(NULL, driverType, NULL, deviceFlag, &featureLevel, 1, D3D11_SDK_VERSION, &m_d3dDevice, NULL, &m_d3dContext);
-		if (S_OK != hr)
-		{
-			break;
-		}
+	IDXGIDevice * dxgiDevice = nullptr;
+	hr = m_d3dDevice->QueryInterface(__uuidof(IDXGIDevice), (void **)&dxgiDevice);
+	if (S_OK != hr)
+	{
+		return false;
+	}
+	ENSURE(dxgiDevice != nullptr);
 
-		IDXGIDevice * dxgiDevice = nullptr;
-		hr = m_d3dDevice->QueryInterface(__uuidof(IDXGIDevice), (void **)&dxgiDevice);
-		if (S_OK != hr || dxgiDevice == nullptr)
-		{
-			break;
-		}
+	IDXGIAdapter * adapter = nullptr;
+	hr = dxgiDevice->GetParent(__uuidof(IDXGIAdapter), (void **)&adapter);
+	if (S_OK != hr)
+	{
+		return false;
+	}
+	ENSURE(adapter != nullptr);
 
-		IDXGIAdapter * adapter = nullptr;
-		hr = dxgiDevice->GetParent(__uuidof(IDXGIAdapter), (void **)&adapter);
-		if (S_OK != hr || adapter == nullptr)
-		{
-			break;
-		}
+	//CreateSwapChain
+	IDXGIFactory* factory = nullptr;
+	hr = adapter->GetParent(__uuidof(IDXGIFactory), (void **)&factory);
+	if (S_OK != hr || factory == nullptr)
+	{
+		return false;
+	}
+	ENSURE(factory != nullptr);
 
-		//CreateSwapChain
-		IDXGIFactory* factory = nullptr;
-		hr = adapter->GetParent(__uuidof(IDXGIFactory), (void **)&factory);
-		if (S_OK != hr || factory == nullptr)
-		{
-			break;
-		}
+	DXGI_SWAP_CHAIN_DESC scDesc;
+	scDesc.BufferDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+	scDesc.BufferDesc.Width = m_windowWidth;
+	scDesc.BufferDesc.Height = m_windowHeight;
+	scDesc.BufferDesc.RefreshRate.Numerator = 60;
+	scDesc.BufferDesc.RefreshRate.Denominator = 1;
+	scDesc.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
+	scDesc.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
+	scDesc.BufferCount = 1;
+	scDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
 
-		DXGI_SWAP_CHAIN_DESC scDesc;
-		scDesc.BufferDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
-		scDesc.BufferDesc.Width = m_windowWidth;
-		scDesc.BufferDesc.Height = m_windowHeight;
-		scDesc.BufferDesc.RefreshRate.Numerator = 60;
-		scDesc.BufferDesc.RefreshRate.Denominator = 1;
-		scDesc.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
-		scDesc.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
-		scDesc.BufferCount = 1;
-		scDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+	scDesc.OutputWindow = reinterpret_cast<HWND>(nativeWindow);
+	scDesc.Windowed = true;
+	scDesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
 
-		scDesc.OutputWindow = reinterpret_cast<HWND>(nativeWindow);
-		scDesc.Windowed = true;
-		scDesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
+	scDesc.SampleDesc.Count = 1;
+	scDesc.SampleDesc.Quality = 0;
+	scDesc.Flags = 0;
 
-		scDesc.SampleDesc.Count = 1;
-		scDesc.SampleDesc.Quality = 0;
-		scDesc.Flags = 0;
+	hr = factory->CreateSwapChain(m_d3dDevice, &scDesc, &m_swapChain);
+	factory->Release();
+	if (S_OK != hr)
+	{
+		return false;
+	}
+	ENSURE(m_swapChain != nullptr);
 
-		hr = factory->CreateSwapChain(m_d3dDevice, &scDesc, &m_swapChain);
-		factory->Release();
-		if (S_OK != hr)
-		{
-			break;
-		}
+	m_swapChain->GetDesc(&scDesc);
+	m_windowWidth = scDesc.BufferDesc.Width;
+	m_windowHeight = scDesc.BufferDesc.Height;
 
-		m_swapChain->GetDesc(&scDesc);
-		m_windowWidth = scDesc.BufferDesc.Width;
-		m_windowHeight = scDesc.BufferDesc.Height;
+	D3D11_BUFFER_DESC bufferDesc =
+	{
+		sizeof(gml::vec4) * 6,			//UINT ByteWidth;
+		D3D11_USAGE_DYNAMIC,			//D3D11_USAGE Usage;
+		D3D11_BIND_CONSTANT_BUFFER,		//UINT BindFlags;
+		D3D11_CPU_ACCESS_WRITE,			//UINT CPUAccessFlags;
+		0,								//UINT MiscFlags;
+		0								//UINT StructureByteStride;
+	};
 
-		D3D11_BUFFER_DESC bufferDesc =
-		{
-			sizeof(gml::vec4) * 6,			//UINT ByteWidth;
-			D3D11_USAGE_DYNAMIC,			//D3D11_USAGE Usage;
-			D3D11_BIND_CONSTANT_BUFFER,		//UINT BindFlags;
-			D3D11_CPU_ACCESS_WRITE,			//UINT CPUAccessFlags;
-			0,								//UINT MiscFlags;
-			0								//UINT StructureByteStride;
-		};
+	hr = m_d3dDevice->CreateBuffer(&bufferDesc, NULL, &m_sceneConstBuffer);
+	if (S_OK != hr)
+	{
+		return false;
+	}
+	ENSURE(m_sceneConstBuffer != nullptr);
 
-		hr = m_d3dDevice->CreateBuffer(&bufferDesc, NULL, &m_sceneConstBuffer);
-		if (S_OK != hr)
-		{
-			break;
-		}
+	if (!OnResize(m_windowWidth, m_windowHeight))
+	{
+		return false;
+	}
 
-		if (!OnResize(m_windowWidth, m_windowHeight))
-		{
-			break;
-		}
+	if (!CreateBlendModes())
+	{
+		return false;
+	}
 
-		if (!CreateBlendModes())
-		{
-			break;
-		}
+	m_viewport =
+	{
+		0.0f,//FLOAT TopLeftX;
+		0.0f,//FLOAT TopLeftY;
+		(FLOAT)m_windowWidth,//FLOAT Width;
+		(FLOAT)m_windowHeight,//FLOAT Height;
+		0.0f,//FLOAT MinDepth;
+		1.0f,//FLOAT MaxDepth;
+	};
 
-		m_viewport =
-		{
-			0.0f,//FLOAT TopLeftX;
-			0.0f,//FLOAT TopLeftY;
-			(FLOAT)m_windowWidth,//FLOAT Width;
-			(FLOAT)m_windowHeight,//FLOAT Height;
-			0.0f,//FLOAT MinDepth;
-			1.0f,//FLOAT MaxDepth;
-		};
+	m_d3dContext->OMSetRenderTargets(1, &m_bbView, nullptr);
+	m_d3dContext->RSSetViewports(1, &m_viewport);
+	SetBlendMode(g2d::BlendMode::None);
+	Instance = this;
 
-		m_d3dContext->OMSetRenderTargets(1, &m_bbView, nullptr);
-		m_d3dContext->RSSetViewports(1, &m_viewport);
-		SetBlendMode(g2d::BLEND_NONE);
-		Instance = this;
+	//all creation using RenderSystem should be start here.
+	if (!m_texPool.CreateDefaultTexture())
+		return false;
 
-		//all creation using RenderSystem should be start here.
-		if (!m_texPool.CreateDefaultTexture())
-			break;
-
-		shaderlib = new ShaderLib();
-		return true;
-	} while (false);
-
-
-	Destroy();
-	return false;
+	m_shaderlib = new ShaderLib();
+	fb.cancel();
+	return true;
 }
 
 void RenderSystem::Destroy()
@@ -335,12 +338,12 @@ Texture* RenderSystem::CreateTextureFromFile(const char* resPath)
 	return new Texture(resPath);
 }
 
-void RenderSystem::UpdateConstBuffer(ID3D11Buffer* cbuffer, const void* data, unsigned int length)
+void RenderSystem::UpdateConstBuffer(ID3D11Buffer* cbuffer, const void* data, uint32_t length)
 {
 	D3D11_MAPPED_SUBRESOURCE mappedData;
 	if (S_OK == m_d3dContext->Map(cbuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData))
 	{
-		unsigned char*  dstBuffre = reinterpret_cast<unsigned char*>(mappedData.pData);
+		uint8_t*  dstBuffre = reinterpret_cast<uint8_t*>(mappedData.pData);
 		memcpy(dstBuffre, data, length);
 		m_d3dContext->Unmap(cbuffer, 0);
 	}
@@ -355,7 +358,7 @@ void RenderSystem::UpdateSceneConstBuffer()
 	D3D11_MAPPED_SUBRESOURCE mappedData;
 	if (S_OK == m_d3dContext->Map(m_sceneConstBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData))
 	{
-		unsigned char*  dstBuffer = reinterpret_cast<unsigned char*>(mappedData.pData);
+		uint8_t*  dstBuffer = reinterpret_cast<uint8_t*>(mappedData.pData);
 		if (m_matrixViewDirty)
 		{
 			memcpy(dstBuffer, &(m_matView.row[0]), sizeof(gml::vec3));
@@ -367,9 +370,9 @@ void RenderSystem::UpdateSceneConstBuffer()
 	}
 }
 
-void RenderSystem::FlushBatch(Mesh& mesh, g2d::Material* material)
+void RenderSystem::FlushBatch(Mesh& mesh, g2d::Material& material)
 {
-	if (mesh.GetIndexCount() == 0 || material == nullptr)
+	if (mesh.GetIndexCount() == 0)
 		return;
 
 	m_geometry.MakeEnoughVertexArray(mesh.GetVertexCount());
@@ -377,15 +380,15 @@ void RenderSystem::FlushBatch(Mesh& mesh, g2d::Material* material)
 	m_geometry.UploadVertices(0, mesh.GetRawVertices(), mesh.GetVertexCount());
 	m_geometry.UploadIndices(0, mesh.GetRawIndices(), mesh.GetIndexCount());
 
-	for (unsigned int i = 0; i < material->GetPassCount(); i++)
+	for (uint32_t i = 0; i < material.GetPassCount(); i++)
 	{
-		auto pass = material->GetPass(i);
-		auto shader = shaderlib->GetShaderByName(pass->GetVertexShaderName(), pass->GetPixelShaderName());
+		auto pass = material.GetPassByIndex(i);
+		auto shader = m_shaderlib->GetShaderByName(pass->GetVertexShaderName(), pass->GetPixelShaderName());
 		if (shader)
 		{
-			unsigned int stride = sizeof(g2d::GeometryVertex);
-			unsigned int offset = 0;
-			m_d3dContext->IASetVertexBuffers(0, 1, &m_geometry.m_vertexBuffer, &stride, &offset);
+			uint32_t stride = sizeof(g2d::GeometryVertex);
+			uint32_t offset = 0;
+			m_d3dContext->IASetVertexBuffers(0, 1, &(m_geometry.m_vertexBuffer.pointer), &stride, &offset);
 			m_d3dContext->IASetIndexBuffer(m_geometry.m_indexBuffer, DXGI_FORMAT_R32_UINT, 0);
 			m_d3dContext->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 			m_d3dContext->IASetInputLayout(shader->GetInputLayout());
@@ -426,11 +429,11 @@ void RenderSystem::FlushBatch(Mesh& mesh, g2d::Material* material)
 			{
 				std::vector<ID3D11ShaderResourceView*> views(pass->GetTextureCount());
 				std::vector<ID3D11SamplerState*> samplerstates(pass->GetTextureCount());
-				for (unsigned int i = 0; i < pass->GetTextureCount(); i++)
+				for (uint32_t i = 0; i < pass->GetTextureCount(); i++)
 				{
-					::Texture* timpl = dynamic_cast<::Texture*>(pass->GetTexture(i));
+					::Texture* timpl = reinterpret_cast<::Texture*>(pass->GetTextureByIndex(i));
 					std::string textureName = (timpl == nullptr) ? "" : timpl->GetResourceName();
-					Texture2D* texture = m_texPool.GetTexture(textureName);
+					auto texture = m_texPool.GetTexture(textureName);
 					if (texture)
 					{
 						views[i] = texture->m_shaderView;
@@ -468,35 +471,36 @@ void RenderSystem::FlushRequests()
 
 		for (auto& request : list)
 		{
-			if (!request.material->IsSame(material))//material may be nullptr.
+			if (material == nullptr)
 			{
-				FlushBatch(batchMesh, material);
-				material = request.material;
+				material = &(request.material);
+			}
+			else if (!request.material.IsSame(material))//material may be nullptr.
+			{
+				FlushBatch(batchMesh, *material);
+				material = &(request.material);
 			}
 
 			if (!batchMesh.Merge(request.mesh, request.worldMatrix))
 			{
-				FlushBatch(batchMesh, material);
+				FlushBatch(batchMesh, *material);
 				//de factor, no need to Merge when there is only ONE MESH each drawcall.
 				batchMesh.Merge(request.mesh, request.worldMatrix);
 			}
 		}
 		list.clear();
 	}
-	FlushBatch(batchMesh, material);
+	FlushBatch(batchMesh, *material);
 }
 
-void RenderSystem::RenderMesh(unsigned int layer, g2d::Mesh* mesh, g2d::Material* material, const gml::mat32& worldMatrix)
+void RenderSystem::RenderMesh(uint32_t layer, g2d::Mesh* mesh, g2d::Material* material, const gml::mat32& worldMatrix)
 {
-	if (mesh == nullptr || material == nullptr)
-		return;
 	if (m_renderRequests.count(layer) == 0)
 	{
 		m_renderRequests[layer] = new ReqList();
 	}
-
 	ReqList* list = m_renderRequests[layer];
-	list->push_back({ mesh, material, worldMatrix });
+	list->push_back({ *mesh, *material, worldMatrix });
 }
 
 void RenderSystem::BeginRender()

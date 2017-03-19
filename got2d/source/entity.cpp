@@ -7,25 +7,9 @@ g2d::Quad* g2d::Quad::Create()
 	return new ::Quad();
 }
 
-g2d::Entity::~Entity() {}
-
-void g2d::Entity::OnInitial() {}
-
-void g2d::Entity::OnUpdate(unsigned int elpasedTime) {}
-
-void g2d::Entity::OnRender() {}
-
-void g2d::Entity::OnRotate(gml::radian r) {}
-
-void g2d::Entity::OnScale(const gml::vec2 newScaler) {}
-
-void g2d::Entity::OnMove(const gml::vec2 newPos) {}
-
-void g2d::Entity::OnUpdateMatrixChanged() {}
-
 gml::aabb2d g2d::Entity::GetWorldAABB() const
 {
-	if (GetLocalAABB().is_empty())
+	if (GetLocalAABB().is_point())
 		return GetLocalAABB();
 
 	auto matrixWorld = GetSceneNode()->GetWorldMatrix();
@@ -36,25 +20,20 @@ void g2d::Entity::SetSceneNode(g2d::SceneNode* node)
 {
 	m_sceneNode = node;
 }
-void g2d::Entity::SetRenderingOrder(int order)
+
+void g2d::Entity::SetRenderingOrder(uint32_t order)
 {
 	m_renderingOrder = order;
 }
 
-unsigned int g2d::Entity::GetVisibleMask() const
+uint32_t g2d::Entity::GetVisibleMask() const
 {
-	if (GetSceneNode())
-	{
-		return GetSceneNode()->GetVisibleMask();
-	}
-	return DEFAULT_VISIBLE_MASK;
+	return GetSceneNode()->GetVisibleMask();
 }
-
-g2d::SceneNode* g2d::Entity::GetSceneNode() const { return m_sceneNode; }
 
 Quad::Quad()
 {
-	unsigned int indices[] = { 0, 1, 2, 0, 2, 3 };
+	uint32_t indices[] = { 0, 1, 2, 0, 2, 3 };
 	m_mesh = g2d::Mesh::Create(4, 6);
 	auto idx = m_mesh->GetRawIndices();
 
@@ -88,18 +67,13 @@ Quad::Quad()
 		break;
 	case 1:
 		m_material = g2d::Material::CreateSimpleTexture();
-		m_material->GetPass(0)->SetTexture(0, g2d::Texture::LoadFromFile((rand() % 2) ? "test_alpha.bmp" : "test_alpha.png"), true);
+		m_material->GetPassByIndex(0)->SetTexture(0, g2d::Texture::LoadFromFile((rand() % 2) ? "test_alpha.bmp" : "test_alpha.png"), true);
 		break;
 	case 2:
 		m_material = g2d::Material::CreateColorTexture();
-		m_material->GetPass(0)->SetTexture(0, g2d::Texture::LoadFromFile((rand() % 2) ? "test_alpha.bmp" : "test_alpha.png"), true);
+		m_material->GetPassByIndex(0)->SetTexture(0, g2d::Texture::LoadFromFile((rand() % 2) ? "test_alpha.bmp" : "test_alpha.png"), true);
 		break;
 	}
-}
-
-int g2d::Entity::GetRenderingOrder() const
-{
-	return m_renderingOrder;
 }
 
 void Quad::OnInitial()
@@ -109,10 +83,14 @@ void Quad::OnInitial()
 
 void Quad::OnRender()
 {
-	g2d::GetEngine()->GetRenderSystem()->RenderMesh(g2d::RenderOrder::RORDER_DEFAULT, m_mesh, m_material, GetSceneNode()->GetWorldMatrix());
+	g2d::GetEngine()->GetRenderSystem()->RenderMesh(
+		g2d::RenderLayer::Default, 
+		m_mesh,
+		m_material, 
+		GetSceneNode()->GetWorldMatrix());
 }
 
-g2d::Entity* Quad::SetSize(const gml::vec2& size)
+g2d::Quad* Quad::SetSize(const gml::vec2& size)
 {
 	g2d::GeometryVertex* vertices = m_mesh->GetRawVertices();
 	vertices[0].position.set(-0.5f, -0.5f);
@@ -130,7 +108,7 @@ g2d::Entity* Quad::SetSize(const gml::vec2& size)
 	return this;
 }
 
-void Camera::OnUpdate(unsigned int elapsedTime)
+void Camera::OnUpdate(uint32_t elapsedTime)
 {
 	float realt = elapsedTime * 0.001f;
 	auto pos = GetSceneNode()->GetPosition();
@@ -157,7 +135,7 @@ void Camera::OnUpdateMatrixChanged()
 		{-halfSize.x, +halfSize.y }
 	};
 
-	m_aabb.clear();
+	m_aabb.empty();
 	auto r = gml::mat22::rotate(rotation);
 	for (int i = 0; i < 4; i++)
 	{
@@ -169,23 +147,22 @@ void Camera::OnUpdateMatrixChanged()
 void Camera::SetRenderingOrder(int renderingOrder)
 {
 	m_renderingOrder = renderingOrder;
-	::Scene* scene = dynamic_cast<::Scene*>(GetSceneNode()->GetScene());
+	::Scene* scene = reinterpret_cast<::Scene*>(GetSceneNode()->GetScene());
 	scene->SetCameraOrderDirty();
 }
 
-bool Camera::TestVisible(gml::aabb2d bounding)
+bool Camera::TestVisible(const gml::aabb2d& bounding) const
 {
-	return (m_aabb.is_intersect(bounding) != gml::it_none);
+	return (m_aabb.is_intersect(bounding) != gml::it_mode::none);
 }
 
-bool Camera::TestVisible(g2d::Entity* entity)
+bool Camera::TestVisible(g2d::Entity& entity) const
 {
-	if (entity->GetLocalAABB().is_empty() || (GetVisibleMask() &entity->GetVisibleMask()) == 0)
+	if (entity.GetLocalAABB().is_point() ||
+		(GetVisibleMask() & entity.GetVisibleMask()) == 0)
 	{
 		return false;
 	}
 
-	auto& entityAABB = entity->GetWorldAABB();
-	return (m_aabb.is_intersect(entityAABB) != gml::it_none);
-
+	return TestVisible(entity.GetWorldAABB());
 }
