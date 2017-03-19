@@ -15,6 +15,9 @@
     <Filter Include="源文件\scene">
       <UniqueIdentifier>{f132b091-4288-4664-b9e5-cc670bdf803b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="源文件\input">
+      <UniqueIdentifier>{e1de6edf-41f7-43fe-84ec-4a376ecdde42}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\g2dengine.h">
@@ -50,6 +53,9 @@
     <ClInclude Include="source\scope_utility.h">
       <Filter>源文件</Filter>
     </ClInclude>
+    <ClInclude Include="include\g2dinput.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="source\engine.cpp">
@@ -75,6 +81,9 @@
     </ClCompile>
     <ClCompile Include="source\spatial_graph.cpp">
       <Filter>源文件\scene</Filter>
+    </ClCompile>
+    <ClCompile Include="source\message_win32.cpp">
+      <Filter>源文件\input</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

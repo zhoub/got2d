@@ -48,6 +48,7 @@ private:
 
 	friend LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
 	void OnResize(uint32_t width, uint32_t height);
+	void OnMessage(uint32_t m, uint32_t wp, uint32_t lp);
 
 	AutoWinClassRegister m_autoClassRegister;
 	HWND m_hWindow = NULL;

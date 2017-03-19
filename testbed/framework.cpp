@@ -4,8 +4,7 @@
 #include <time.h>
 #include <g2dengine.h>
 #include <g2drender.h>
-
-#include <WinUser.h>
+#include <g2dinput.h>
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -17,6 +16,24 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	}
 	return 0;
 
+	case WM_LBUTTONDOWN:
+	case WM_RBUTTONDOWN:
+	case WM_MBUTTONDOWN:
+	case WM_LBUTTONUP:
+	case WM_RBUTTONUP:
+	case WM_MBUTTONUP:
+	case WM_MOUSEMOVE:
+	case WM_LBUTTONDBLCLK:
+	case WM_RBUTTONDBLCLK:
+	case WM_MBUTTONDBLCLK:
+	{
+		Framework* pFramework = (Framework*)::GetWindowLongPtrW(hWnd, 0);
+		pFramework->OnMessage(message,
+			static_cast<uint32_t>(wParam),
+			static_cast<uint32_t>(lParam)
+		);
+	}
+	break;
 	case WM_SIZE:
 	{
 		RECT rect;
@@ -24,11 +41,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		Framework* pFramework = (Framework*)::GetWindowLongPtrW(hWnd, 0);
 		pFramework->OnResize(rect.right - rect.left, rect.bottom - rect.top);
 	}
-	return 0;
-
-	default:
-		return DefWindowProc(hWnd, message, wParam, lParam);
+	break;
 	}
+
+	return DefWindowProc(hWnd, message, wParam, lParam);
 }
 
 int AutoWinClassRegister::s_initialCount = 0;
@@ -266,6 +282,12 @@ void Framework::OnResize(uint32_t width, uint32_t height)
 	{
 		g2d::GetEngine()->GetRenderSystem()->OnResize(width, height);
 	}
+}
+
+void Framework::OnMessage(uint32_t m, uint32_t wp, uint32_t lp)
+{
+	//要在初始化之后再做这件事情
+	g2d::Message msg = g2d::TranslateMessageFromWin32(m, wp, lp);
 }
 
 
