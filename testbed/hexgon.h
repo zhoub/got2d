@@ -1,4 +1,5 @@
 #pragma once
+#include <g2dengine.h>
 #include <g2dscene.h>
 #include <g2drender.h>
 

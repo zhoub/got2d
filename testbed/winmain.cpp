@@ -1,157 +1,13 @@
-// testbed.cpp : 定义应用程序的入口点。
-//
-
 #include "stdafx.h"
-#include "testbed.h"
+#include "framework.h"
+#include <cinttypes>
 
-HINSTANCE hInst;
-HWND hWnd;
-Testbed testbed;
-
-void RegisterCallbacks();
-ATOM MyRegisterClass(HINSTANCE hInstance);
-BOOL InitInstance(HINSTANCE, int);
-LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
-
-int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
-	_In_opt_ HINSTANCE hPrevInstance,
-	_In_ LPWSTR    lpCmdLine,
-	_In_ int       nCmdShow)
+namespace g2d
 {
-	UNREFERENCED_PARAMETER(hPrevInstance);
-	UNREFERENCED_PARAMETER(lpCmdLine);
-
-	RegisterCallbacks();
-	MyRegisterClass(hInstance);
-
-	// 执行应用程序初始化: 
-	if (!InitInstance(hInstance, nCmdShow) || !testbed.InitApp())
-	{
-		return FALSE;
-	}
-
-	MSG msg;
-	bool needExit = false;
-	testbed.FirstTick();
-	while (true)
-	{
-		if (::PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE))
-		{
-			if (msg.message == WM_QUIT)
-			{
-				break;
-			}
-			TranslateMessage(&msg);
-			DispatchMessage(&msg);
-		}
-		else if (!needExit)
-		{
-			if (!testbed.MainLoop())
-			{
-				::DestroyWindow(hWnd);
-				needExit = true;
-			}
-		}
-	}
-
-	testbed.DestroyApp();
-
-	return (int)msg.wParam;
+	class Scene;
 }
 
-
-
-//
-//  函数: MyRegisterClass()
-//
-//  目的: 注册窗口类。
-//
-ATOM MyRegisterClass(HINSTANCE hInstance)
-{
-	WNDCLASSEXW wcex;
-	::ZeroMemory(&wcex, sizeof(WNDCLASSEX));
-
-	wcex.cbSize = sizeof(WNDCLASSEX);
-
-	wcex.style = CS_HREDRAW | CS_VREDRAW;
-	wcex.lpfnWndProc = WndProc;
-	wcex.cbClsExtra = 0;
-	wcex.cbWndExtra = 0;
-	wcex.hInstance = hInstance;
-	wcex.hCursor = LoadCursor(nullptr, IDC_ARROW);
-	wcex.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1);
-	wcex.lpszClassName = testbed.GetWindowClassName().c_str();
-
-	return RegisterClassExW(&wcex);
-}
-
-//
-//   函数: InitInstance(HINSTANCE, int)
-//
-//   目的: 保存实例句柄并创建主窗口
-//
-//   注释: 
-//
-//        在此函数中，我们在全局变量中保存实例句柄并
-//        创建和显示主程序窗口。
-//
-BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
-{
-	hInst = hInstance; // 将实例句柄存储在全局变量中
-
-	hWnd = CreateWindowW(testbed.GetWindowClassName().c_str(), testbed.GetWindowTitle().c_str(), WS_OVERLAPPEDWINDOW,
-		CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
-
-	if (!hWnd)
-	{
-		return FALSE;
-	}
-
-	ShowWindow(hWnd, nCmdShow);
-	UpdateWindow(hWnd);
-
-	return TRUE;
-}
-
-//
-//  函数: WndProc(HWND, UINT, WPARAM, LPARAM)
-//
-//  目的:    处理主窗口的消息。
-//
-//  WM_COMMAND  - 处理应用程序菜单
-//  WM_PAINT    - 绘制主窗口
-//  WM_DESTROY  - 发送退出消息并返回
-//
-//
-LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
-{
-	switch (message)
-	{
-	case WM_DESTROY:
-		PostQuitMessage(0);
-		break;
-	case WM_SIZE:
-	{
-		RECT rect;
-		::GetClientRect(hWnd, &rect);
-		testbed.OnResize(rect.right - rect.left, rect.bottom - rect.top);
-	}
-	break;
-	default:
-		return DefWindowProc(hWnd, message, wParam, lParam);
-	}
-	return 0;
-}
-
-
-
-#include <g2dengine.h>
-#include <g2drender.h>
-#include <g2dscene.h>
-
-#include "hexgon.h"
-
-class MyApp
+class Testbed
 {
 public:
 	void Start();
@@ -161,17 +17,38 @@ private:
 	g2d::Scene* mainScene = nullptr;
 };
 
-MyApp g_app;
 
-void RegisterCallbacks()
+int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
+	_In_opt_ HINSTANCE hPrevInstance,
+	_In_ LPWSTR    lpCmdLine,
+	_In_ int       nCmdShow)
 {
-	testbed.OnStart = std::bind(&MyApp::Start, &g_app);
-	testbed.OnFinish = std::bind(&MyApp::End, &g_app);
+	UNREFERENCED_PARAMETER(hPrevInstance);
+	UNREFERENCED_PARAMETER(lpCmdLine);
+
+	Framework framework(hInstance);
+	Testbed testbed;
+
+	// 注册事件
+	framework.OnStart = std::bind(&Testbed::Start, &testbed);
+	framework.OnFinish = std::bind(&Testbed::End, &testbed);
 	using namespace std::placeholders;
-	testbed.OnUpdate = std::bind(&MyApp::Update, &g_app, _1);
+	framework.OnUpdate = std::bind(&Testbed::Update, &testbed, _1);
+
+	// 运行程序
+	if (framework.Initial(nCmdShow, "/../extern/res/win32_test/"))
+	{
+		return framework.Start();
+	}
+	return 0;
 }
 
-void MyApp::Start()
+#include "hexgon.h"
+#include <g2dengine.h>
+#include <g2drender.h>
+#include <g2dscene.h>
+
+void Testbed::Start()
 {
 	mainScene = g2d::GetEngine()->CreateNewScene(2 << 10);
 
@@ -218,13 +95,13 @@ void MyApp::Start()
 	hexgonNode->SetPosition({ 10,10 });
 }
 
-void MyApp::End()
+void Testbed::End()
 {
 	mainScene->Release();
 	mainScene = nullptr;
 }
 
-bool MyApp::Update(uint32_t elapsedTime)
+bool Testbed::Update(uint32_t elapsedTime)
 {
 	mainScene->Update(elapsedTime);
 
@@ -234,4 +111,3 @@ bool MyApp::Update(uint32_t elapsedTime)
 	return true;
 
 }
-
