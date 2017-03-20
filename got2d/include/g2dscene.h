@@ -4,6 +4,7 @@
 #include <gmlvector.h>
 #include <gmlmatrix.h>
 #include <gmlaabb.h>
+#include <gmlrect.h>
 namespace g2d
 {
 	constexpr uint32_t DEFAULT_VISIBLE_MASK = 0xFFFFFFFF;
@@ -52,6 +53,9 @@ namespace g2d
 
 		// 节点局部位置更新事件
 		virtual void OnMove(const gml::vec2& newPos) { }
+
+		// 用户输入消息时间
+		virtual void OnMessage(const g2d::Message& message) { }
 
 		// 节点局部坐标变化之后，第一次更新的事件
 		// 一般AABB的变换在这里计算。
@@ -142,6 +146,10 @@ namespace g2d
 
 		// 摄像机是否被启用
 		virtual bool IsActivity() const = 0;
+
+		virtual gml::vec2 ScreenToWorld(const gml::coord& pos) const = 0;
+
+		virtual gml::coord WorldToScreen(const gml::vec2& pos) const = 0;
 	};
 
 	// 场景节点，在场景中是一个以树形形式组成
@@ -229,6 +237,9 @@ namespace g2d
 		// 获得节点Roll旋转
 		virtual gml::radian GetRotation() const = 0;
 
+		// 获得节点世界坐标的位置
+		virtual gml::vec2 GetWorldPosition() = 0;
+
 		// 获取节点绑定的Entity对象
 		virtual Entity* GetEntity() const = 0;
 
@@ -240,6 +251,8 @@ namespace g2d
 
 		// 节点可见性Mask的设置
 		virtual uint32_t GetVisibleMask() const = 0;
+
+		virtual gml::vec2 WorldToLocal(const gml::vec2& pos) = 0;
 	};
 
 	class G2DAPI Scene : public SceneNode

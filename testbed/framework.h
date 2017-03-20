@@ -1,4 +1,5 @@
 #pragma once
+#include <gmlrect.h>
 #include <g2dinput.h>
 #include <functional>
 #include <string>
@@ -35,7 +36,8 @@ public:
 	bool Initial(int nCmdShow, const std::string& resPath);
 	int Start();
 	void QuitApp();
-
+	void SetCursorPos(const gml::coord&);
+	gml::coord GetCursorPos();
 	const std::wstring& GetWindowTitle();
 	uint32_t GetFrameCount() const;
 	uint32_t GetElapsedTime() const;

@@ -112,6 +112,8 @@ public:
 	void SetChildIndex(uint32_t index) { m_childID = index; }
 
 	void SetRenderingOrder(uint32_t& index);
+
+	void OnMessage(const g2d::Message& message);
 	
 public:	//g2d::SceneNode
 	virtual g2d::Scene* GetScene() const override;
@@ -160,6 +162,8 @@ public:	//g2d::SceneNode
 
 	virtual gml::radian GetRotation() const override { return _GetRotation(); }
 
+	virtual gml::vec2 GetWorldPosition() override;
+
 	virtual g2d::Entity* GetEntity() const override { return m_entity; }
 
 	virtual bool IsVisible() const override { return _IsVisible(); }
@@ -167,6 +171,8 @@ public:	//g2d::SceneNode
 	virtual bool IsStatic() const override { return m_isStatic; }
 
 	virtual uint32_t GetVisibleMask() const override { return _GetVisibleMask(); }
+
+	virtual gml::vec2 WorldToLocal(const gml::vec2& pos) override;
 
 private:
 	void SetWorldMatrixDirty();
@@ -251,6 +257,8 @@ public: //g2d::SceneNode
 
 	virtual gml::radian GetRotation() const override { return _GetRotation(); }
 
+	virtual gml::vec2 GetWorldPosition() override { return _GetPosition(); };
+
 	virtual g2d::Entity* GetEntity() const override { return nullptr; }
 
 	virtual bool IsVisible() const override { return _IsVisible(); }
@@ -258,6 +266,8 @@ public: //g2d::SceneNode
 	virtual bool IsStatic() const override { return true; }
 
 	virtual uint32_t GetVisibleMask() const override { return _GetVisibleMask(); }
+
+	virtual gml::vec2 WorldToLocal(const gml::vec2& pos) override { return pos; }
 
 public:	//g2d::Scene
 	virtual void Release() override;
@@ -276,6 +286,8 @@ public:	//g2d::Scene
 
 private:
 	void ResortCameraOrder();
+
+	void FindInteractiveObject(const g2d::Message& message);
 
 	virtual ::BaseNode* _GetParent() override { return nullptr; }
 

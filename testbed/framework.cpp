@@ -114,6 +114,23 @@ void Framework::QuitApp()
 	m_running = false;
 }
 
+
+
+void Framework::SetCursorPos(const gml::coord& pos)
+{
+	POINT p = { pos.x, pos.y };
+	::ClientToScreen(m_hWindow, &p);
+	::SetCursorPos(p.x, p.y);
+}
+
+gml::coord Framework::GetCursorPos()
+{
+	POINT p;
+	::GetCursorPos(&p);
+	::ScreenToClient(m_hWindow, &p);
+	return { p.x, p.y };
+}
+
 const std::wstring& Framework::GetWindowTitle()
 {
 	static const std::wstring title = L"got2d test bed";

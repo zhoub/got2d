@@ -371,6 +371,27 @@ void SceneNode::SetStatic(bool s)
 	}
 }
 
+gml::vec2 SceneNode::GetWorldPosition()
+{
+	auto localPos = _GetPosition();
+	return gml::transform_point(GetWorldMatrix(), localPos);
+}
+
+gml::vec2 SceneNode::WorldToLocal(const gml::vec2& pos)
+{
+	gml::mat33 worldMatrixInv = gml::mat33(m_iparent.GetWorldMatrix()).inversed();
+	auto p = gml::transform_point(worldMatrixInv, pos);
+	return p;
+}
+
+void SceneNode::OnMessage(const g2d::Message& message)
+{
+	m_entity->OnMessage(message);
+	TraversalChildren([&](::SceneNode* child) {
+		child->OnMessage(message);
+	});
+}
+
 Scene::Scene(float boundSize)
 	: m_spatial(boundSize)
 {
@@ -393,7 +414,10 @@ void Scene::ResortCameraOrder()
 			{
 				return a->GetID() < b->GetID();
 			}
-			return aOrder < bOrder;
+			else
+			{
+				return aOrder < bOrder;
+			}
 		});
 	}
 }
@@ -402,53 +426,6 @@ void Scene::Release()
 {
 	EmptyChildren();
 	delete this;
-}
-
-#include "render_system.h"
-void Scene::Render()
-{
-	GetRenderSystem()->FlushRequests();
-
-	ResortCameraOrder();
-	for (size_t i = 0, n = m_cameraOrder.size(); i < n; i++)
-	{
-		auto& camera = m_cameraOrder[i];
-		if (!camera->IsActivity())
-			continue;
-
-		GetRenderSystem()->SetViewMatrix(camera->GetViewMatrix());
-
-		std::vector<g2d::Entity*> visibleEntities;
-		m_spatial.FindVisible(*camera, visibleEntities);
-
-		//sort visibleEntities by render order
-		std::sort(visibleEntities.begin(), visibleEntities.end(),
-			[](g2d::Entity* a, g2d::Entity* b) {
-			return a->GetRenderingOrder() < b->GetRenderingOrder();
-		});
-
-		for (auto& entity : visibleEntities)
-		{
-			entity->OnRender();
-		}
-		GetRenderSystem()->FlushRequests();
-	}
-}
-
-g2d::Camera* Scene::CreateCameraNode()
-{
-	Camera* camera = new ::Camera();
-	CreateSceneNodeChild(camera, true);
-	m_cameraOrderDirty = true;
-	camera->SetID(static_cast<uint32_t>(m_cameras.size()));
-	m_cameras.push_back(camera);
-	return camera;
-}
-
-g2d::Camera* Scene::GetCameraByIndex(uint32_t index) const
-{
-	ENSURE(index < m_cameras.size());
-	return m_cameras[index];
 }
 
 void Scene::Update(uint32_t elapsedTime)
@@ -469,5 +446,77 @@ void Scene::AdjustRenderingOrder()
 
 void Scene::OnMessage(const g2d::Message& message)
 {
+	TraversalChildren([&](::SceneNode* child) {
+		child->OnMessage(message);
+	});
 
+	if (message.Source == g2d::MessageSource::Mouse)
+	{
+		FindInteractiveObject(message);
+	}
+}
+
+void Scene::FindInteractiveObject(const g2d::Message& message)
+{
+	ResortCameraOrder();
+	auto cur = std::rbegin(m_cameraOrder);
+	auto end = std::rend(m_cameraOrder);
+
+	for (; cur != end; cur++)
+	{
+		g2d::Camera* camera = *cur;
+
+		int coordX = message.MousePositionX;
+		int coordY = message.MousePositionY;
+		gml::vec2 worldCoord = camera->ScreenToWorld({ coordX, coordY });
+		//if (camera->FindIntersectionObject(worldCoord))
+		{
+			return;
+		}
+	}
+}
+
+#include "render_system.h"
+void Scene::Render()
+{
+	GetRenderSystem()->FlushRequests();
+	ResortCameraOrder();
+	for (auto camera : m_cameraOrder)
+	{
+		if (camera->IsActivity())
+		{
+			GetRenderSystem()->SetViewMatrix(camera->GetViewMatrix());
+
+			std::vector<g2d::Entity*> visibleEntities;
+			m_spatial.FindVisible(*camera, visibleEntities);
+
+			//sort visibleEntities by render order
+			std::sort(visibleEntities.begin(), visibleEntities.end(),
+				[](g2d::Entity* a, g2d::Entity* b) {
+				return a->GetRenderingOrder() < b->GetRenderingOrder();
+			});
+
+			for (auto& entity : visibleEntities)
+			{
+				entity->OnRender();
+			}
+			GetRenderSystem()->FlushRequests();
+		}
+	}
+}
+
+g2d::Camera* Scene::CreateCameraNode()
+{
+	Camera* camera = new ::Camera();
+	CreateSceneNodeChild(camera, true);
+	m_cameraOrderDirty = true;
+	camera->SetID(static_cast<uint32_t>(m_cameras.size()));
+	m_cameras.push_back(camera);
+	return camera;
+}
+
+g2d::Camera* Scene::GetCameraByIndex(uint32_t index) const
+{
+	ENSURE(index < m_cameras.size());
+	return m_cameras[index];
 }

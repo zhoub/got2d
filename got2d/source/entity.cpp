@@ -78,15 +78,14 @@ Quad::Quad()
 
 void Quad::OnInitial()
 {
-	GetSceneNode()->SetPivot(gml::vec2(-0.5f, -0.5f));
 }
 
 void Quad::OnRender()
 {
 	g2d::GetEngine()->GetRenderSystem()->RenderMesh(
-		g2d::RenderLayer::Default, 
+		g2d::RenderLayer::Default,
 		m_mesh,
-		m_material, 
+		m_material,
 		GetSceneNode()->GetWorldMatrix());
 }
 
@@ -110,10 +109,6 @@ g2d::Quad* Quad::SetSize(const gml::vec2& size)
 
 void Camera::OnUpdate(uint32_t elapsedTime)
 {
-	float realt = elapsedTime * 0.001f;
-	auto pos = GetSceneNode()->GetPosition();
-	GetSceneNode()->SetPosition(gml::vec2(pos.x + 10 * realt, pos.y));
-	GetSceneNode()->SetScale(gml::vec2(1.0f + 0.1f*realt, 1.0f + 0.1f*realt));
 }
 
 void Camera::OnUpdateMatrixChanged()
@@ -121,7 +116,8 @@ void Camera::OnUpdateMatrixChanged()
 	auto pos = GetSceneNode()->GetPosition();
 	auto scale = GetSceneNode()->GetScale();
 	auto rotation = GetSceneNode()->GetRotation();
-	m_matrix = gml::mat32::inv_trs(pos, rotation, scale);
+	m_matView = gml::mat32::inv_trs(pos, rotation, scale);
+	m_matViewInverse = gml::mat33(m_matView).inversed();
 
 	auto rs = g2d::GetEngine()->GetRenderSystem();
 	gml::vec2 halfSize(rs->GetWindowWidth() * 0.5f, rs->GetWindowHeight()* 0.5f);
@@ -165,4 +161,24 @@ bool Camera::TestVisible(g2d::Entity& entity) const
 	}
 
 	return TestVisible(entity.GetWorldAABB());
+}
+
+bool Camera::FindIntersectionObject(const gml::coord& worldPosition)
+{
+	return false;
+}
+
+gml::vec2 Camera::ScreenToWorld(const gml::coord& pos) const
+{
+	auto renderSystem = g2d::GetEngine()->GetRenderSystem();
+	auto viewPos = renderSystem->ScreenToView(pos);
+	return gml::transform_point(m_matViewInverse, viewPos);
+}
+
+gml::coord Camera::WorldToScreen(const gml::vec2& pos) const
+{
+	auto renderSystem = g2d::GetEngine()->GetRenderSystem();
+	auto viewPos = gml::transform_point(m_matView, pos);
+	return renderSystem->ViewToScreen(viewPos);
+
 }

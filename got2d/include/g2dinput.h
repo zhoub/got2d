@@ -1,6 +1,5 @@
 #pragma once
 #include <g2dconfig.h>
-#include <gmlrect.h>
 
 namespace g2d
 {

@@ -38,6 +38,8 @@ class Camera : public g2d::Camera
 public:
 	void SetID(uint32_t index) { m_id = index; }
 
+	bool FindIntersectionObject(const gml::coord& worldPosition);
+
 public:	//g2d::entity
 	virtual void Release() override { delete this; }
 
@@ -62,7 +64,7 @@ public:	//g2d::camera
 
 	virtual void SetActivity(bool activity) override { m_activity = activity; }
 
-	virtual const gml::mat32& GetViewMatrix() const override { return m_matrix; }
+	virtual const gml::mat32& GetViewMatrix() const override { return m_matView; }
 
 	virtual bool TestVisible(const gml::aabb2d& bounding) const override;
 
@@ -73,12 +75,17 @@ public:	//g2d::camera
 	virtual int GetRenderingOrder() const override { return m_renderingOrder; }
 
 	virtual bool IsActivity() const override { return m_activity; }
+	
+	virtual gml::vec2 ScreenToWorld(const gml::coord& pos) const override;
+
+	virtual gml::coord WorldToScreen(const gml::vec2 & pos) const override;
 
 private:
 	uint32_t m_id;
 	uint32_t m_visibleMask = g2d::DEFAULT_VISIBLE_MASK;
 	int m_renderingOrder = 0;
 	bool m_activity = true;
-	gml::mat32 m_matrix;
+	gml::mat32 m_matView;
+	gml::mat33 m_matViewInverse;
 	gml::aabb2d m_aabb;
 };
