@@ -4,6 +4,7 @@
 #include "scope_utility.h"
 #include <gmlmatrix.h>
 #include <g2drender.h>
+#include <vector>
 
 
 class Quad : public g2d::Quad
@@ -38,7 +39,9 @@ class Camera : public g2d::Camera
 public:
 	void SetID(uint32_t index) { m_id = index; }
 
-	bool FindIntersectionObject(const gml::coord& worldPosition);
+	g2d::Entity* FindIntersectionObject(const gml::vec2& worldPosition);
+
+	std::vector<Entity*> visibleEntities;
 
 public:	//g2d::entity
 	virtual void Release() override { delete this; }

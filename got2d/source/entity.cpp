@@ -163,9 +163,20 @@ bool Camera::TestVisible(g2d::Entity& entity) const
 	return TestVisible(entity.GetWorldAABB());
 }
 
-bool Camera::FindIntersectionObject(const gml::coord& worldPosition)
+g2d::Entity* Camera::FindIntersectionObject(const gml::vec2& worldPosition)
 {
-	return false;
+	auto itCur = std::rbegin(visibleEntities);
+	auto itEnd = std::rend(visibleEntities);
+	for (; itCur != itEnd; itCur++)
+	{
+		Entity* entity = *itCur;
+		auto localPos = entity->GetSceneNode()->WorldToLocal(worldPosition);
+		if (entity->GetLocalAABB().contains(localPos))
+		{
+			return entity;
+		}
+	}
+	return nullptr;
 }
 
 gml::vec2 Camera::ScreenToWorld(const gml::coord& pos) const

@@ -1,5 +1,5 @@
-#include "scene.h"
 #include "spatial_graph.h"
+#include "scene.h"
 #include <algorithm>
 #include <gmlconversion.h>
 
@@ -115,7 +115,6 @@ void BaseNode::_Update(uint32_t elpasedTime)
 	ENSURE(index < m_children.size());
 	return m_children[index];
 }
-
 
 void BaseNode::MoveChild(uint32_t from, uint32_t to)
 {
@@ -394,6 +393,7 @@ void SceneNode::OnMessage(const g2d::Message& message)
 
 Scene::Scene(float boundSize)
 	: m_spatial(boundSize)
+	, m_mouseButtonState{ g2d::MouseButton::Left, g2d::MouseButton::Right }
 {
 	CreateCameraNode();
 }
@@ -430,6 +430,13 @@ void Scene::Release()
 
 void Scene::Update(uint32_t elapsedTime)
 {
+	m_lastTickStamp += elapsedTime;
+	for (auto& state : m_mouseButtonState)
+	{
+		state.Update(m_lastTickStamp);
+	}
+
+	//m_hoverNode->OnMouseHovering(elapsedTime);
 	_Update(elapsedTime);
 	AdjustRenderingOrder();
 }
@@ -444,6 +451,99 @@ void Scene::AdjustRenderingOrder()
 	});
 }
 
+void Scene::MouseButtonState::Update(uint32_t currentStamp)
+{
+	if (pressing && !dragging && (currentStamp - pressStamp > PressingDelta) && hoverNode != nullptr)
+	{
+		dragging = true;
+		hoverNode->OnDragBegin(button);
+	}
+}
+
+bool Scene::MouseButtonState::UpdateMessage(const g2d::Message& message, uint32_t currentStamp, ::SceneNode* itNode)
+{
+	if (message.MouseButton != button)
+		return false;
+	if (message.Event == g2d::MessageEvent::MouseButtonDown)
+	{
+		if (dragging)
+		{
+			//�쳣״̬
+			if (hoverNode != nullptr && hoverNode != itNode)
+			{
+				hoverNode->OnDragEnd(button);
+			}
+			dragging = false;
+
+		}
+		else if (pressing)
+		{
+			if (hoverNode != nullptr && hoverNode != itNode)
+			{
+				hoverNode->OnClick(button);
+			}
+		}
+		pressing = true;
+		pressStamp = currentStamp;
+		pressPosition.set(message.MousePositionX, message.MousePositionY);
+		hoverNode = itNode;
+	}
+	else if (message.Event == g2d::MessageEvent::MouseButtonUp)
+	{
+		if (dragging)
+		{
+			if (itNode != nullptr && itNode != hoverNode)
+			{
+				hoverNode->OnDropTo(button, itNode);
+			}
+			else
+			{
+				hoverNode->OnDragEnd(button);
+			}
+			pressing = false;
+			dragging = false;
+			return true;
+		}
+		else if (pressing)
+		{
+			if (hoverNode != nullptr && itNode == hoverNode)
+			{
+				hoverNode->OnClick(button);
+				pressing = false;
+				dragging = false;
+				return true;
+			}
+			pressing = false;
+			dragging = false;
+		}
+	}
+	else if (message.Event == g2d::MessageEvent::MouseMove)
+	{
+		if (!dragging)
+		{
+			if (pressing && hoverNode != nullptr)
+			{
+				dragging = true;
+				hoverNode->OnDragBegin(button);
+			}
+		}
+
+		if (dragging)
+		{
+			if (itNode != nullptr)
+			{
+				hoverNode->OnDropping(button, itNode);
+			}
+			else
+			{
+				hoverNode->OnDragging(button);
+			}
+			return true;
+		}
+	}
+	return false;
+}
+
 void Scene::OnMessage(const g2d::Message& message)
 {
 	TraversalChildren([&](::SceneNode* child) {
@@ -452,28 +552,59 @@ void Scene::OnMessage(const g2d::Message& message)
 
 	if (message.Source == g2d::MessageSource::Mouse)
 	{
-		FindInteractiveObject(message);
+		::SceneNode* sceneNode = FindInteractiveObject(message);
+		for (auto& state : m_mouseButtonState)
+		{
+			if (!state.UpdateMessage(message, m_lastTickStamp, sceneNode))
+			{
+				if (message.Event == g2d::MessageEvent::MouseMove)
+				{
+					if (m_hoverNode != sceneNode)
+					{
+						if (m_hoverNode != nullptr)
+						{
+							m_hoverNode->OnMouseLeaveTo(sceneNode);
+						}
+						if (sceneNode != nullptr)
+						{
+							sceneNode->OnMouseEnterFrom(m_hoverNode);
+						}
+					}
+				}
+				else if (message.Event == g2d::MessageEvent::MouseButtonDoubleClick)
+				{
+					if (m_hoverNode != nullptr && m_hoverNode == sceneNode)
+					{
+						m_hoverNode->OnDoubleClick(message.MouseButton);
+					}
+				}
+				m_hoverNode = sceneNode;
+			}
+
+		}
 	}
 }
 
-void Scene::FindInteractiveObject(const g2d::Message& message)
+::SceneNode* Scene::FindInteractiveObject(const g2d::Message& message)
 {
 	ResortCameraOrder();
 	auto cur = std::rbegin(m_cameraOrder);
 	auto end = std::rend(m_cameraOrder);
-
+	g2d::Entity* entity = nullptr;
 	for (; cur != end; cur++)
 	{
-		g2d::Camera* camera = *cur;
+		::Camera* camera = *cur;
 
 		int coordX = message.MousePositionX;
 		int coordY = message.MousePositionY;
 		gml::vec2 worldCoord = camera->ScreenToWorld({ coordX, coordY });
-		//if (camera->FindIntersectionObject(worldCoord))
+		entity = camera->FindIntersectionObject(worldCoord);
+		if (entity != nullptr)
 		{
-			return;
+			return reinterpret_cast<::SceneNode*>(entity->GetSceneNode());
 		}
 	}
+	return nullptr;
 }
 
 #include "render_system.h"
@@ -485,18 +616,17 @@ void Scene::Render()
 	{
 		if (camera->IsActivity())
 		{
+			camera->visibleEntities.clear();
 			GetRenderSystem()->SetViewMatrix(camera->GetViewMatrix());
-
-			std::vector<g2d::Entity*> visibleEntities;
-			m_spatial.FindVisible(*camera, visibleEntities);
+			m_spatial.FindVisible(*camera);
 
 			//sort visibleEntities by render order
-			std::sort(visibleEntities.begin(), visibleEntities.end(),
+			std::sort(std::begin(camera->visibleEntities), std::end(camera->visibleEntities),
 				[](g2d::Entity* a, g2d::Entity* b) {
 				return a->GetRenderingOrder() < b->GetRenderingOrder();
 			});
 
-			for (auto& entity : visibleEntities)
+			for (auto& entity : camera->visibleEntities)
 			{
 				entity->OnRender();
 			}

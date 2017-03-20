@@ -5,6 +5,7 @@
 #include "inner_utility.h"
 #include "scope_utility.h"
 
+class Camera;
 class QuadTreeNode
 {
 public:
@@ -22,7 +23,7 @@ public:
 
 	gml::aabb2d GetBounding() { return m_bounding; }
 
-	void FindVisible(const g2d::Camera& camera, std::vector<g2d::Entity*>& visibleEntities);
+	void FindVisible(Camera& camera);
 
 	bool IsEmpty() { return m_isEmpty; }
 
@@ -56,7 +57,7 @@ public:
 
 	void Remove(g2d::Entity& entity);
 
-	void FindVisible(const g2d::Camera& camera, std::vector<g2d::Entity*>& visibleEntities);
+	void FindVisible(Camera& camera);
 
 private:
 	autod<QuadTreeNode> m_root;

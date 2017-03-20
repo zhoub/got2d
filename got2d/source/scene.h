@@ -63,7 +63,7 @@ protected:
 	template<typename FUNC>
 	void TraversalChildrenByIndex(uint32_t startIndex, FUNC func)
 	{
-		for(uint32_t size = static_cast<uint32_t>(m_children.size()); startIndex < size; startIndex++)
+		for (uint32_t size = static_cast<uint32_t>(m_children.size()); startIndex < size; startIndex++)
 			func(startIndex, m_children[startIndex]);
 	}
 
@@ -71,6 +71,14 @@ protected:
 	void TraversalChildren(FUNC func)
 	{
 		for (auto& child : m_children) func(child);
+	}
+
+	template<typename FUNC>
+	void InverseTraversalChildren(FUNC func)
+	{
+		auto it = std::rbegin(m_children);
+		auto end = std::rend(m_children);
+		for (; it != end; it++) func(*child);
 	}
 
 	virtual BaseNode* _GetParent() = 0;
@@ -114,7 +122,25 @@ public:
 	void SetRenderingOrder(uint32_t& index);
 
 	void OnMessage(const g2d::Message& message);
-	
+
+	void OnMouseEnterFrom(::SceneNode* adjacency) { }
+
+	void OnMouseLeaveTo(::SceneNode* adjacency) { }
+
+	void OnClick(g2d::MouseButton btn) { }
+
+	void OnDoubleClick(g2d::MouseButton btn) { }
+
+	void OnDragBegin(g2d::MouseButton btn) { }
+
+	void OnDragging(g2d::MouseButton btn) { }
+
+	void OnDragEnd(g2d::MouseButton btn) { }
+
+	void OnDropping(g2d::MouseButton btn, ::SceneNode* adjacency) { }
+
+	void OnDropTo(g2d::MouseButton btn, ::SceneNode* adjacency) { }
+
 public:	//g2d::SceneNode
 	virtual g2d::Scene* GetScene() const override;
 
@@ -287,7 +313,7 @@ public:	//g2d::Scene
 private:
 	void ResortCameraOrder();
 
-	void FindInteractiveObject(const g2d::Message& message);
+	::SceneNode* FindInteractiveObject(const g2d::Message& message);
 
 	virtual ::BaseNode* _GetParent() override { return nullptr; }
 
@@ -296,5 +322,22 @@ private:
 	SpatialGraph m_spatial;
 	std::vector<::Camera*> m_cameras;
 	std::vector<::Camera*> m_cameraOrder;
-	bool m_cameraOrderDirty;
+	bool m_cameraOrderDirty = true;
+
+	struct MouseButtonState
+	{
+		static const uint32_t PressingDelta = 700;
+
+		MouseButtonState(g2d::MouseButton btn) : button(btn) { }
+		void Update(uint32_t currentStamp);
+		bool UpdateMessage(const g2d::Message& message, uint32_t currentStamp, ::SceneNode* itNode);
+		bool dragging = false;
+		bool pressing = false;
+		uint32_t pressStamp;
+		gml::coord pressPosition;
+		::SceneNode* hoverNode = nullptr;
+		const g2d::MouseButton button;
+	} m_mouseButtonState[2];
+	::SceneNode* m_hoverNode = nullptr;
+	uint32_t m_lastTickStamp = 0;
 };
