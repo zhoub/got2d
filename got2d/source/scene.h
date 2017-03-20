@@ -272,6 +272,8 @@ public:	//g2d::Scene
 
 	virtual void Update(uint32_t elpasedTime) override;
 
+	virtual void OnMessage(const g2d::Message& message) override;
+
 private:
 	void ResortCameraOrder();
 

@@ -13,6 +13,7 @@ public:
 	void Start();
 	void End();
 	bool Update(uint32_t elapsedTime);
+	void OnMessage(const g2d::Message& message);
 private:
 	g2d::Scene* mainScene = nullptr;
 };
@@ -30,10 +31,13 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	Testbed testbed;
 
 	// 注册事件
-	framework.OnStart = std::bind(&Testbed::Start, &testbed);
-	framework.OnFinish = std::bind(&Testbed::End, &testbed);
-	using namespace std::placeholders;
-	framework.OnUpdate = std::bind(&Testbed::Update, &testbed, _1);
+	{
+		framework.OnStart = std::bind(&Testbed::Start, &testbed);
+		framework.OnFinish = std::bind(&Testbed::End, &testbed);
+		using namespace std::placeholders;
+		framework.OnUpdate = std::bind(&Testbed::Update, &testbed, _1);
+		framework.OnMessage = std::bind(&Testbed::OnMessage, &testbed, _1);
+	}
 
 	// 运行程序
 	if (framework.Initial(nCmdShow, "/../extern/res/win32_test/"))
@@ -109,5 +113,9 @@ bool Testbed::Update(uint32_t elapsedTime)
 	mainScene->Render();
 	g2d::GetEngine()->GetRenderSystem()->EndRender();
 	return true;
+}
 
+void Testbed::OnMessage(const g2d::Message& message)
+{
+	mainScene->OnMessage(message);
 }

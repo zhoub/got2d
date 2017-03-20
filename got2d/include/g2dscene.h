@@ -1,5 +1,6 @@
 #pragma once
 #include <g2dconfig.h>
+#include <g2dinput.h>
 #include <gmlvector.h>
 #include <gmlmatrix.h>
 #include <gmlaabb.h>
@@ -259,11 +260,16 @@ namespace g2d
 		virtual Camera* GetCameraByIndex(uint32_t index) const = 0;
 
 		// 把场景中的物体加入渲染队列
-		// 引擎用户主动调用
+		// 需要用户主动调用
 		virtual void Render() = 0;
 
 		// 更细场景
-		// 引擎用户主动调用
+		// 需要用户主动调用
 		virtual void Update(uint32_t elapsedTime) = 0;
+
+		// 当用户输入的时候
+		// 往所有节点派发消息
+		// 需要用户主动调用
+		virtual void OnMessage(const Message& message) = 0;
 	};
 }

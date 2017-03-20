@@ -28,7 +28,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	case WM_MBUTTONDBLCLK:
 	{
 		Framework* pFramework = (Framework*)::GetWindowLongPtrW(hWnd, 0);
-		pFramework->OnMessage(message,
+		pFramework->OnWindowMessage(message,
 			static_cast<uint32_t>(wParam),
 			static_cast<uint32_t>(lParam)
 		);
@@ -39,7 +39,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		RECT rect;
 		::GetClientRect(hWnd, &rect);
 		Framework* pFramework = (Framework*)::GetWindowLongPtrW(hWnd, 0);
-		pFramework->OnResize(rect.right - rect.left, rect.bottom - rect.top);
+		pFramework->OnWindowResize(rect.right - rect.left, rect.bottom - rect.top);
 	}
 	break;
 	}
@@ -275,7 +275,7 @@ void Framework::DestroyApp()
 	m_initial = false;
 }
 
-void Framework::OnResize(uint32_t width, uint32_t height)
+void Framework::OnWindowResize(uint32_t width, uint32_t height)
 {
 	//要在初始化之后再做这件事情
 	if (g2d::IsEngineInitialized())
@@ -284,10 +284,13 @@ void Framework::OnResize(uint32_t width, uint32_t height)
 	}
 }
 
-void Framework::OnMessage(uint32_t m, uint32_t wp, uint32_t lp)
+void Framework::OnWindowMessage(uint32_t m, uint32_t wp, uint32_t lp)
 {
-	//要在初始化之后再做这件事情
 	g2d::Message msg = g2d::TranslateMessageFromWin32(m, wp, lp);
+	if (OnMessage != nullptr)
+	{
+		OnMessage(msg);
+	}
 }
 
 

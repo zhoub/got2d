@@ -130,7 +130,7 @@ void BaseNode::MoveChild(uint32_t from, uint32_t to)
 		for (auto itID = to; itID < from; itID++)
 		{
 			siblings[itID + 1] = siblings[itID];
-			siblings[itID + 1]->SetChildIndex(itID +1);
+			siblings[itID + 1]->SetChildIndex(itID + 1);
 		}
 	}
 	else
@@ -465,4 +465,9 @@ void Scene::AdjustRenderingOrder()
 	{
 		child->SetRenderingOrder(curIndex);
 	});
+}
+
+void Scene::OnMessage(const g2d::Message& message)
+{
+
 }

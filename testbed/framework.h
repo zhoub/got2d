@@ -1,4 +1,5 @@
 #pragma once
+#include <g2dinput.h>
 #include <functional>
 #include <string>
 #include <cinttypes>
@@ -26,6 +27,7 @@ public:
 	std::function<void()> OnStart = nullptr;
 	std::function<void()> OnFinish = nullptr;
 	std::function<bool(uint32_t)> OnUpdate = nullptr;
+	std::function<void(const g2d::Message&)> OnMessage = nullptr;
 
 public:
 	Framework(HINSTANCE inst);
@@ -47,8 +49,8 @@ private:
 	void DestroyApp();
 
 	friend LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
-	void OnResize(uint32_t width, uint32_t height);
-	void OnMessage(uint32_t m, uint32_t wp, uint32_t lp);
+	void OnWindowResize(uint32_t width, uint32_t height);
+	void OnWindowMessage(uint32_t m, uint32_t wp, uint32_t lp);
 
 	AutoWinClassRegister m_autoClassRegister;
 	HWND m_hWindow = NULL;
