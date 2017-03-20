@@ -126,8 +126,8 @@ void Camera::OnUpdateMatrixChanged()
 	auto rs = g2d::GetEngine()->GetRenderSystem();
 	gml::vec2 halfSize(rs->GetWindowWidth() * 0.5f, rs->GetWindowHeight()* 0.5f);
 
-	halfSize.x /= scale.x;
-	halfSize.y /= scale.y;
+	halfSize.x *= scale.x;
+	halfSize.y *= scale.y;
 	gml::vec2 p[4] =
 	{
 		-halfSize, halfSize,
