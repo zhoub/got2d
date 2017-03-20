@@ -365,7 +365,6 @@ private:
 	gml::mat44 m_matProj;
 
 	bool m_matrixConstBufferDirty = true;
-	bool m_matrixViewDirty = true;
 	bool m_matrixProjDirty = true;
 	uint32_t m_windowWidth = 0;
 	uint32_t m_windowHeight = 0;

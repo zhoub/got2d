@@ -296,7 +296,6 @@ void RenderSystem::SetViewMatrix(const gml::mat32& viewMatrix)
 	if (viewMatrix != m_matView)
 	{
 		m_matView = viewMatrix;
-		m_matrixViewDirty = true;
 		m_matrixConstBufferDirty = true;
 	}
 }
@@ -306,7 +305,7 @@ const gml::mat44& RenderSystem::GetProjectionMatrix()
 	if (m_matrixProjDirty)
 	{
 		m_matrixProjDirty = false;
-		float znear = -0.5f;
+		float znear = -1.0f;
 		m_matProj = gml::mat44::center_ortho_lh(static_cast<float>(m_windowWidth), static_cast<float>(m_windowHeight), znear, 1000.0f);
 		//m_matProj = gml::mat44::ortho2d_lh(static_cast<float>(m_windowWidth), static_cast<float>(m_windowHeight), znear, 1000.0f);
 		m_matrixConstBufferDirty = true;
@@ -351,7 +350,7 @@ void RenderSystem::UpdateConstBuffer(ID3D11Buffer* cbuffer, const void* data, ui
 
 void RenderSystem::UpdateSceneConstBuffer()
 {
-	if (!m_matrixViewDirty && !m_matrixProjDirty && !m_matrixConstBufferDirty)
+	if (!m_matrixConstBufferDirty)
 		return;
 
 	m_matrixConstBufferDirty = false;
@@ -359,12 +358,8 @@ void RenderSystem::UpdateSceneConstBuffer()
 	if (S_OK == m_d3dContext->Map(m_sceneConstBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData))
 	{
 		uint8_t*  dstBuffer = reinterpret_cast<uint8_t*>(mappedData.pData);
-		if (m_matrixViewDirty)
-		{
-			memcpy(dstBuffer, &(m_matView.row[0]), sizeof(gml::vec3));
-			memcpy(dstBuffer + sizeof(gml::vec4), &(m_matView.row[1]), sizeof(gml::vec3));
-			m_matrixViewDirty = false;
-		}
+		memcpy(dstBuffer, &(m_matView.row[0]), sizeof(gml::vec3));
+		memcpy(dstBuffer + sizeof(gml::vec4), &(m_matView.row[1]), sizeof(gml::vec3));
 		memcpy(dstBuffer + sizeof(gml::vec4) * 2, GetProjectionMatrix().m, sizeof(gml::mat44));
 		m_d3dContext->Unmap(m_sceneConstBuffer, 0);
 	}

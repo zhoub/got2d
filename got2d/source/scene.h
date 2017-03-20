@@ -89,8 +89,7 @@ private:
 	gml::vec2 m_scale;
 	gml::radian m_rotation;
 	gml::mat32 m_matrixLocal;
-	bool m_matrixLocalDirty = false;
-
+	bool m_matrixLocalDirty = true;
 	bool m_isVisible = true;
 	uint32_t m_visibleMask = g2d::DEFAULT_VISIBLE_MASK;
 
@@ -190,7 +189,7 @@ private:
 	uint32_t m_childID = 0;
 	uint32_t m_baseRenderingOrder = 0;
 	bool m_isStatic = false;
-	bool m_matrixDirtyUpdate = false;
+	bool m_matrixDirtyUpdate = true;
 	bool m_matrixWorldDirty = true;
 	gml::mat32 m_matrixWorld;
 };
@@ -281,7 +280,7 @@ private:
 	virtual void AdjustRenderingOrder() override;
 
 	SpatialGraph m_spatial;
-	std::vector<g2d::Camera*> m_cameras;
-	std::vector<g2d::Camera*> m_cameraOrder;
+	std::vector<::Camera*> m_cameras;
+	std::vector<::Camera*> m_cameraOrder;
 	bool m_cameraOrderDirty;
 };
