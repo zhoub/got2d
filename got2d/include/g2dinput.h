@@ -6,6 +6,7 @@ namespace g2d
 	enum class G2DAPI MessageEvent
 	{
 		Invalid,
+		LostFocus,
 		MouseMove,
 		MouseButtonDown,
 		MouseButtonUp,
@@ -15,7 +16,7 @@ namespace g2d
 	// 输入设备，事件来源
 	enum class MessageSource
 	{
-		Invalid, Mouse, Keyboard
+		None, Mouse, Keyboard
 	};
 
 	enum class MouseButton
@@ -43,14 +44,14 @@ namespace g2d
 		
 		const MessageEvent Event = MessageEvent::Invalid;
 
-		const MessageSource Source = MessageSource::Invalid;
+		const MessageSource Source = MessageSource::None;
 
 		// 光标事件信息
 		const MouseButton MouseButton = MouseButton::None;
 
-		const uint32_t MousePositionX = 0;
+		const int MousePositionX = 0;
 
-		const uint32_t MousePositionY = 0;
+		const int MousePositionY = 0;
 
 		// 键盘事件信息，没完整实现
 		const int KeyButton = 0;
@@ -63,7 +64,7 @@ namespace g2d
 			, MouseButton(btn)
 		{		}
 
-		Message(const Message& m, uint32_t x, uint32_t y)
+		Message(const Message& m, int x, int y)
 			: Event(m.Event), Source(MessageSource::Mouse)
 			, MouseButton(m.MouseButton)
 			, MousePositionX(x)
@@ -71,9 +72,8 @@ namespace g2d
 		{		}
 
 		// 根据键盘信息构建半成品Message
-		// 这个接口有点2
-		Message(MessageEvent ev)
-			: Event(ev), Source(MessageSource::Keyboard)
+		Message(MessageEvent ev, MessageSource src)
+			: Event(ev), Source(src)
 		{		}
 
 		Message(const Message& m, int key)

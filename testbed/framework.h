@@ -62,4 +62,5 @@ private:
 	uint32_t m_tickInterval;
 	bool m_running = true;
 	bool m_initial = false;
+	bool m_firstTick = false;
 };

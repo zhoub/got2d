@@ -97,8 +97,8 @@ namespace g2d
 				Systems with multiple monitors can have negative x- and y- coordinates,
 				and LOWORD and HIWORD treat the coordinates as unsigned quantities.
 				*/
-				uint32_t x = GET_X_LPARAM(lparam);
-				uint32_t y = GET_Y_LPARAM(lparam);
+				int x = GET_X_LPARAM(lparam);
+				int y = GET_Y_LPARAM(lparam);
 				return Message(msg, x, y);
 			}
 
@@ -111,6 +111,10 @@ namespace g2d
 			default:
 				return Message();
 			}
+		}
+		else if (message == WM_ACTIVATE && message == WA_INACTIVE)
+		{
+			return Message(MessageEvent::LostFocus, MessageSource::None);
 		}
 		else
 		{

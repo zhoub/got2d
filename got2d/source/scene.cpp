@@ -453,48 +453,87 @@ void Scene::AdjustRenderingOrder()
 
 void Scene::MouseButtonState::Update(uint32_t currentStamp)
 {
-	if (pressing && !dragging && (currentStamp - pressStamp > PressingDelta) && hoverNode != nullptr)
+	if (pressing && !dragging &&
+		hoverNode != nullptr &&
+		(currentStamp - pressStamp > PressingDelta))
 	{
 		dragging = true;
 		hoverNode->OnDragBegin(button);
 	}
 }
-
-bool Scene::MouseButtonState::UpdateMessage(const g2d::Message& message, uint32_t currentStamp, ::SceneNode* itNode)
+void Scene::MouseButtonState::LostFocus(::SceneNode* hitNode)
 {
-	if (message.MouseButton != button)
-		return false;
+	if (dragging)
+	{
+		if (hoverNode == hitNode)
+		{
+			hoverNode->OnDragEnd(button);
+		}
+		else
+		{
+			hoverNode->OnDropTo(button, hitNode);
+		}
+
+		dragging = false;
+		pressing = false;
+	}
+	else if (pressing)
+	{
+		if (hoverNode == hitNode)
+		{
+			hoverNode->OnClick(button);
+		}
+		else
+		{
+			if (hitNode != nullptr)
+			{
+				hitNode->OnMouseEnterFrom(hoverNode);
+			}
+			hoverNode->OnMouseLeaveTo(hitNode);
+		}
+		pressing = false;
+	}
+	hoverNode = hitNode;
+}
+bool Scene::MouseButtonState::UpdateMessage(const g2d::Message& message, uint32_t currentStamp, ::SceneNode* hitNode)
+{
 	if (message.Event == g2d::MessageEvent::MouseButtonDown)
 	{
-		if (dragging)
+		if (dragging)//�쳣״̬
 		{
-			//�쳣״̬
-			if (hoverNode != nullptr && hoverNode != itNode)
+			if (hoverNode != hitNode)
 			{
 				hoverNode->OnDragEnd(button);
 			}
 			dragging = false;
-
+			pressing = false;
 		}
-		else if (pressing)
+		else if (pressing)//�쳣״̬
 		{
-			if (hoverNode != nullptr && hoverNode != itNode)
-			{
-				hoverNode->OnClick(button);
-			}
+			pressing = false;
 		}
-		pressing = true;
-		pressStamp = currentStamp;
-		pressPosition.set(message.MousePositionX, message.MousePositionY);
-		hoverNode = itNode;
+
+		hoverNode = hitNode;
+		if (hoverNode != nullptr)
+		{
+			pressing = true;
+			pressStamp = currentStamp;
+			pressPosition.set(message.MousePositionX, message.MousePositionY);
+		}
+		return true;
 	}
 	else if (message.Event == g2d::MessageEvent::MouseButtonUp)
 	{
 		if (dragging)
 		{
-			if (itNode != nullptr && itNode != hoverNode)
+			if (hitNode != hoverNode)
 			{
-				hoverNode->OnDropTo(button, itNode);
+				hoverNode->OnDropTo(button, hitNode);
+				if (hitNode)
+				{
+					hitNode->OnMouseEnterFrom(hoverNode);
+				}
+				hoverNode = hitNode;
 			}
 			else
 			{
@@ -506,22 +545,16 @@ bool Scene::MouseButtonState::UpdateMessage(const g2d::Message& message, uint32_
 		}
 		else if (pressing)
 		{
-			if (hoverNode != nullptr && itNode == hoverNode)
-			{
-				hoverNode->OnClick(button);
-				pressing = false;
-				dragging = false;
-				return true;
-			}
+			hoverNode->OnClick(button);
 			pressing = false;
-			dragging = false;
+			return true;
 		}
 	}
 	else if (message.Event == g2d::MessageEvent::MouseMove)
 	{
 		if (!dragging)
 		{
-			if (pressing && hoverNode != nullptr)
+			if (pressing)
 			{
 				dragging = true;
 				hoverNode->OnDragBegin(button);
@@ -530,9 +563,9 @@ bool Scene::MouseButtonState::UpdateMessage(const g2d::Message& message, uint32_
 
 		if (dragging)
 		{
-			if (itNode != nullptr)
+			if (hitNode != nullptr)
 			{
-				hoverNode->OnDropping(button, itNode);
+				hoverNode->OnDropping(button, hitNode);
 			}
 			else
 			{
@@ -544,43 +577,60 @@ bool Scene::MouseButtonState::UpdateMessage(const g2d::Message& message, uint32_
 	return false;
 }
 
+void Scene::DispatchMouseEvent(MouseButtonState& buttonState, const g2d::Message& message, ::SceneNode* hitNode)
+{
+	if (!buttonState.UpdateMessage(message, m_lastTickStamp, hitNode))
+	{
+		if (message.Event == g2d::MessageEvent::MouseMove)
+		{
+			if (m_hoverNode != hitNode)
+			{
+				if (m_hoverNode != nullptr)
+				{
+					m_hoverNode->OnMouseLeaveTo(hitNode);
+				}
+				if (hitNode != nullptr)
+				{
+					hitNode->OnMouseEnterFrom(m_hoverNode);
+				}
+				m_hoverNode = hitNode;
+			}
+			else
+			{
+				// move inside 
+				// dont care
+			}
+		}
+		else if (message.Event == g2d::MessageEvent::MouseButtonDoubleClick)
+		{
+			if (hitNode != nullptr)
+			{
+				m_hoverNode->OnDoubleClick(message.MouseButton);
+			}
+			m_hoverNode = hitNode;
+		}
+	}
+}
+
 void Scene::OnMessage(const g2d::Message& message)
 {
 	TraversalChildren([&](::SceneNode* child) {
 		child->OnMessage(message);
 	});
 
-	if (message.Source == g2d::MessageSource::Mouse)
+	::SceneNode* hitNode = FindInteractiveObject(message);
+	if (message.Event == g2d::MessageEvent::LostFocus)
 	{
-		::SceneNode* sceneNode = FindInteractiveObject(message);
+		for (auto& state : m_mouseButtonState)
+			state.LostFocus(hitNode);
+	}
+	else if (message.Source == g2d::MessageSource::Mouse)
+	{
 		for (auto& state : m_mouseButtonState)
 		{
-			if (!state.UpdateMessage(message, m_lastTickStamp, sceneNode))
-			{
-				if (message.Event == g2d::MessageEvent::MouseMove)
-				{
-					if (m_hoverNode != sceneNode)
-					{
-						if (m_hoverNode != nullptr)
-						{
-							m_hoverNode->OnMouseLeaveTo(sceneNode);
-						}
-						if (sceneNode != nullptr)
-						{
-							sceneNode->OnMouseEnterFrom(m_hoverNode);
-						}
-					}
-				}
-				else if (message.Event == g2d::MessageEvent::MouseButtonDoubleClick)
-				{
-					if (m_hoverNode != nullptr && m_hoverNode == sceneNode)
-					{
-						m_hoverNode->OnDoubleClick(message.MouseButton);
-					}
-				}
-				m_hoverNode = sceneNode;
-			}
-
+			if (message.MouseButton != message.MouseButton)
+				continue;
+			DispatchMouseEvent(state, message, hitNode);
 		}
 	}
 }

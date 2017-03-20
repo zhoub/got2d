@@ -313,6 +313,9 @@ public:	//g2d::Scene
 private:
 	void ResortCameraOrder();
 
+	struct MouseButtonState;
+	void DispatchMouseEvent(MouseButtonState& buttonState, const g2d::Message& message, ::SceneNode* hitNode);
+
 	::SceneNode* FindInteractiveObject(const g2d::Message& message);
 
 	virtual ::BaseNode* _GetParent() override { return nullptr; }
@@ -330,7 +333,8 @@ private:
 
 		MouseButtonState(g2d::MouseButton btn) : button(btn) { }
 		void Update(uint32_t currentStamp);
-		bool UpdateMessage(const g2d::Message& message, uint32_t currentStamp, ::SceneNode* itNode);
+		bool UpdateMessage(const g2d::Message& message, uint32_t currentStamp, ::SceneNode* hitNode);
+		void LostFocus(::SceneNode* hitNode);
 		bool dragging = false;
 		bool pressing = false;
 		uint32_t pressStamp;

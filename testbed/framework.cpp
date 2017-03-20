@@ -15,7 +15,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		PostQuitMessage(0);
 	}
 	return 0;
-
+	case WM_ACTIVATE:
 	case WM_LBUTTONDOWN:
 	case WM_RBUTTONDOWN:
 	case WM_MBUTTONDOWN:
@@ -224,6 +224,7 @@ void Framework::FirstTick()
 	{
 		OnStart();
 	}
+	m_firstTick = true;
 }
 
 int Framework::MainLoop()
@@ -304,7 +305,7 @@ void Framework::OnWindowResize(uint32_t width, uint32_t height)
 void Framework::OnWindowMessage(uint32_t m, uint32_t wp, uint32_t lp)
 {
 	g2d::Message msg = g2d::TranslateMessageFromWin32(m, wp, lp);
-	if (OnMessage != nullptr)
+	if (m_firstTick && OnMessage != nullptr)
 	{
 		OnMessage(msg);
 	}
