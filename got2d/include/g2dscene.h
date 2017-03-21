@@ -13,26 +13,11 @@ namespace g2d
 	class SceneNode;
 	class Scene;
 
-	// 实体基类，节点逻辑的实现全在entity内
-	// 挂在场景节点上，一个SceneNode只能挂一个Entity
-	class G2DAPI Entity : public GObject
+	// 以下为消息响应接口
+	// 用户自定义实体重载这些虚函数以获得事件响应
+	class G2DAPI EventReceiver
 	{
 	public:
-		// 用户自定义实体需要实现内存释放的接口
-		// 引擎内部会调用这个接口释放entity资源
-		// 只会在析构时候被调用
-		virtual void Release() = 0;
-
-		// 局部坐标系下节点的包围盒大小
-		virtual const gml::aabb2d& GetLocalAABB() const = 0;
-
-		// 节点在世界空间中包围盒的大小
-		// 默认实现用世界矩阵变换局部坐标系下的包围盒
-		virtual gml::aabb2d GetWorldAABB() const;
-
-		// 以下为消息响应接口
-		// 用户自定义实体重载这些虚函数以获得事件响应
-
 		// 节点被成功构造的事件
 		// 一般初始化代码写这个事件里
 		virtual void OnInitial() { }
@@ -54,13 +39,84 @@ namespace g2d
 		// 节点局部位置更新事件
 		virtual void OnMove(const gml::vec2& newPos) { }
 
-		// 用户输入消息时间
+		// 用户输入消息事件
+		// 单纯的获取原始消息，消息会被转化成以下特殊事件
 		virtual void OnMessage(const g2d::Message& message) { }
 
 		// 节点局部坐标变化之后，第一次更新的事件
 		// 一般AABB的变换在这里计算。
 		// 顺序在 OnUpdate之后
 		virtual void OnUpdateMatrixChanged() { }
+
+		// 当光标碰到节点对象(Entity)的时候触发
+		// 参数是前一个光标悬停的对象
+		// 直接从未悬停状态下触碰对象时参数为空
+		virtual void OnMouseEnterFrom(SceneNode* adjacency, const gml::coord& cursorPos, bool ctrl, bool shift, bool alt) { }
+
+		// 当光标离开节点对象(Entity)的时候触发
+		// 参数是当前光标悬停的对象
+		// 如果离开实体后光标没有触碰对象，此参数为空
+		virtual void OnMouseLeaveTo(SceneNode* adjacency, const gml::coord& cursorPos, bool ctrl, bool shift, bool alt) { }
+
+		// 单击鼠标事件
+		virtual void OnLClick(const gml::coord& cursorPos, bool ctrl, bool shift, bool alt) { }
+		virtual void OnRClick(const gml::coord& cursorPos, bool ctrl, bool shift, bool alt) { }
+		virtual void OnMClick(const gml::coord& cursorPos, bool ctrl, bool shift, bool alt) { }
+
+		// 双击鼠标的事件
+		virtual void OnLDoubleClick(const gml::coord& cursorPos, bool ctrl, bool shift, bool alt) { }
+		virtual void OnRDoubleClick(const gml::coord& cursorPos, bool ctrl, bool shift, bool alt) { }
+		virtual void OnMDoubleClick(const gml::coord& cursorPos, bool ctrl, bool shift, bool alt) { }
+
+		// 光标拖拽开始
+		virtual void OnLDragBegin(const gml::coord& cursorPos, bool ctrl, bool shift, bool alt) { }
+		virtual void OnRDragBegin(const gml::coord& cursorPos, bool ctrl, bool shift, bool alt) { }
+		virtual void OnMDragBegin(const gml::coord& cursorPos, bool ctrl, bool shift, bool alt) { }
+
+		// 没有触碰到别的物体的时候，光标拖拽中
+		virtual void OnLDragging(const gml::coord& cursorPos, bool ctrl, bool shift, bool alt) { }
+		virtual void OnRDragging(const gml::coord& cursorPos, bool ctrl, bool shift, bool alt) { }
+		virtual void OnMDragging(const gml::coord& cursorPos, bool ctrl, bool shift, bool alt) { }
+
+		// 没有触碰到别的物体的时候，鼠标拖拽结时
+		virtual void OnLDragEnd(const gml::coord& cursorPos, bool ctrl, bool shift, bool alt) { }
+		virtual void OnRDragEnd(const gml::coord& cursorPos, bool ctrl, bool shift, bool alt) { }
+		virtual void OnMDragEnd(const gml::coord& cursorPos, bool ctrl, bool shift, bool alt) { }
+
+		// 光标触碰到别的物体的时候，鼠标拖拽中
+		virtual void OnLDropping(SceneNode* dropped, const gml::coord& cursorPos, bool ctrl, bool shift, bool alt) { }
+		virtual void OnRDropping(SceneNode* dropped, const gml::coord& cursorPos, bool ctrl, bool shift, bool alt) { }
+		virtual void OnMDropping(SceneNode* dropped, const gml::coord& cursorPos, bool ctrl, bool shift, bool alt) { }
+
+		// 光标触碰到别的物体的时候，鼠标拖拽结束
+		virtual void OnLDropTo(SceneNode* dropped, const gml::coord& cursorPos, bool ctrl, bool shift, bool alt) { }
+		virtual void OnRDropTo(SceneNode* dropped, const gml::coord& cursorPos, bool ctrl, bool shift, bool alt) { }
+		virtual void OnMDropTo(SceneNode* dropped, const gml::coord& cursorPos, bool ctrl, bool shift, bool alt) { }
+
+		// 键位被持续按下
+		// virtual void OnKeyPressing(int key, bool ctrl, bool shift, bool alt) { }
+
+		// 键位被触发，与持续按下的情况互斥
+		//virtual void OnKeyPress(int key, bool ctrl, bool shift, bool alt) { }
+	};
+
+	// 实体基类，节点逻辑的实现全在entity内
+	// 挂在场景节点上，一个SceneNode只能挂一个Entity
+	// 重载 EventReceiver的接口已获得自定义事件响应
+	class G2DAPI Entity : public GObject, public EventReceiver
+	{
+	public:
+		// 用户自定义实体需要实现内存释放的接口
+		// 引擎内部会调用这个接口释放entity资源
+		// 只会在析构时候被调用
+		virtual void Release() = 0;
+
+		// 局部坐标系下节点的包围盒大小
+		virtual const gml::aabb2d& GetLocalAABB() const = 0;
+
+		// 节点在世界空间中包围盒的大小
+		// 默认实现用世界矩阵变换局部坐标系下的包围盒
+		virtual gml::aabb2d GetWorldAABB() const;
 
 		// entity附着关联的场景节点
 		// 这个接口一般提供给用户自定义entity内部获取node相关属性
@@ -166,11 +222,11 @@ namespace g2d
 
 		// 获取同级节点的下一个节点
 		// 同级最后一个节点返回nullptr
-		virtual SceneNode* GetPrevSiblingNode() const  = 0;
+		virtual SceneNode* GetPrevSiblingNode() const = 0;
 
 		// 获取同级节点的上一个节点
 		// 同级第一个节点返回nullptr
-		virtual SceneNode* GetNextSiblingNode() const  = 0;
+		virtual SceneNode* GetNextSiblingNode() const = 0;
 
 		// 创建子节点，必须传入Entity对象
 		virtual SceneNode* CreateSceneNodeChild(Entity*, bool autoRelease) = 0;

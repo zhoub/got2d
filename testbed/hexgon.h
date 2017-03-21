@@ -2,6 +2,7 @@
 #include <g2dengine.h>
 #include <g2dscene.h>
 #include <g2drender.h>
+#include <vector>
 
 class Hexgon : public g2d::Entity
 {
@@ -13,6 +14,7 @@ public://implement
 public:
 	Hexgon()
 	{
+		colors.resize(7);
 		//mesh
 		{
 			m_mesh = g2d::Mesh::Create(7, 6 * 3);
@@ -74,8 +76,64 @@ public:
 			GetSceneNode()->GetWorldMatrix());
 	}
 
+	virtual void OnLClick(const gml::coord& cursorPos, bool ctrl, bool shift, bool alt) override
+	{
+		g2d::GeometryVertex* vertices = m_mesh->GetRawVertices();
+		for (int i = 0; i < 7; i++)
+		{
+			colors[i] = gml::color4::random();
+		}
+	}
+
+	virtual void OnMouseEnterFrom(g2d::SceneNode* adjacency, const gml::coord& cursorPos, bool ctrl, bool shift, bool alt) override
+	{
+		g2d::GeometryVertex* vertices = m_mesh->GetRawVertices();
+		for (int i = 0; i < 7; i++)
+		{
+			colors[i] = vertices[i].vtxcolor;
+			vertices[i].vtxcolor = gml::color4::red();
+		}
+	}
+
+	virtual void OnMouseLeaveTo(g2d::SceneNode* adjacency, const gml::coord& cursorPos, bool ctrl, bool shift, bool alt) override
+	{
+		g2d::GeometryVertex* vertices = m_mesh->GetRawVertices();
+		for (int i = 0; i < 7; i++)
+		{
+			vertices[i].vtxcolor = colors[i];
+		}
+	}
+
+	virtual void OnLDoubleClick(const gml::coord& cursorPos, bool ctrl, bool shift, bool alt) override
+	{
+		g2d::GeometryVertex* vertices = m_mesh->GetRawVertices();
+		for (int i = 0; i < 7; i++)
+		{
+			colors[i] = gml::color4::green();
+		}
+	}
+
+	virtual void OnLDragBegin(const gml::coord& cursorPos, bool ctrl, bool shift, bool alt) override
+	{
+		g2d::GeometryVertex* vertices = m_mesh->GetRawVertices();
+		for (int i = 0; i < 7; i++)
+		{
+			vertices[i].vtxcolor = gml::color4::yellow();
+		}
+	}
+
+	virtual void OnLDragEnd(const gml::coord& cursorPos, bool ctrl, bool shift, bool alt) override
+	{
+		g2d::GeometryVertex* vertices = m_mesh->GetRawVertices();
+		for (int i = 0; i < 7; i++)
+		{
+			vertices[i].vtxcolor = colors[i];
+		}
+	}
+
 private:
 	gml::aabb2d m_aabb;
 	g2d::Mesh* m_mesh;
 	g2d::Material* m_material;
+	std::vector<gml::color4> colors;
 };

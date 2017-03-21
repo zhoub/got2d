@@ -123,23 +123,23 @@ public:
 
 	void OnMessage(const g2d::Message& message);
 
-	void OnMouseEnterFrom(::SceneNode* adjacency) { }
+	void OnMouseEnterFrom(::SceneNode* adjacency, const gml::coord& cursorPos, bool ctrl, bool shift, bool alt);
 
-	void OnMouseLeaveTo(::SceneNode* adjacency) { }
+	void OnMouseLeaveTo(::SceneNode* adjacency, const gml::coord& cursorPos, bool ctrl, bool shift, bool alt);
 
-	void OnClick(g2d::MouseButton btn) { }
+	void OnClick(g2d::MouseButton button, const gml::coord& cursorPos, bool ctrl, bool shift, bool alt);
 
-	void OnDoubleClick(g2d::MouseButton btn) { }
+	void OnDoubleClick(g2d::MouseButton button, const gml::coord& cursorPos, bool ctrl, bool shift, bool alt);
 
-	void OnDragBegin(g2d::MouseButton btn) { }
+	void OnDragBegin(g2d::MouseButton button, const gml::coord& cursorPos, bool ctrl, bool shift, bool alt);
 
-	void OnDragging(g2d::MouseButton btn) { }
+	void OnDragging(g2d::MouseButton button, const gml::coord& cursorPos, bool ctrl, bool shift, bool alt);
 
-	void OnDragEnd(g2d::MouseButton btn) { }
+	void OnDragEnd(g2d::MouseButton button, const gml::coord& cursorPos, bool ctrl, bool shift, bool alt);
 
-	void OnDropping(g2d::MouseButton btn, ::SceneNode* adjacency) { }
+	void OnDropping(::SceneNode* dropped, g2d::MouseButton button, const gml::coord& cursorPos, bool ctrl, bool shift, bool alt);
 
-	void OnDropTo(g2d::MouseButton btn, ::SceneNode* adjacency) { }
+	void OnDropTo(::SceneNode* dropped, g2d::MouseButton button, const gml::coord& cursorPos, bool ctrl, bool shift, bool alt);
 
 public:	//g2d::SceneNode
 	virtual g2d::Scene* GetScene() const override;
@@ -317,9 +317,6 @@ public:	//g2d::Scene
 private:
 	void ResortCameraOrder();
 
-	struct MouseButtonState;
-	void DispatchMouseEvent(MouseButtonState& buttonState, const g2d::Message& message, ::SceneNode* hitNode);
-
 	::SceneNode* FindInteractiveObject(const g2d::Message& message);
 
 	virtual ::BaseNode* _GetParent() override { return nullptr; }
@@ -341,11 +338,15 @@ private:
 		void LostFocus(::SceneNode* hitNode);
 		bool dragging = false;
 		bool pressing = false;
+		bool control = false;	//临时的记录上一个消息的按键
+		bool shift = false;		//临时的记录上一个消息的按键
+		bool alt = false;		//临时的记录上一个消息的按键
 		uint32_t pressStamp;
-		gml::coord pressPosition;
+		gml::coord cursorPos;
 		::SceneNode* hoverNode = nullptr;
 		const g2d::MouseButton button;
-	} m_mouseButtonState[2];
+		
+	} m_mouseButtonState[3];
 	::SceneNode* m_hoverNode = nullptr;
 	uint32_t m_lastTickStamp = 0;
 };

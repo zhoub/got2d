@@ -186,6 +186,7 @@
     <ClCompile Include="source\message_win32.cpp" />
     <ClCompile Include="source\render_system.cpp" />
     <ClCompile Include="source\scene.cpp" />
+    <ClCompile Include="source\scene_node.cpp" />
     <ClCompile Include="source\shader.cpp" />
     <ClCompile Include="source\spatial_graph.cpp" />
     <ClCompile Include="source\texture.cpp" />

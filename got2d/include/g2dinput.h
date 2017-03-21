@@ -11,6 +11,8 @@ namespace g2d
 		MouseButtonDown,
 		MouseButtonUp,
 		MouseButtonDoubleClick,
+		KeyDown,
+		KeyUp,
 	};
 
 	// 输入设备，事件来源
@@ -30,21 +32,30 @@ namespace g2d
 
 		Message(const Message& other) = default;
 
-		Message(MessageEvent ev, g2d::MouseButton btn, uint32_t x, uint32_t y)
+		Message(MessageEvent ev, bool ctrl, bool shift, bool alt,
+			g2d::MouseButton btn, uint32_t x, uint32_t y)
 			: Event(ev), Source(MessageSource::Mouse)
+			, Control(ctrl), Shift(shift), Alt(alt)
 			, MouseButton(btn)
-			, MousePositionX(x)
-			, MousePositionY(y)
+			, MousePositionX(x), MousePositionY(y)
 		{		}
 
-		Message(MessageEvent ev, int key)
+		Message(MessageEvent ev, bool ctrl, bool shift, bool alt, int key)
 			: Event(ev), Source(MessageSource::Keyboard)
+			, Control(ctrl), Shift(shift), Alt(alt)
 			, KeyButton(key)
 		{		}
 		
 		const MessageEvent Event = MessageEvent::Invalid;
 
 		const MessageSource Source = MessageSource::None;
+
+		// 特殊键位
+		const bool Control = false;
+
+		const bool Shift = false;
+
+		const bool Alt = false;
 
 		// 光标事件信息
 		const MouseButton MouseButton = MouseButton::None;
@@ -64,20 +75,22 @@ namespace g2d
 			, MouseButton(btn)
 		{		}
 
-		Message(const Message& m, int x, int y)
-			: Event(m.Event), Source(MessageSource::Mouse)
-			, MouseButton(m.MouseButton)
-			, MousePositionX(x)
-			, MousePositionY(y)
-		{		}
-
-		// 根据键盘信息构建半成品Message
 		Message(MessageEvent ev, MessageSource src)
 			: Event(ev), Source(src)
 		{		}
 
-		Message(const Message& m, int key)
+		// 根据鼠标信息构建Message
+		Message(const Message& m, bool ctrl, bool shift, bool alt, int x, int y)
+			: Event(m.Event), Source(MessageSource::Mouse)
+			, Control(ctrl), Shift(shift), Alt(alt)
+			, MouseButton(m.MouseButton)
+			, MousePositionX(x), MousePositionY(y)
+		{		}
+
+		// 根据键盘信息构建Message
+		Message(const Message& m, bool ctrl, bool shift, bool alt, int key)
 			: Event(m.Event), Source(MessageSource::Keyboard)
+			, Control(ctrl), Shift(shift), Alt(alt)
 			, KeyButton(key)
 		{		}
 	};

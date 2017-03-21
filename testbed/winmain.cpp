@@ -130,7 +130,7 @@ bool Testbed::Update(uint32_t elapsedTime)
 			auto p = mainCamera->WorldToScreen(lastNode->GetWorldPosition());
 			framework.SetCursorPos(p);
 		}
-		else if(1)
+		else if(0)
 		{
 			auto mouseP = framework.GetCursorPos();
 			auto p = mainCamera->ScreenToWorld(mouseP);

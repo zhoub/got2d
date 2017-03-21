@@ -26,6 +26,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 	case WM_LBUTTONDBLCLK:
 	case WM_RBUTTONDBLCLK:
 	case WM_MBUTTONDBLCLK:
+	case WM_KEYDOWN:
+	case WM_KEYUP:
 	{
 		Framework* pFramework = (Framework*)::GetWindowLongPtrW(hWnd, 0);
 		pFramework->OnWindowMessage(message,
@@ -59,7 +61,7 @@ AutoWinClassRegister::AutoWinClassRegister(HINSTANCE hInstance)
 		::ZeroMemory(&wcex, sizeof(WNDCLASSEX));
 
 		wcex.cbSize = sizeof(WNDCLASSEX);
-		wcex.style = CS_HREDRAW | CS_VREDRAW;
+		wcex.style = CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS;
 		wcex.lpfnWndProc = WndProc;
 		wcex.cbClsExtra = 0;
 		wcex.cbWndExtra = sizeof(Framework*);

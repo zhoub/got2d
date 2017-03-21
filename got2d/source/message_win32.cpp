@@ -57,6 +57,16 @@ struct msg_map
 			g2d::MessageEvent::MouseMove,
 			g2d::MouseButton::None,
 		});
+
+		reg(WM_KEYDOWN, {
+			g2d::MessageEvent::KeyDown,
+			g2d::MessageSource::Keyboard
+		});
+
+		reg(WM_KEYUP, {
+			g2d::MessageEvent::KeyUp,
+			g2d::MessageSource::Keyboard
+		});
 	}
 
 	bool exist(uint32_t win32msg) const
@@ -77,6 +87,10 @@ private:
 	typedef std::map<uint32_t, g2d::Message> msg_map_;
 	msg_map_ m_mapping;
 };
+
+bool Ctrl() { return (HIBYTE(GetKeyState(VK_CONTROL)) & 0x80) != 0; }
+bool Shift() { return (HIBYTE(GetKeyState(VK_SHIFT)) & 0x80) != 0; }
+bool Alt() { return (HIBYTE(GetKeyState(VK_MENU)) & 0x80) != 0; }
 
 namespace g2d
 {
@@ -99,13 +113,15 @@ namespace g2d
 				*/
 				int x = GET_X_LPARAM(lparam);
 				int y = GET_Y_LPARAM(lparam);
-				return Message(msg, x, y);
+				bool ctrl = (wparam & MK_CONTROL) != 0;
+				bool shift = (wparam & MK_SHIFT) != 0;
+				return Message(msg, ctrl, shift, Alt(), x, y);
 			}
 
 			case MessageSource::Keyboard:
 			{
-				int key = lparam;
-				return Message(msg, key);
+				int key = wparam;
+				return Message(msg, Ctrl(), Shift(), Alt(), key);
 			}
 
 			default:
