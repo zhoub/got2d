@@ -112,7 +112,7 @@ namespace g2d
 				return Message();
 			}
 		}
-		else if (message == WM_ACTIVATE && message == WA_INACTIVE)
+		else if (message == WM_ACTIVATE && wparam == WA_INACTIVE)
 		{
 			return Message(MessageEvent::LostFocus, MessageSource::None);
 		}

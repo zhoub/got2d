@@ -107,12 +107,16 @@ QuadTreeNode* QuadTreeNode::AddRecursive(const gml::aabb2d& entityBound, g2d::En
 QuadTreeNode* QuadTreeNode::AddToDynamicList(g2d::Entity& entity)
 {
 	m_dynamicEntities.push_back(&entity);
+	m_isEmpty = false;
 	return this;
 }
 
 void QuadTreeNode::TryMarkEmpty()
 {
 	if (m_dynamicEntities.size() > 0)
+	{
+
+	}
 		return;
 
 	bool hasEntities = false;

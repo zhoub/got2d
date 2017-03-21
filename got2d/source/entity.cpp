@@ -154,7 +154,8 @@ bool Camera::TestVisible(const gml::aabb2d& bounding) const
 
 bool Camera::TestVisible(g2d::Entity& entity) const
 {
-	if (entity.GetLocalAABB().is_point() ||
+	if (IsSameType(&entity) ||
+		entity.GetLocalAABB().is_point() ||
 		(GetVisibleMask() & entity.GetVisibleMask()) == 0)
 	{
 		return false;

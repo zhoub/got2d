@@ -378,6 +378,13 @@ gml::vec2 SceneNode::GetWorldPosition()
 
 gml::vec2 SceneNode::WorldToLocal(const gml::vec2& pos)
 {
+	gml::mat33 worldMatrixInv = gml::mat33(GetWorldMatrix()).inversed();
+	auto p = gml::transform_point(worldMatrixInv, pos);
+	return p;
+}
+
+gml::vec2 SceneNode::WorldToParent(const gml::vec2& pos)
+{
 	gml::mat33 worldMatrixInv = gml::mat33(m_iparent.GetWorldMatrix()).inversed();
 	auto p = gml::transform_point(worldMatrixInv, pos);
 	return p;
@@ -501,15 +508,14 @@ bool Scene::MouseButtonState::UpdateMessage(const g2d::Message& message, uint32_
 	{
 		if (dragging)//异常状态
 		{
-			if (hoverNode != hitNode)
-			{
-				hoverNode->OnDragEnd(button);
-			}
+			// 让上次的dragging事件正常结束
+			hoverNode->OnDragEnd(button);
 			dragging = false;
 			pressing = false;
 		}
 		else if (pressing)//异常状态
 		{
+			// 取消上次的点击操作
 			pressing = false;
 		}
 
@@ -545,6 +551,8 @@ bool Scene::MouseButtonState::UpdateMessage(const g2d::Message& message, uint32_
 		}
 		else if (pressing)
 		{
+			// 不相等的状态已经在MouseMove中解决了
+			ENSURE(hitNode == hoverNode);
 			hoverNode->OnClick(button);
 			pressing = false;
 			return true;
@@ -552,13 +560,10 @@ bool Scene::MouseButtonState::UpdateMessage(const g2d::Message& message, uint32_
 	}
 	else if (message.Event == g2d::MessageEvent::MouseMove)
 	{
-		if (!dragging)
+		if (!dragging && pressing)
 		{
-			if (pressing)
-			{
-				dragging = true;
-				hoverNode->OnDragBegin(button);
-			}
+			dragging = true;
+			hoverNode->OnDragBegin(button);
 		}
 
 		if (dragging)
@@ -637,10 +642,9 @@ void Scene::OnMessage(const g2d::Message& message)
 
 ::SceneNode* Scene::FindInteractiveObject(const g2d::Message& message)
 {
-	ResortCameraOrder();
 	auto cur = std::rbegin(m_cameraOrder);
 	auto end = std::rend(m_cameraOrder);
-	g2d::Entity* entity = nullptr;
+	g2d::Entity* frontEntity = nullptr;
 	for (; cur != end; cur++)
 	{
 		::Camera* camera = *cur;
@@ -648,7 +652,7 @@ void Scene::OnMessage(const g2d::Message& message)
 		int coordX = message.MousePositionX;
 		int coordY = message.MousePositionY;
 		gml::vec2 worldCoord = camera->ScreenToWorld({ coordX, coordY });
-		entity = camera->FindIntersectionObject(worldCoord);
+		auto entity = camera->FindIntersectionObject(worldCoord);
 		if (entity != nullptr)
 		{
 			return reinterpret_cast<::SceneNode*>(entity->GetSceneNode());

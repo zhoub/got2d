@@ -305,7 +305,7 @@ void Framework::OnWindowResize(uint32_t width, uint32_t height)
 void Framework::OnWindowMessage(uint32_t m, uint32_t wp, uint32_t lp)
 {
 	g2d::Message msg = g2d::TranslateMessageFromWin32(m, wp, lp);
-	if (m_firstTick && OnMessage != nullptr)
+	if (m_firstTick && msg.Event != g2d::MessageEvent::Invalid && OnMessage != nullptr)
 	{
 		OnMessage(msg);
 	}

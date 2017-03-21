@@ -59,16 +59,16 @@ g2d::SceneNode* lastNode = nullptr;
 void Testbed::Start()
 {
 	mainScene = g2d::GetEngine()->CreateNewScene(2 << 10);
-
+	
 	auto quad = g2d::Quad::Create()->SetSize(gml::vec2(100, 120));
 	auto node = mainScene->CreateSceneNodeChild(quad, true)->SetPosition(gml::vec2(50, 0));
-
+	
 	//node.SetVisibleMask(3, true);
 	node->SetStatic(true);
-	for (int i = 0; i <= 4; i++)
+	for (int i = 0; i < 5; i++)
 	{
 		auto quad = g2d::Quad::Create()->SetSize(gml::vec2(100, 120));
-		auto child = node->CreateSceneNodeChild(quad, true)->SetPosition(gml::vec2(100, 0));
+		auto child = node->CreateSceneNodeChild(quad, true)->SetPosition(gml::vec2(50, 0));
 
 		child->SetVisibleMask((i % 2) ? 1 : 2, true);
 		child->SetStatic(true);
@@ -130,11 +130,11 @@ bool Testbed::Update(uint32_t elapsedTime)
 			auto p = mainCamera->WorldToScreen(lastNode->GetWorldPosition());
 			framework.SetCursorPos(p);
 		}
-		else
+		else if(1)
 		{
 			auto mouseP = framework.GetCursorPos();
 			auto p = mainCamera->ScreenToWorld(mouseP);
-			p = lastNode->WorldToLocal(p);
+			p = lastNode->WorldToParent(p);
 			lastNode->SetPosition(p);
 		}
 	}

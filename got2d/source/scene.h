@@ -200,6 +200,8 @@ public:	//g2d::SceneNode
 
 	virtual gml::vec2 WorldToLocal(const gml::vec2& pos) override;
 
+	virtual gml::vec2 WorldToParent(const gml::vec2& pos) override;
+
 private:
 	void SetWorldMatrixDirty();
 
@@ -294,6 +296,8 @@ public: //g2d::SceneNode
 	virtual uint32_t GetVisibleMask() const override { return _GetVisibleMask(); }
 
 	virtual gml::vec2 WorldToLocal(const gml::vec2& pos) override { return pos; }
+
+	virtual gml::vec2 WorldToParent(const gml::vec2& pos) override { return pos; }
 
 public:	//g2d::Scene
 	virtual void Release() override;

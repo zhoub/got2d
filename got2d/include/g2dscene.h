@@ -252,7 +252,11 @@ namespace g2d
 		// 节点可见性Mask的设置
 		virtual uint32_t GetVisibleMask() const = 0;
 
+		// 把坐标转换节点局部空间内
 		virtual gml::vec2 WorldToLocal(const gml::vec2& pos) = 0;
+
+		// 把坐标转换节点同级的局部空间
+		virtual gml::vec2 WorldToParent(const gml::vec2& pos) = 0;
 	};
 
 	class G2DAPI Scene : public SceneNode
