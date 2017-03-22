@@ -34,11 +34,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 	// 注册事件
 	{
-		framework.OnStart = std::bind(&Testbed::Start, &testbed);
-		framework.OnFinish = std::bind(&Testbed::End, &testbed);
-		using namespace std::placeholders;
-		framework.OnUpdate = std::bind(&Testbed::Update, &testbed, _1);
-		framework.OnMessage = std::bind(&Testbed::OnMessage, &testbed, _1);
+		framework.OnStart = [&] { testbed.Start(); };
+		framework.OnFinish = [&] { testbed.End(); };
+		framework.OnUpdate = [&](uint32_t deltaTime)->bool { return testbed.Update(deltaTime); };
+		framework.OnMessage = [&](const g2d::Message& message) { testbed.OnMessage(message); };
 	}
 
 	// 运行程序

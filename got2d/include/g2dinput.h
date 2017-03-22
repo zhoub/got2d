@@ -26,6 +26,8 @@ namespace g2d
 		Left, Middle, Right, None
 	};
 
+	typedef int KeyCode;
+
 	struct G2DAPI Message
 	{
 		Message() = default;
@@ -40,12 +42,12 @@ namespace g2d
 			, MousePositionX(x), MousePositionY(y)
 		{		}
 
-		Message(MessageEvent ev, bool ctrl, bool shift, bool alt, int key)
+		Message(MessageEvent ev, bool ctrl, bool shift, bool alt, KeyCode key)
 			: Event(ev), Source(MessageSource::Keyboard)
 			, Control(ctrl), Shift(shift), Alt(alt)
-			, KeyButton(key)
+			, Key(key)
 		{		}
-		
+
 		const MessageEvent Event = MessageEvent::Invalid;
 
 		const MessageSource Source = MessageSource::None;
@@ -65,7 +67,7 @@ namespace g2d
 		const int MousePositionY = 0;
 
 		// 键盘事件信息，没完整实现
-		const int KeyButton = 0;
+		const KeyCode Key = 0;
 
 	public:
 		// 根据鼠标信息构建半成品Message
@@ -88,10 +90,10 @@ namespace g2d
 		{		}
 
 		// 根据键盘信息构建Message
-		Message(const Message& m, bool ctrl, bool shift, bool alt, int key)
+		Message(const Message& m, bool ctrl, bool shift, bool alt, KeyCode key)
 			: Event(m.Event), Source(MessageSource::Keyboard)
 			, Control(ctrl), Shift(shift), Alt(alt)
-			, KeyButton(key)
+			, Key(key)
 		{		}
 	};
 
