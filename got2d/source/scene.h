@@ -48,7 +48,7 @@ protected:
 
 	void _SetVisible(bool visible) { m_isVisible = visible; }
 
-	void _Update(uint32_t elpasedTime);
+	void _Update(uint32_t deltaTime);
 
 	::SceneNode* GetChildByIndex(uint32_t index) const;
 
@@ -115,7 +115,7 @@ public:
 
 	~SceneNode();
 
-	void Update(uint32_t elpasedTime);
+	void Update(uint32_t deltaTime);
 
 	void SetChildIndex(uint32_t index) { m_childID = index; }
 
@@ -238,6 +238,10 @@ public:
 
 	SpatialGraph* GetSpatialGraph() { return &m_spatial; }
 
+	void Update(uint32_t elapsedTime, uint32_t deltaTime);
+
+	void OnMessage(const g2d::Message& message, uint32_t currentTimeStamp);
+
 public: //g2d::SceneNode
 	virtual g2d::Scene* GetScene() const override { return const_cast<::Scene*>(this); }
 
@@ -310,10 +314,6 @@ public:	//g2d::Scene
 
 	virtual void Render() override;
 
-	virtual void Update(uint32_t elpasedTime) override;
-
-	virtual void OnMessage(const g2d::Message& message) override;
-
 private:
 	void ResortCameraOrder();
 
@@ -328,25 +328,30 @@ private:
 	std::vector<::Camera*> m_cameraOrder;
 	bool m_cameraOrderDirty = true;
 
-	struct MouseButtonState
+	class MouseButtonState
 	{
-		static const uint32_t PressingDelta = 700;
+	public:
+		const g2d::MouseButton button;
 
 		MouseButtonState(g2d::MouseButton btn) : button(btn) { }
 		void Update(uint32_t currentStamp);
 		bool UpdateMessage(const g2d::Message& message, uint32_t currentStamp, ::SceneNode* hitNode);
-		void LostFocus(::SceneNode* hitNode);
-		bool dragging = false;
-		bool pressing = false;
+		void LostFocus();
+	private:
+		void OnDoubleClick(const g2d::Message& message);
+		void OnMouseDown(const g2d::Message& message, uint32_t currentStamp);
+		bool OnMouseUp(const g2d::Message& message);
+		bool OnMouseMove(const g2d::Message& message);
+
 		bool control = false;	//临时的记录上一个消息的按键
 		bool shift = false;		//临时的记录上一个消息的按键
 		bool alt = false;		//临时的记录上一个消息的按键
-		uint32_t pressStamp;
-		gml::coord cursorPos;
-		::SceneNode* hoverNode = nullptr;
-		const g2d::MouseButton button;
-		
+		bool isDragging = false;
+		bool isPressing = false;
+		uint32_t pressTimeStamp;
+		gml::coord pressCursorPos;
+		::SceneNode* nodeDragging = nullptr;
+		::SceneNode* nodeHovering = nullptr;
 	} m_mouseButtonState[3];
 	::SceneNode* m_hoverNode = nullptr;
-	uint32_t m_lastTickStamp = 0;
 };

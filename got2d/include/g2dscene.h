@@ -24,7 +24,7 @@ namespace g2d
 
 		// 节点进行更新的事件
 		// 一般每帧逻辑更新写这个事件里
-		virtual void OnUpdate(uint32_t elpasedTime) { }
+		virtual void OnUpdate(uint32_t deltaTime) { }
 
 		// 节点进行渲染的事件
 		// 渲染节点的时候需要用户把render request加入到渲染队列中
@@ -84,6 +84,7 @@ namespace g2d
 		virtual void OnMDragEnd(const gml::coord& cursorPos, bool ctrl, bool shift, bool alt) { }
 
 		// 光标触碰到别的物体的时候，鼠标拖拽中
+		// 如果dropped 是空的话，会把消息转发到OnDragging
 		virtual void OnLDropping(SceneNode* dropped, const gml::coord& cursorPos, bool ctrl, bool shift, bool alt) { }
 		virtual void OnRDropping(SceneNode* dropped, const gml::coord& cursorPos, bool ctrl, bool shift, bool alt) { }
 		virtual void OnMDropping(SceneNode* dropped, const gml::coord& cursorPos, bool ctrl, bool shift, bool alt) { }
@@ -335,14 +336,5 @@ namespace g2d
 		// 把场景中的物体加入渲染队列
 		// 需要用户主动调用
 		virtual void Render() = 0;
-
-		// 更细场景
-		// 需要用户主动调用
-		virtual void Update(uint32_t elapsedTime) = 0;
-
-		// 当用户输入的时候
-		// 往所有节点派发消息
-		// 需要用户主动调用
-		virtual void OnMessage(const Message& message) = 0;
 	};
 }

@@ -1,5 +1,7 @@
 #include "spatial_graph.h"
 #include "scene.h"
+#include "engine.h"
+#include "input.h"
 #include <algorithm>
 
 Scene::Scene(float boundSize)
@@ -35,20 +37,20 @@ void Scene::ResortCameraOrder()
 
 void Scene::Release()
 {
+	::GetEngineImpl()->RemoveScene(*this);
 	EmptyChildren();
 	delete this;
 }
 
-void Scene::Update(uint32_t elapsedTime)
+void Scene::Update(uint32_t elapsedTime, uint32_t deltaTime)
 {
-	m_lastTickStamp += elapsedTime;
 	for (auto& state : m_mouseButtonState)
 	{
-		state.Update(m_lastTickStamp);
+		state.Update(elapsedTime);
 	}
 
-	//m_hoverNode->OnMouseHovering(elapsedTime);
-	_Update(elapsedTime);
+	//m_hoverNode->OnMouseHovering(deltaTime);
+	_Update(deltaTime);
 	AdjustRenderingOrder();
 }
 
@@ -64,166 +66,191 @@ void Scene::AdjustRenderingOrder()
 
 void Scene::MouseButtonState::Update(uint32_t currentStamp)
 {
-	if (pressing && !dragging &&
-		hoverNode != nullptr &&
-		(currentStamp - pressStamp > PressingDelta))
+	if (isPressing && !isDragging &&
+		nodeHovering != nullptr &&
+		(currentStamp - pressTimeStamp > PRESSING_INTERVAL))
 	{
-		dragging = true;
+		isDragging = true;
 		// 使用上一个消息的按键
-		hoverNode->OnDragBegin(button, cursorPos, control, shift, alt);
+		nodeDragging = nodeHovering;
+		nodeDragging->OnDragBegin(button, pressCursorPos, control, shift, alt);
 	}
 }
 
-void Scene::MouseButtonState::LostFocus(::SceneNode* hitNode)
+void Scene::MouseButtonState::LostFocus()
 {
-	if (dragging)
+	if (isDragging)
 	{
-		if (hoverNode == hitNode)
+		if (nodeDragging == nodeHovering)
 		{
-			hoverNode->OnDragEnd(button, cursorPos, control, shift, alt);
+			nodeDragging->OnDragEnd(button, pressCursorPos, control, shift, alt);
 		}
 		else
 		{
-			hoverNode->OnDropTo(hitNode, button, cursorPos, control, shift, alt);
+			nodeDragging->OnDropTo(nodeHovering, button, pressCursorPos, control, shift, alt);
 		}
 
-		dragging = false;
-		pressing = false;
+		isDragging = false;
+		isPressing = false;
+		nodeDragging = nullptr;
 	}
-	else if (pressing)
+	else if (isPressing)
 	{
-		if (hoverNode == hitNode)
+		nodeHovering->OnClick(button, pressCursorPos, control, shift, alt);
+		isPressing = false;
+	}
+}
+
+void Scene::MouseButtonState::OnDoubleClick(const g2d::Message& message)
+{
+	if (nodeHovering != nullptr)
+	{
+		nodeHovering->OnDoubleClick(message.MouseButton,
+			gml::coord(message.MousePositionX, message.MousePositionY),
+			message.Control, message.Shift, message.Alt);
+	}
+}
+
+void Scene::MouseButtonState::OnMouseDown(const g2d::Message& message, uint32_t currentStamp)
+{
+	if (nodeHovering != nullptr)
+	{
+		isPressing = true;
+		pressTimeStamp = currentStamp;
+		pressCursorPos.set(message.MousePositionX, message.MousePositionY);
+	}
+	else
+	{
+		isPressing = false;
+	}
+}
+
+bool Scene::MouseButtonState::OnMouseUp(const g2d::Message& message)
+{
+	if (isDragging)
+	{
+		if (nodeHovering != nullptr && nodeHovering != nodeDragging)
 		{
-			hoverNode->OnClick(button, cursorPos, control, shift, alt);
+			nodeDragging->OnDropTo(nodeHovering, button,
+				gml::coord(message.MousePositionX, message.MousePositionY),
+				message.Control, message.Shift, message.Alt);
+
+			nodeHovering->OnMouseEnterFrom(nodeDragging,
+				gml::coord(message.MousePositionX, message.MousePositionY),
+				message.Control, message.Shift, message.Alt);
 		}
 		else
 		{
-			if (hitNode != nullptr)
-			{
-				hitNode->OnMouseEnterFrom(hoverNode, cursorPos, control, shift, alt);
-			}
-			hoverNode->OnMouseLeaveTo(hitNode, cursorPos, control, shift, alt);
+			nodeDragging->OnDragEnd(button,
+				gml::coord(message.MousePositionX, message.MousePositionY),
+				message.Control, message.Shift, message.Alt);
+
+			nodeDragging->OnMouseEnterFrom(nodeDragging,
+				gml::coord(message.MousePositionX, message.MousePositionY),
+				message.Control, message.Shift, message.Alt);
 		}
-		pressing = false;
+		isPressing = false;
+		isDragging = false;
+		nodeDragging = nullptr;
+		return true;
 	}
-	hoverNode = hitNode;
+	else if (isPressing)
+	{
+		nodeHovering->OnClick(button,
+			gml::coord(message.MousePositionX, message.MousePositionY),
+			message.Control, message.Shift, message.Alt);
+		isPressing = false;
+		return true;
+	}
+
+	return false;
+}
+
+bool Scene::MouseButtonState::OnMouseMove(const g2d::Message& message)
+{
+	if (!isDragging && isPressing)
+	{
+		isDragging = true;
+		nodeDragging = nodeHovering;
+		nodeDragging->OnDragBegin(button,
+			gml::coord(message.MousePositionX, message.MousePositionY),
+			message.Control, message.Shift, message.Alt);
+
+		nodeDragging->OnDragging(button,
+			gml::coord(message.MousePositionX, message.MousePositionY),
+			message.Control, message.Shift, message.Alt);
+		return true;
+	}
+	else if (isDragging)
+	{
+		if (nodeHovering != nullptr && nodeHovering != nodeDragging)
+		{
+			nodeDragging->OnDropping(nodeHovering, button,
+				gml::coord(message.MousePositionX, message.MousePositionY),
+				message.Control, message.Shift, message.Alt);
+		}
+		else
+		{
+			nodeDragging->OnDragging(button,
+				gml::coord(message.MousePositionX, message.MousePositionY),
+				message.Control, message.Shift, message.Alt);
+		}
+		return true;
+	}
+	return false;
 }
 
 bool Scene::MouseButtonState::UpdateMessage(const g2d::Message& message, uint32_t currentStamp, ::SceneNode* hitNode)
-{	//临时的记录上一个消息的按键
+{
+	nodeHovering = hitNode;
+	//临时的记录上一个消息的按键
 	control = message.Control;
 	shift = message.Shift;
 	alt = message.Alt;
 	bool sameButton = message.MouseButton == button;
 
-	if (message.Event == g2d::MessageEvent::MouseButtonDoubleClick && sameButton)
+	if (sameButton)
 	{
-		if (hitNode != nullptr)
+		if (message.Event == g2d::MessageEvent::MouseButtonDoubleClick)
 		{
-			hoverNode->OnDoubleClick(message.MouseButton,
-				gml::coord(message.MousePositionX, message.MousePositionY),
-				message.Control, message.Shift, message.Alt);
+			OnDoubleClick(message);
 		}
-		hoverNode = hitNode;
-	}
-	else if (message.Event == g2d::MessageEvent::MouseButtonDown && sameButton)
-	{
-		if (dragging)//异常状态
+		else if (message.Event == g2d::MessageEvent::MouseButtonDown)
 		{
-			// 让上次的dragging事件正常结束
-			hoverNode->OnDragEnd(button,
-				gml::coord(message.MousePositionX, message.MousePositionY),
-				message.Control, message.Shift, message.Alt);
-			dragging = false;
-			pressing = false;
-		}
-		else if (pressing)//异常状态
-		{
-			// 取消上次的点击操作
-			pressing = false;
-		}
-
-		hoverNode = hitNode;
-		if (hoverNode != nullptr)
-		{
-			pressing = true;
-			pressStamp = currentStamp;
-			cursorPos.set(message.MousePositionX, message.MousePositionY);
-		}
-		return true;
-	}
-	else if (message.Event == g2d::MessageEvent::MouseButtonUp && sameButton)
-	{
-		if (message.MouseButton != button)
-			return false;
-
-		if (dragging)
-		{
-			if (hitNode != hoverNode)
+			if (isDragging)//异常状态
 			{
-				hoverNode->OnDropTo(hitNode, button,
+				// 让上次的dragging事件正常结束
+				nodeDragging->OnDragEnd(button,
 					gml::coord(message.MousePositionX, message.MousePositionY),
 					message.Control, message.Shift, message.Alt);
-				if (hitNode)
-				{
-					hitNode->OnMouseEnterFrom(hoverNode,
-						gml::coord(message.MousePositionX, message.MousePositionY),
-						message.Control, message.Shift, message.Alt);
-				}
-				hoverNode = hitNode;
+
+				isDragging = false;
+				isPressing = false;
+				nodeDragging = nullptr;
 			}
-			else
+			else if (isPressing)//异常状态
 			{
-				hoverNode->OnDragEnd(button,
-					gml::coord(message.MousePositionX, message.MousePositionY),
-					message.Control, message.Shift, message.Alt);
+				// 取消上次的点击操作
+				isPressing = false;
 			}
-			pressing = false;
-			dragging = false;
+			OnMouseDown(message, currentStamp);
 			return true;
 		}
-		else if (pressing)
+		else if (message.Event == g2d::MessageEvent::MouseButtonUp)
 		{
-			// 不相等的状态已经在MouseMove中解决了
-			ENSURE(hitNode == hoverNode);
-			hoverNode->OnClick(button,
-				gml::coord(message.MousePositionX, message.MousePositionY),
-				message.Control, message.Shift, message.Alt);
-			pressing = false;
-			return true;
+			if (OnMouseUp(message))
+				return true;
 		}
 	}
 	else if (message.Event == g2d::MessageEvent::MouseMove)
 	{
-		if (!dragging && pressing)
-		{
-			dragging = true;
-			hoverNode->OnDragBegin(button,
-				gml::coord(message.MousePositionX, message.MousePositionY),
-				message.Control, message.Shift, message.Alt);
-		}
-
-		if (dragging)
-		{
-			if (hitNode != nullptr)
-			{
-				hoverNode->OnDropping(hitNode, button,
-					gml::coord(message.MousePositionX, message.MousePositionY),
-					message.Control, message.Shift, message.Alt);
-			}
-			else
-			{
-				hoverNode->OnDragging(button,
-					gml::coord(message.MousePositionX, message.MousePositionY),
-					message.Control, message.Shift, message.Alt);
-			}
+		if (OnMouseMove(message))
 			return true;
-		}
 	}
 	return false;
 }
 
-void Scene::OnMessage(const g2d::Message& message)
+void Scene::OnMessage(const g2d::Message& message, uint32_t currentTimeStamp)
 {
 	TraversalChildren([&](::SceneNode* child) {
 		child->OnMessage(message);
@@ -233,14 +260,14 @@ void Scene::OnMessage(const g2d::Message& message)
 	if (message.Event == g2d::MessageEvent::LostFocus)
 	{
 		for (auto& state : m_mouseButtonState)
-			state.LostFocus(hitNode);
+			state.LostFocus();
 	}
 	else if (message.Source == g2d::MessageSource::Mouse)
 	{
 		bool handleMove = false;
 		for (auto& state : m_mouseButtonState)
 		{
-			if (state.UpdateMessage(message, m_lastTickStamp, hitNode))
+			if (state.UpdateMessage(message, currentTimeStamp, hitNode))
 			{
 				handleMove = true;
 			}

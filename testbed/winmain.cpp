@@ -13,7 +13,7 @@ public:
 	Testbed(Framework& fw) : framework(fw) { }
 	void Start();
 	void End();
-	bool Update(uint32_t elapsedTime);
+	bool Update(uint32_t deltaTime);
 	void OnMessage(const g2d::Message& message);
 private:
 	g2d::Scene* mainScene = nullptr;
@@ -59,10 +59,10 @@ g2d::SceneNode* lastNode = nullptr;
 void Testbed::Start()
 {
 	mainScene = g2d::GetEngine()->CreateNewScene(2 << 10);
-	
+
 	auto quad = g2d::Quad::Create()->SetSize(gml::vec2(100, 120));
 	auto node = mainScene->CreateSceneNodeChild(quad, true)->SetPosition(gml::vec2(50, 0));
-	
+
 	//node.SetVisibleMask(3, true);
 	node->SetStatic(true);
 	for (int i = 0; i < 5; i++)
@@ -114,7 +114,7 @@ void Testbed::End()
 	mainScene = nullptr;
 }
 
-bool Testbed::Update(uint32_t elapsedTime)
+bool Testbed::Update(uint32_t deltaTime)
 {
 	//²âÊÔ¹â±ê×ø±êÓ³Éä
 	{
@@ -130,7 +130,7 @@ bool Testbed::Update(uint32_t elapsedTime)
 			auto p = mainCamera->WorldToScreen(lastNode->GetWorldPosition());
 			framework.SetCursorPos(p);
 		}
-		else if(0)
+		else if (0)
 		{
 			auto mouseP = framework.GetCursorPos();
 			auto p = mainCamera->ScreenToWorld(mouseP);
@@ -139,7 +139,7 @@ bool Testbed::Update(uint32_t elapsedTime)
 		}
 	}
 
-	mainScene->Update(elapsedTime);
+	g2d::GetEngine()->Update(deltaTime);
 
 	g2d::GetEngine()->GetRenderSystem()->BeginRender();
 	mainScene->Render();
@@ -149,5 +149,5 @@ bool Testbed::Update(uint32_t elapsedTime)
 
 void Testbed::OnMessage(const g2d::Message& message)
 {
-	mainScene->OnMessage(message);
+	g2d::GetEngine()->OnMessage(message);
 }

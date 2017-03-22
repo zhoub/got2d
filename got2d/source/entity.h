@@ -48,8 +48,6 @@ public:	//g2d::entity
 
 	virtual const gml::aabb2d& GetLocalAABB() const override { return m_aabb; }
 
-	virtual void OnUpdate(uint32_t elapsedTime) override;
-
 	virtual void OnUpdateMatrixChanged() override;
 
 public:	//g2d::camera

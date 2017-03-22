@@ -263,15 +263,15 @@ int Framework::MainLoop()
 //return false表示关闭窗口退出。
 bool Framework::Tick()
 {
-	auto elapseTime = timeGetTime() - m_lastTimeStamp;
-	if (elapseTime > m_tickInterval)
+	auto deltaTime = timeGetTime() - m_lastTimeStamp;
+	if (deltaTime > m_tickInterval)
 	{
-		m_elapsedTime += elapseTime;
+		m_elapsedTime += deltaTime;
 		m_lastTimeStamp = timeGetTime();
 		++m_frameCount;
 		if (OnUpdate != nullptr)
 		{
-			return OnUpdate(elapseTime);
+			return OnUpdate(deltaTime);
 		}
 		else
 		{

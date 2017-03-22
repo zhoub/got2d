@@ -99,11 +99,11 @@ void BaseNode::SetLocalMatrixDirty()
 	m_matrixLocalDirty = true;
 }
 
-void BaseNode::_Update(uint32_t elpasedTime)
+void BaseNode::_Update(uint32_t deltaTime)
 {
 	for (auto& child : m_children)
 	{
-		child->Update(elpasedTime);
+		child->Update(deltaTime);
 	}
 	RemoveReleasedChildren();
 }
@@ -267,9 +267,9 @@ void SceneNode::AdjustSpatial()
 	m_scene.GetSpatialGraph()->Add(*m_entity);
 }
 
-void SceneNode::Update(uint32_t elpasedTime)
+void SceneNode::Update(uint32_t deltaTime)
 {
-	m_entity->OnUpdate(elpasedTime);
+	m_entity->OnUpdate(deltaTime);
 	if (m_matrixDirtyUpdate)
 	{
 		//现在阶段只需要在test visible之前处理好就行.
@@ -281,7 +281,7 @@ void SceneNode::Update(uint32_t elpasedTime)
 		m_entity->OnUpdateMatrixChanged();
 		m_matrixDirtyUpdate = false;
 	}
-	_Update(elpasedTime);
+	_Update(deltaTime);
 }
 
 void SceneNode::AdjustRenderingOrder()

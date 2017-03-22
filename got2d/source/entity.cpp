@@ -107,10 +107,6 @@ g2d::Quad* Quad::SetSize(const gml::vec2& size)
 	return this;
 }
 
-void Camera::OnUpdate(uint32_t elapsedTime)
-{
-}
-
 void Camera::OnUpdateMatrixChanged()
 {
 	auto pos = GetSceneNode()->GetPosition();

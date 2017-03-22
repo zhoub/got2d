@@ -122,6 +122,13 @@ public:
 		}
 	}
 
+	virtual void OnLDragging(const gml::coord& cursorPos, bool ctrl, bool shift, bool alt) override
+	{
+		auto worldP = GetSceneNode()->GetScene()->GetMainCamera()->ScreenToWorld(cursorPos);
+		auto parentP = GetSceneNode()->WorldToParent(worldP);
+		GetSceneNode()->SetPosition(parentP);
+	}
+
 	virtual void OnLDragEnd(const gml::coord& cursorPos, bool ctrl, bool shift, bool alt) override
 	{
 		g2d::GeometryVertex* vertices = m_mesh->GetRawVertices();
