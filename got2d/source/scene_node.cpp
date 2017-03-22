@@ -7,7 +7,6 @@ BaseNode::BaseNode()
 	, m_pivot(gml::vec2::zero())
 	, m_scale(gml::vec2::one())
 	, m_rotation(0)
-	, m_isVisible(true)
 	, m_matrixLocal(gml::mat32::identity())
 { }
 
@@ -397,16 +396,19 @@ void SceneNode::OnMessage(const g2d::Message& message)
 	});
 }
 
-
-
-void SceneNode::OnMouseEnterFrom(::SceneNode* adjacency, const gml::coord& cursorPos)
+void SceneNode::OnCursorEnterFrom(::SceneNode* adjacency, const gml::coord& cursorPos)
 {
-	m_entity->OnMouseEnterFrom(adjacency, cursorPos, ::Keyboard::Instance);
+	m_entity->OnCursorEnterFrom(adjacency, cursorPos, ::Keyboard::Instance);
 }
 
-void SceneNode::OnMouseLeaveTo(::SceneNode* adjacency, const gml::coord& cursorPos)
+void SceneNode::OnCursorLeaveTo(::SceneNode* adjacency, const gml::coord& cursorPos)
 {
-	m_entity->OnMouseLeaveTo(adjacency, cursorPos, ::Keyboard::Instance);
+	m_entity->OnCursorLeaveTo(adjacency, cursorPos, ::Keyboard::Instance);
+}
+
+void SceneNode::OnCursorHovering(const gml::coord& cursorPos)
+{
+	m_entity->OnCursorHovering(cursorPos, ::Keyboard::Instance);
 }
 
 void SceneNode::OnClick(g2d::MouseButton button, const gml::coord& cursorPos)
