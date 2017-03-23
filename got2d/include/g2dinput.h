@@ -5,10 +5,14 @@
 
 namespace g2d
 {
+	// 键盘，鼠标按键的状态
 	enum class G2DAPI SwitchState : int
 	{
-		Releasing, JustPressed, Pressing,
+		Releasing,		// 按钮弹起状态
+		JustPressed,	// 刚刚按下不就还没响应
+		Pressing,		// 一直被按下的状态
 	};
+
 	// 键盘状态获取接口
 	class Keyboard
 	{

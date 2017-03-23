@@ -3,15 +3,17 @@
 
 namespace g2d
 {
+	// 消息类型
 	enum class G2DAPI MessageEvent : int
 	{
-		Invalid, LostFocus,
-		MouseMove,
-		MouseButtonDown,
-		MouseButtonUp,
-		MouseButtonDoubleClick,
-		KeyDown,
-		KeyUp,
+		Invalid,					// 未知消息
+		LostFocus,					// 切换窗口的时候
+		MouseMove,					// 光标移动
+		MouseButtonDown,			// 鼠标按钮被按下
+		MouseButtonUp,				// 鼠标按钮释放
+		MouseButtonDoubleClick,		// 鼠标按钮双击
+		KeyDown,					// 键盘按钮被按
+		KeyUp,						// 键盘按钮释放
 	};
 
 
@@ -77,6 +79,8 @@ namespace g2d
 		OEMColon = ';', OEMQuote = '\'', OEMComma = ',', OEMPeriod = '.', OEMSlash = '/',
 	};
 
+	// 系统使用的事件，请使用TranslateMessage翻译系统事件
+	// 一般只有引擎内部会构造虚拟消息
 	class G2DAPI Message
 	{
 	public:
