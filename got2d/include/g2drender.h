@@ -189,10 +189,10 @@ namespace g2d
 	class G2DAPI RenderLayer
 	{
 	public:
-		constexpr static uint32_t PreZ = 0;
-		constexpr static uint32_t BackGround = 0x4000;
-		constexpr static uint32_t Default = BackGround + 0x1000;
-		constexpr static uint32_t ForeGround = BackGround + 0x400;
+		constexpr static uint32_t PreZ = 0x1000;
+		constexpr static uint32_t BackGround = 0x2000;
+		constexpr static uint32_t Default = BackGround + 0x2000;
+		constexpr static uint32_t ForeGround = BackGround + 0x4000;
 		constexpr static uint32_t Overlay = 0x8000;
 	};
 
