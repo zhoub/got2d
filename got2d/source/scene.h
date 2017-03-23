@@ -2,8 +2,10 @@
 #include "../include/g2dscene.h"
 #include "entity.h"
 #include "spatial_graph.h"
+#include "input.h"
 #include <gmlmatrix.h>
 #include <vector>
+
 
 class SpatialGraph;
 class SceneNode;
@@ -48,7 +50,7 @@ protected:
 
 	void _SetVisible(bool visible) { m_isVisible = visible; }
 
-	void _Update(uint32_t elpasedTime);
+	void _Update(uint32_t deltaTime);
 
 	::SceneNode* GetChildByIndex(uint32_t index) const;
 
@@ -63,7 +65,7 @@ protected:
 	template<typename FUNC>
 	void TraversalChildrenByIndex(uint32_t startIndex, FUNC func)
 	{
-		for(uint32_t size = static_cast<uint32_t>(m_children.size()); startIndex < size; startIndex++)
+		for (uint32_t size = static_cast<uint32_t>(m_children.size()); startIndex < size; startIndex++)
 			func(startIndex, m_children[startIndex]);
 	}
 
@@ -71,6 +73,14 @@ protected:
 	void TraversalChildren(FUNC func)
 	{
 		for (auto& child : m_children) func(child);
+	}
+
+	template<typename FUNC>
+	void InverseTraversalChildren(FUNC func)
+	{
+		auto it = std::rbegin(m_children);
+		auto end = std::rend(m_children);
+		for (; it != end; it++) func(*child);
 	}
 
 	virtual BaseNode* _GetParent() = 0;
@@ -107,12 +117,42 @@ public:
 
 	~SceneNode();
 
-	void Update(uint32_t elpasedTime);
+	void Update(uint32_t deltaTime);
 
 	void SetChildIndex(uint32_t index) { m_childID = index; }
 
 	void SetRenderingOrder(uint32_t& index);
-	
+
+	void OnMessage(const g2d::Message& message);
+
+	void OnCursorEnterFrom(::SceneNode* adjacency);
+
+	void OnCursorHovering();
+
+	void OnCursorLeaveTo(::SceneNode* adjacency);
+
+	void OnClick(g2d::MouseButton button);
+
+	void OnDoubleClick(g2d::MouseButton button);
+
+	void OnDragBegin(g2d::MouseButton button);
+
+	void OnDragging(g2d::MouseButton button);
+
+	void OnDragEnd(g2d::MouseButton button);
+
+	void OnDropping(::SceneNode* dropped, g2d::MouseButton button);
+
+	void OnDropTo(::SceneNode* dropped, g2d::MouseButton button);
+
+	void OnKeyPress(g2d::KeyCode key);
+
+	void OnKeyPressingBegin(g2d::KeyCode key);
+
+	void OnKeyPressing(g2d::KeyCode key);
+
+	void OnKeyPressingEnd(g2d::KeyCode key);
+
 public:	//g2d::SceneNode
 	virtual g2d::Scene* GetScene() const override;
 
@@ -160,6 +200,8 @@ public:	//g2d::SceneNode
 
 	virtual gml::radian GetRotation() const override { return _GetRotation(); }
 
+	virtual gml::vec2 GetWorldPosition() override;
+
 	virtual g2d::Entity* GetEntity() const override { return m_entity; }
 
 	virtual bool IsVisible() const override { return _IsVisible(); }
@@ -167,6 +209,10 @@ public:	//g2d::SceneNode
 	virtual bool IsStatic() const override { return m_isStatic; }
 
 	virtual uint32_t GetVisibleMask() const override { return _GetVisibleMask(); }
+
+	virtual gml::vec2 WorldToLocal(const gml::vec2& pos) override;
+
+	virtual gml::vec2 WorldToParent(const gml::vec2& pos) override;
 
 private:
 	void SetWorldMatrixDirty();
@@ -203,6 +249,10 @@ public:
 	void SetCameraOrderDirty() { m_cameraOrderDirty = true; }
 
 	SpatialGraph* GetSpatialGraph() { return &m_spatial; }
+
+	void Update(uint32_t elapsedTime, uint32_t deltaTime);
+
+	void OnMessage(const g2d::Message& message, uint32_t currentTimeStamp);
 
 public: //g2d::SceneNode
 	virtual g2d::Scene* GetScene() const override { return const_cast<::Scene*>(this); }
@@ -251,6 +301,8 @@ public: //g2d::SceneNode
 
 	virtual gml::radian GetRotation() const override { return _GetRotation(); }
 
+	virtual gml::vec2 GetWorldPosition() override { return _GetPosition(); };
+
 	virtual g2d::Entity* GetEntity() const override { return nullptr; }
 
 	virtual bool IsVisible() const override { return _IsVisible(); }
@@ -258,6 +310,10 @@ public: //g2d::SceneNode
 	virtual bool IsStatic() const override { return true; }
 
 	virtual uint32_t GetVisibleMask() const override { return _GetVisibleMask(); }
+
+	virtual gml::vec2 WorldToLocal(const gml::vec2& pos) override { return pos; }
+
+	virtual gml::vec2 WorldToParent(const gml::vec2& pos) override { return pos; }
 
 public:	//g2d::Scene
 	virtual void Release() override;
@@ -270,17 +326,72 @@ public:	//g2d::Scene
 
 	virtual void Render() override;
 
-	virtual void Update(uint32_t elpasedTime) override;
-
-private:
-	void ResortCameraOrder();
-
+private:	//BaseNode
 	virtual ::BaseNode* _GetParent() override { return nullptr; }
 
 	virtual void AdjustRenderingOrder() override;
 
+private:
+	void ResortCameraOrder();
+
+	::SceneNode* FindInteractiveObject(const gml::coord& cursorPos);
+
+	void RegisterKeyEventReceiver();
+
+	void UnRegisterKeyEventReceiver();
+
+	void RegisterMouseEventReceiver();
+
+	void UnRegisterMouseEventReceiver();
+
+	void OnKeyPress(g2d::KeyCode key);
+
+	void OnKeyPressingBegin(g2d::KeyCode key);
+
+	void OnKeyPressing(g2d::KeyCode key);
+
+	void OnKeyPressingEnd(g2d::KeyCode key);
+
+	void OnMousePress(g2d::MouseButton button);
+
+	void OnMousePressingBegin(g2d::MouseButton button);
+
+	void OnMousePressing(g2d::MouseButton button);
+
+	void OnMousePressingEnd(g2d::MouseButton button);
+
+	void OnMouseDoubleClick(g2d::MouseButton button);
+
+	void OnMouseMoving();
+
+	KeyEventReceiver m_keyPressReceiver;
+	KeyEventReceiver m_keyPressingBeginReceiver;
+	KeyEventReceiver m_keyPressingReceiver;
+	KeyEventReceiver m_keyPressingEndReceiver;
+
+	MouseEventReceiver m_mousePressReceiver;
+	MouseEventReceiver m_mousePressingBeginReceiver;
+	MouseEventReceiver m_mousePressingReceiver;
+	MouseEventReceiver m_mousePressingEndReceiver;
+	MouseEventReceiver m_mouseMovingReceiver;
+	MouseEventReceiver m_mouseDoubleClickReceiver;
+
 	SpatialGraph m_spatial;
 	std::vector<::Camera*> m_cameras;
 	std::vector<::Camera*> m_cameraOrder;
-	bool m_cameraOrderDirty;
+	bool m_cameraOrderDirty = true;
+
+	class MouseButtonState
+	{
+		::SceneNode* dragNode = nullptr;
+	public:
+		const g2d::MouseButton Button;
+		MouseButtonState(int index) : Button((g2d::MouseButton)index) { }
+		void OnMoving(::SceneNode* hitNode);
+		void OnPressingBegin(::SceneNode* hitNode);
+		void OnPressing(::SceneNode* hitNode);
+		void OnPressingEnd(::SceneNode* hitNode);
+	} m_mouseButtonState[3];
+	::SceneNode* m_hoverNode = nullptr;
+	bool m_canTickHovering = false;
 };

@@ -498,6 +498,23 @@ void RenderSystem::RenderMesh(uint32_t layer, g2d::Mesh* mesh, g2d::Material* ma
 	list->push_back({ *mesh, *material, worldMatrix });
 }
 
+gml::vec2 RenderSystem::ScreenToView(const gml::coord& screen) const
+{
+	int wWidth = static_cast<int>(GetWindowWidth());
+	int wHeight = static_cast<int>(GetWindowHeight());
+	float x = screen.x - wWidth * 0.5f;
+	float y = screen.y - wHeight* 0.5f;
+	return { x, y };
+}
+gml::coord RenderSystem::ViewToScreen(const gml::vec2 & view) const
+{
+	int wWidth = static_cast<int>(GetWindowWidth());
+	int wHeight = static_cast<int>(GetWindowHeight());
+	int x = static_cast<int>(round(view.x + wWidth * 0.5f));
+	int y = static_cast<int>(round(view.y + wHeight* 0.5f));
+	return { x, y };
+}
+
 void RenderSystem::BeginRender()
 {
 	Clear();

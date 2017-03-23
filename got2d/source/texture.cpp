@@ -12,6 +12,7 @@ Texture::Texture(std::string resPath) : m_resPath(std::move(resPath))
 {
 
 }
+
 bool Texture::IsSame(g2d::Texture* other) const
 {
 	ENSURE(other != nullptr);
@@ -37,7 +38,6 @@ void Texture::Release()
 		delete this;
 	}
 }
-
 
 bool Texture2D::Create(uint32_t width, uint32_t height)
 {

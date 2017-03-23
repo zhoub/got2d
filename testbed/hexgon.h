@@ -2,6 +2,7 @@
 #include <g2dengine.h>
 #include <g2dscene.h>
 #include <g2drender.h>
+#include <vector>
 
 class Hexgon : public g2d::Entity
 {
@@ -13,6 +14,7 @@ public://implement
 public:
 	Hexgon()
 	{
+		colors.resize(7);
 		//mesh
 		{
 			m_mesh = g2d::Mesh::Create(7, 6 * 3);
@@ -74,8 +76,94 @@ public:
 			GetSceneNode()->GetWorldMatrix());
 	}
 
+	virtual void OnLClick(const g2d::Mouse& mouse, const g2d::Keyboard& keyboard) override
+	{
+		g2d::GeometryVertex* vertices = m_mesh->GetRawVertices();
+		for (int i = 0; i < 7; i++)
+		{
+			colors[i] = gml::color4::random();
+		}
+	}
+
+	virtual void OnCursorEnterFrom(g2d::SceneNode* adjacency, const g2d::Mouse& mouse, const g2d::Keyboard& keyboard) override
+	{
+		g2d::GeometryVertex* vertices = m_mesh->GetRawVertices();
+		for (int i = 0; i < 7; i++)
+		{
+			colors[i] = vertices[i].vtxcolor;
+		}
+
+	}
+	virtual void OnCursorHovering(const g2d::Mouse& mouse, const g2d::Keyboard& keyboard) override
+	{
+		g2d::GeometryVertex* vertices = m_mesh->GetRawVertices();
+		for (int i = 0; i < 7; i++)
+		{
+			vertices[i].vtxcolor = gml::color4::red();
+		}
+	}
+
+	virtual void OnCursorLeaveTo(g2d::SceneNode* adjacency, const g2d::Mouse& mouse, const g2d::Keyboard& keyboard) override
+	{
+		g2d::GeometryVertex* vertices = m_mesh->GetRawVertices();
+		for (int i = 0; i < 7; i++)
+		{
+			vertices[i].vtxcolor = colors[i];
+		}
+	}
+
+	virtual void OnLDoubleClick(const g2d::Mouse& mouse, const g2d::Keyboard& keyboard) override
+	{
+		g2d::GeometryVertex* vertices = m_mesh->GetRawVertices();
+		for (int i = 0; i < 7; i++)
+		{
+			colors[i] = gml::color4::green();
+		}
+	}
+
+	virtual void OnLDragBegin(const g2d::Mouse& mouse, const g2d::Keyboard& keyboard) override
+	{
+		auto worldP = GetSceneNode()->GetScene()->GetMainCamera()->ScreenToWorld(mouse.GetCursorPosition());
+		m_dragOffset = GetSceneNode()->WorldToLocal(worldP);
+		g2d::GeometryVertex* vertices = m_mesh->GetRawVertices();
+		for (int i = 0; i < 7; i++)
+		{
+			vertices[i].vtxcolor = gml::color4::yellow();
+		}
+	}
+
+	virtual void OnLDragging(const g2d::Mouse& mouse, const g2d::Keyboard& keyboard) override
+	{
+		auto worldP = GetSceneNode()->GetScene()->GetMainCamera()->ScreenToWorld(mouse.GetCursorPosition());
+		auto parentP = GetSceneNode()->WorldToParent(worldP);
+		GetSceneNode()->SetPosition(parentP - m_dragOffset);
+	}
+
+	virtual void OnLDragEnd(const g2d::Mouse& mouse, const g2d::Keyboard& keyboard) override
+	{
+		g2d::GeometryVertex* vertices = m_mesh->GetRawVertices();
+		for (int i = 0; i < 7; i++)
+		{
+			vertices[i].vtxcolor = colors[i];
+		}
+	}
+
+	virtual void OnKeyPress(g2d::KeyCode key, const g2d::Mouse& mouse, const g2d::Keyboard& keyboard) override
+	{
+		if ((int)key == 'C')
+		{
+			g2d::GeometryVertex* vertices = m_mesh->GetRawVertices();
+			for (int i = 0; i < 7; i++)
+			{
+				vertices[i].vtxcolor = colors[i] = gml::color4::random();
+			}
+		}
+	}
+
 private:
 	gml::aabb2d m_aabb;
 	g2d::Mesh* m_mesh;
 	g2d::Material* m_material;
+	std::vector<gml::color4> colors;
+	gml::vec2 m_dragOffset;
 };

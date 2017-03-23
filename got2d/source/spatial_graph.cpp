@@ -1,5 +1,6 @@
 #include "spatial_graph.h"
 #include "../include/g2dscene.h"
+#include "entity.h"
 #include <algorithm>
 
 QuadTreeNode::QuadTreeNode(QuadTreeNode* parent, const gml::vec2& center, float gridSize)
@@ -31,7 +32,7 @@ inline bool Contains(const gml::vec2& center, float gridSize, const gml::aabb2d&
 	gml::aabb2d bounding(
 		gml::vec2(center.x - gridSize, center.y - gridSize),
 		gml::vec2(center.x + gridSize, center.y + gridSize)
-		);
+	);
 
 	return bounding.is_intersect(nodeAABB) == gml::it_mode::contain;
 }
@@ -105,6 +106,7 @@ QuadTreeNode* QuadTreeNode::AddRecursive(const gml::aabb2d& entityBound, g2d::En
 
 QuadTreeNode* QuadTreeNode::AddToDynamicList(g2d::Entity& entity)
 {
+	m_isEmpty = false;
 	m_dynamicEntities.push_back(&entity);
 	return this;
 }
@@ -112,7 +114,9 @@ QuadTreeNode* QuadTreeNode::AddToDynamicList(g2d::Entity& entity)
 void QuadTreeNode::TryMarkEmpty()
 {
 	if (m_dynamicEntities.size() > 0)
+	{
 		return;
+	}
 
 	bool hasEntities = false;
 	for (auto child : m_directionNodes)
@@ -145,7 +149,7 @@ void QuadTreeNode::Remove(g2d::Entity& entity)
 	TryMarkEmpty();
 }
 
-void QuadTreeNode::FindVisible(const g2d::Camera& camera, std::vector<g2d::Entity*>& outVisibleList)
+void QuadTreeNode::FindVisible(Camera& camera)
 {
 	if (IsEmpty())
 		return;
@@ -154,7 +158,7 @@ void QuadTreeNode::FindVisible(const g2d::Camera& camera, std::vector<g2d::Entit
 	{
 		if (entity->GetSceneNode()->IsVisible() && camera.TestVisible(*entity))
 		{
-			outVisibleList.push_back(entity);
+			camera.visibleEntities.push_back(entity);
 		}
 	}
 
@@ -162,7 +166,7 @@ void QuadTreeNode::FindVisible(const g2d::Camera& camera, std::vector<g2d::Entit
 	{
 		if (child != nullptr && camera.TestVisible(child->GetBounding()))
 		{
-			child->FindVisible(camera, outVisibleList);
+			child->FindVisible(camera);
 		}
 	}
 }
@@ -184,6 +188,7 @@ void SpatialGraph::Add(g2d::Entity& entity)
 	}
 	else
 	{
+		// FOR HINT: m_root->m_isEmpty = false;
 		node = m_root->AddToDynamicList(entity);
 	}
 	m_linkRef[&entity] = node;
@@ -199,7 +204,7 @@ void SpatialGraph::Remove(g2d::Entity& entity)
 	}
 }
 
-void SpatialGraph::FindVisible(const g2d::Camera& camera, std::vector<g2d::Entity*>& outVisibleList)
+void SpatialGraph::FindVisible(Camera& camera)
 {
-	m_root->FindVisible(camera, outVisibleList);
+	m_root->FindVisible(camera);
 }

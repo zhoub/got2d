@@ -324,6 +324,10 @@ public:
 
 	virtual uint32_t GetWindowHeight() const override { return m_windowHeight; }
 
+	virtual gml::vec2 ScreenToView(const gml::coord& screen) const override;
+
+	virtual gml::coord ViewToScreen(const gml::vec2 & view) const override;
+
 private:
 	bool CreateBlendModes();
 
@@ -363,7 +367,6 @@ private:
 	ID3D11Buffer* m_sceneConstBuffer = nullptr;
 	gml::mat32 m_matView;
 	gml::mat44 m_matProj;
-
 	bool m_matrixConstBufferDirty = true;
 	bool m_matrixProjDirty = true;
 	uint32_t m_windowWidth = 0;

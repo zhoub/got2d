@@ -4,6 +4,7 @@
 #include <gmlvector.h>
 #include <gmlmatrix.h>
 #include <gmlcolor.h>
+#include <gmlrect.h>
 
 namespace g2d
 {
@@ -188,10 +189,10 @@ namespace g2d
 	class G2DAPI RenderLayer
 	{
 	public:
-		constexpr static uint32_t PreZ = 0;
-		constexpr static uint32_t BackGround = 0x4000;
-		constexpr static uint32_t Default = BackGround + 0x1000;
-		constexpr static uint32_t ForeGround = BackGround + 0x400;
+		constexpr static uint32_t PreZ = 0x1000;
+		constexpr static uint32_t BackGround = 0x2000;
+		constexpr static uint32_t Default = BackGround + 0x2000;
+		constexpr static uint32_t ForeGround = BackGround + 0x4000;
 		constexpr static uint32_t Overlay = 0x8000;
 	};
 
@@ -220,5 +221,11 @@ namespace g2d
 		// 过后会改成 引擎初始化的时候，提供一个接口
 		virtual uint32_t GetWindowWidth() const = 0;
 		virtual uint32_t GetWindowHeight() const = 0;
+
+		// 从屏幕坐标转到摄像机坐标系
+		virtual gml::vec2 ScreenToView(const gml::coord& screen) const = 0;
+
+		// 从摄像机坐标系转换到屏幕坐标系
+		virtual gml::coord ViewToScreen(const gml::vec2 & view) const = 0;
 	};
 }

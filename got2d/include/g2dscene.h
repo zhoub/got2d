@@ -1,8 +1,10 @@
 #pragma once
 #include <g2dconfig.h>
+#include <g2dinput.h>
 #include <gmlvector.h>
 #include <gmlmatrix.h>
 #include <gmlaabb.h>
+#include <gmlrect.h>
 namespace g2d
 {
 	constexpr uint32_t DEFAULT_VISIBLE_MASK = 0xFFFFFFFF;
@@ -11,33 +13,18 @@ namespace g2d
 	class SceneNode;
 	class Scene;
 
-	// 实体基类，节点逻辑的实现全在entity内
-	// 挂在场景节点上，一个SceneNode只能挂一个Entity
-	class G2DAPI Entity : public GObject
+	// 以下为消息响应接口
+	// 用户自定义实体重载这些虚函数以获得事件响应
+	class G2DAPI EventReceiver
 	{
 	public:
-		// 用户自定义实体需要实现内存释放的接口
-		// 引擎内部会调用这个接口释放entity资源
-		// 只会在析构时候被调用
-		virtual void Release() = 0;
-
-		// 局部坐标系下节点的包围盒大小
-		virtual const gml::aabb2d& GetLocalAABB() const = 0;
-
-		// 节点在世界空间中包围盒的大小
-		// 默认实现用世界矩阵变换局部坐标系下的包围盒
-		virtual gml::aabb2d GetWorldAABB() const;
-
-		// 以下为消息响应接口
-		// 用户自定义实体重载这些虚函数以获得事件响应
-
 		// 节点被成功构造的事件
 		// 一般初始化代码写这个事件里
 		virtual void OnInitial() { }
 
 		// 节点进行更新的事件
 		// 一般每帧逻辑更新写这个事件里
-		virtual void OnUpdate(uint32_t elpasedTime) { }
+		virtual void OnUpdate(uint32_t deltaTime) { }
 
 		// 节点进行渲染的事件
 		// 渲染节点的时候需要用户把render request加入到渲染队列中
@@ -52,10 +39,96 @@ namespace g2d
 		// 节点局部位置更新事件
 		virtual void OnMove(const gml::vec2& newPos) { }
 
+		// 用户输入消息事件
+		// 单纯的获取原始消息，消息会被转化成以下特殊事件
+		virtual void OnMessage(const g2d::Message& message) { }
+
 		// 节点局部坐标变化之后，第一次更新的事件
 		// 一般AABB的变换在这里计算。
 		// 顺序在 OnUpdate之后
 		virtual void OnUpdateMatrixChanged() { }
+
+		// 当光标碰到节点对象(Entity)的时候触发
+		// 参数是前一个光标悬停的对象
+		// 直接从未悬停状态下触碰对象时参数为空
+		virtual void OnCursorEnterFrom(SceneNode* adjacency, const g2d::Mouse&, const g2d::Keyboard&) { }
+
+		// 当光标悬停在物体上的时候持续触发
+		virtual void OnCursorHovering(const g2d::Mouse&, const g2d::Keyboard&) { }
+
+		// 当光标离开节点对象(Entity)的时候触发
+		// 参数是当前光标悬停的对象
+		// 如果离开实体后光标没有触碰对象，此参数为空
+		virtual void OnCursorLeaveTo(SceneNode* adjacency, const g2d::Mouse&, const g2d::Keyboard&) { }
+
+		// 单击鼠标事件
+		virtual void OnLClick(const g2d::Mouse&, const g2d::Keyboard&) { }
+		virtual void OnRClick(const g2d::Mouse&, const g2d::Keyboard&) { }
+		virtual void OnMClick(const g2d::Mouse&, const g2d::Keyboard&) { }
+
+		// 双击鼠标的事件
+		virtual void OnLDoubleClick(const g2d::Mouse&, const g2d::Keyboard&) { }
+		virtual void OnRDoubleClick(const g2d::Mouse&, const g2d::Keyboard&) { }
+		virtual void OnMDoubleClick(const g2d::Mouse&, const g2d::Keyboard&) { }
+
+		// 光标拖拽开始
+		virtual void OnLDragBegin(const g2d::Mouse&, const g2d::Keyboard&) { }
+		virtual void OnRDragBegin(const g2d::Mouse&, const g2d::Keyboard&) { }
+		virtual void OnMDragBegin(const g2d::Mouse&, const g2d::Keyboard&) { }
+
+		// 没有触碰到别的物体的时候，光标拖拽中
+		virtual void OnLDragging(const g2d::Mouse&, const g2d::Keyboard&) { }
+		virtual void OnRDragging(const g2d::Mouse&, const g2d::Keyboard&) { }
+		virtual void OnMDragging(const g2d::Mouse&, const g2d::Keyboard&) { }
+
+		// 没有触碰到别的物体的时候，鼠标拖拽结时
+		virtual void OnLDragEnd(const g2d::Mouse&, const g2d::Keyboard&) { }
+		virtual void OnRDragEnd(const g2d::Mouse&, const g2d::Keyboard&) { }
+		virtual void OnMDragEnd(const g2d::Mouse&, const g2d::Keyboard&) { }
+
+		// 光标触碰到别的物体的时候，鼠标拖拽中
+		// 如果dropped 是空的话，会把消息转发到OnDragging
+		virtual void OnLDropping(SceneNode* dropped, const g2d::Mouse&, const g2d::Keyboard&) { }
+		virtual void OnRDropping(SceneNode* dropped, const g2d::Mouse&, const g2d::Keyboard&) { }
+		virtual void OnMDropping(SceneNode* dropped, const g2d::Mouse&, const g2d::Keyboard&) { }
+
+		// 光标触碰到别的物体的时候，鼠标拖拽结束
+		virtual void OnLDropTo(SceneNode* dropped, const g2d::Mouse&, const g2d::Keyboard&) { }
+		virtual void OnRDropTo(SceneNode* dropped, const g2d::Mouse&, const g2d::Keyboard&) { }
+		virtual void OnMDropTo(SceneNode* dropped, const g2d::Mouse&, const g2d::Keyboard&) { }
+
+		// 键位被触发，与持续按下的情况互斥
+		virtual void OnKeyPress(KeyCode key, const g2d::Mouse&, const g2d::Keyboard& keyboard) { }
+
+		// 键位被持续按下的第一下
+		virtual void OnKeyPressingBegin(KeyCode key, const g2d::Mouse&, const g2d::Keyboard& keyboard) { }
+
+		// 键位被持续按下
+		virtual void OnKeyPressing(KeyCode key, const g2d::Mouse&, const g2d::Keyboard& keyboard) { }
+
+		// 键位被持续按下的最后一下
+		virtual void OnKeyPressingEnd(KeyCode key, const g2d::Mouse&, const g2d::Keyboard& keyboard) { }
+
+		
+	};
+
+	// 实体基类，节点逻辑的实现全在entity内
+	// 挂在场景节点上，一个SceneNode只能挂一个Entity
+	// 重载 EventReceiver的接口已获得自定义事件响应
+	class G2DAPI Entity : public GObject, public EventReceiver
+	{
+	public:
+		// 用户自定义实体需要实现内存释放的接口
+		// 引擎内部会调用这个接口释放entity资源
+		// 只会在析构时候被调用
+		virtual void Release() = 0;
+
+		// 局部坐标系下节点的包围盒大小
+		virtual const gml::aabb2d& GetLocalAABB() const = 0;
+
+		// 节点在世界空间中包围盒的大小
+		// 默认实现用世界矩阵变换局部坐标系下的包围盒
+		virtual gml::aabb2d GetWorldAABB() const;
 
 		// entity附着关联的场景节点
 		// 这个接口一般提供给用户自定义entity内部获取node相关属性
@@ -141,6 +214,10 @@ namespace g2d
 
 		// 摄像机是否被启用
 		virtual bool IsActivity() const = 0;
+
+		virtual gml::vec2 ScreenToWorld(const gml::coord& pos) const = 0;
+
+		virtual gml::coord WorldToScreen(const gml::vec2& pos) const = 0;
 	};
 
 	// 场景节点，在场景中是一个以树形形式组成
@@ -157,11 +234,11 @@ namespace g2d
 
 		// 获取同级节点的下一个节点
 		// 同级最后一个节点返回nullptr
-		virtual SceneNode* GetPrevSiblingNode() const  = 0;
+		virtual SceneNode* GetPrevSiblingNode() const = 0;
 
 		// 获取同级节点的上一个节点
 		// 同级第一个节点返回nullptr
-		virtual SceneNode* GetNextSiblingNode() const  = 0;
+		virtual SceneNode* GetNextSiblingNode() const = 0;
 
 		// 创建子节点，必须传入Entity对象
 		virtual SceneNode* CreateSceneNodeChild(Entity*, bool autoRelease) = 0;
@@ -228,6 +305,9 @@ namespace g2d
 		// 获得节点Roll旋转
 		virtual gml::radian GetRotation() const = 0;
 
+		// 获得节点世界坐标的位置
+		virtual gml::vec2 GetWorldPosition() = 0;
+
 		// 获取节点绑定的Entity对象
 		virtual Entity* GetEntity() const = 0;
 
@@ -239,6 +319,12 @@ namespace g2d
 
 		// 节点可见性Mask的设置
 		virtual uint32_t GetVisibleMask() const = 0;
+
+		// 把坐标转换节点局部空间内
+		virtual gml::vec2 WorldToLocal(const gml::vec2& pos) = 0;
+
+		// 把坐标转换节点同级的局部空间
+		virtual gml::vec2 WorldToParent(const gml::vec2& pos) = 0;
 	};
 
 	class G2DAPI Scene : public SceneNode
@@ -259,11 +345,7 @@ namespace g2d
 		virtual Camera* GetCameraByIndex(uint32_t index) const = 0;
 
 		// 把场景中的物体加入渲染队列
-		// 引擎用户主动调用
+		// 需要用户主动调用
 		virtual void Render() = 0;
-
-		// 更细场景
-		// 引擎用户主动调用
-		virtual void Update(uint32_t elapsedTime) = 0;
 	};
 }

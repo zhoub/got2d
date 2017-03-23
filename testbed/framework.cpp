@@ -4,8 +4,7 @@
 #include <time.h>
 #include <g2dengine.h>
 #include <g2drender.h>
-
-#include <WinUser.h>
+#include <g2dmessage.h>
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -16,19 +15,38 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		PostQuitMessage(0);
 	}
 	return 0;
-
+	case WM_ACTIVATE:
+	case WM_LBUTTONDOWN:
+	case WM_RBUTTONDOWN:
+	case WM_MBUTTONDOWN:
+	case WM_LBUTTONUP:
+	case WM_RBUTTONUP:
+	case WM_MBUTTONUP:
+	case WM_MOUSEMOVE:
+	case WM_LBUTTONDBLCLK:
+	case WM_RBUTTONDBLCLK:
+	case WM_MBUTTONDBLCLK:
+	case WM_KEYDOWN:
+	case WM_KEYUP:
+	{
+		Framework* pFramework = (Framework*)::GetWindowLongPtrW(hWnd, 0);
+		pFramework->OnWindowMessage(message,
+			static_cast<uint32_t>(wParam),
+			static_cast<uint32_t>(lParam)
+		);
+	}
+	break;
 	case WM_SIZE:
 	{
 		RECT rect;
 		::GetClientRect(hWnd, &rect);
 		Framework* pFramework = (Framework*)::GetWindowLongPtrW(hWnd, 0);
-		pFramework->OnResize(rect.right - rect.left, rect.bottom - rect.top);
+		pFramework->OnWindowResize(rect.right - rect.left, rect.bottom - rect.top);
 	}
-	return 0;
+	break;
+	}
 
-	default:
-		return DefWindowProc(hWnd, message, wParam, lParam);
-	}
+	return DefWindowProc(hWnd, message, wParam, lParam);
 }
 
 int AutoWinClassRegister::s_initialCount = 0;
@@ -43,7 +61,7 @@ AutoWinClassRegister::AutoWinClassRegister(HINSTANCE hInstance)
 		::ZeroMemory(&wcex, sizeof(WNDCLASSEX));
 
 		wcex.cbSize = sizeof(WNDCLASSEX);
-		wcex.style = CS_HREDRAW | CS_VREDRAW;
+		wcex.style = CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS;
 		wcex.lpfnWndProc = WndProc;
 		wcex.cbClsExtra = 0;
 		wcex.cbWndExtra = sizeof(Framework*);
@@ -72,7 +90,7 @@ AutoWinClassRegister::~AutoWinClassRegister()
 Framework::Framework(HINSTANCE instance)
 	: m_autoClassRegister(instance)
 {
-
+	OnMessageInternal = &Framework::EmptyMessageHandler;
 }
 
 Framework::~Framework()
@@ -96,6 +114,23 @@ Framework::~Framework()
 void Framework::QuitApp()
 {
 	m_running = false;
+}
+
+
+
+void Framework::SetCursorPos(const gml::coord& pos)
+{
+	POINT p = { pos.x, pos.y };
+	::ClientToScreen(m_hWindow, &p);
+	::SetCursorPos(p.x, p.y);
+}
+
+gml::coord Framework::GetCursorPos()
+{
+	POINT p;
+	::GetCursorPos(&p);
+	::ScreenToClient(m_hWindow, &p);
+	return { p.x, p.y };
 }
 
 const std::wstring& Framework::GetWindowTitle()
@@ -191,6 +226,11 @@ void Framework::FirstTick()
 	{
 		OnStart();
 	}
+
+	if (OnMessage != nullptr)
+	{
+		OnMessageInternal = &Framework::SolidMessageHandler;
+	}
 }
 
 int Framework::MainLoop()
@@ -227,15 +267,15 @@ int Framework::MainLoop()
 //return false表示关闭窗口退出。
 bool Framework::Tick()
 {
-	auto elapseTime = timeGetTime() - m_lastTimeStamp;
-	if (elapseTime > m_tickInterval)
+	auto deltaTime = timeGetTime() - m_lastTimeStamp;
+	if (deltaTime > m_tickInterval)
 	{
-		m_elapsedTime += elapseTime;
+		m_elapsedTime += deltaTime;
 		m_lastTimeStamp = timeGetTime();
 		++m_frameCount;
 		if (OnUpdate != nullptr)
 		{
-			return OnUpdate(elapseTime);
+			return OnUpdate(deltaTime);
 		}
 		else
 		{
@@ -259,7 +299,7 @@ void Framework::DestroyApp()
 	m_initial = false;
 }
 
-void Framework::OnResize(uint32_t width, uint32_t height)
+void Framework::OnWindowResize(uint32_t width, uint32_t height)
 {
 	//要在初始化之后再做这件事情
 	if (g2d::IsEngineInitialized())
@@ -267,5 +307,19 @@ void Framework::OnResize(uint32_t width, uint32_t height)
 		g2d::GetEngine()->GetRenderSystem()->OnResize(width, height);
 	}
 }
+
+void Framework::SolidMessageHandler(const g2d::Message& message)
+{
+	if (message.Event != g2d::MessageEvent::Invalid)
+		OnMessage(message);
+}
+
+void Framework::OnWindowMessage(uint32_t m, uint32_t wp, uint32_t lp)
+{
+	g2d::Message message = g2d::TranslateMessageWin32(m, wp, lp);
+	(this->*OnMessageInternal)(message);
+}
+
+
 
 

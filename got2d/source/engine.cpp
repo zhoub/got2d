@@ -1,6 +1,7 @@
 #include "engine.h"
 #include "inner_utility.h"
 #include "scope_utility.h"
+#include "input.h"
 #include <algorithm>
 
 uint32_t G2DAPI NextClassID()
@@ -39,7 +40,7 @@ bool g2d::Engine::Initialize(const Config& config)
 	}
 
 	fb.cancel();
-	return true;	
+	return true;
 }
 
 void g2d::Engine::Uninitialize()
@@ -60,9 +61,42 @@ Engine::~Engine()
 	m_renderSystem.Destroy();
 }
 
+void Engine::RemoveScene(::Scene& scene)
+{
+	auto newEnd = std::remove(std::begin(m_scenes), std::end(m_scenes), &scene);
+	m_scenes.erase(newEnd, std::end(m_scenes));
+}
+
 g2d::Scene* Engine::CreateNewScene(float boundSize)
 {
-	return new Scene(boundSize);
+	auto scene = new Scene(boundSize);
+	m_scenes.push_back(scene);
+	return scene;
+}
+
+void Engine::Update(uint32_t deltaTime)
+{
+	m_elapsedTime += deltaTime;
+
+	GetKeyboard().Update(m_elapsedTime);
+	GetMouse().Update(m_elapsedTime);
+
+	for (auto& scene : m_scenes)
+	{
+		scene->Update(m_elapsedTime, deltaTime);
+	}
+}
+
+void Engine::OnMessage(const g2d::Message& message)
+{
+	GetKeyboard().OnMessage(message, m_elapsedTime);
+	GetMouse().OnMessage(message, m_elapsedTime);
+
+	for (auto& scene : m_scenes)
+	{
+		scene->OnMessage(message, m_elapsedTime);
+	}
+
 }
 
 bool Engine::CreateRenderSystem(void* nativeWindow)

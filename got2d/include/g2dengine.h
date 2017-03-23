@@ -1,5 +1,6 @@
 #pragma once
 #include <g2dconfig.h>
+#include <g2dmessage.h>
 
 namespace g2d
 {
@@ -42,16 +43,24 @@ namespace g2d
 		// 需要设置场景的最大边界，增加可视化裁剪效率
 		// 在场景边界之外的对象，每次渲染之前都会进行可见性判断
 		virtual Scene* CreateNewScene(float boundSize) = 0;
+
+		// 引擎更新，场景，特效等物体
+		// 需要用户主动调用
+		virtual void Update(uint32_t deltaTime) = 0;
+
+		// 当用户输入的时候，往所有场景节点派发消息
+		// 需要用户主动调用
+		virtual void OnMessage(const Message& message) = 0;
 	};
 
 	inline bool IsEngineInitialized()
-	{ 
+	{
 		return g2d::Engine::IsInitialized();
 	}
 
 	inline Engine* GetEngine()
-	{ 
-		return g2d::Engine::Instance(); 
+	{
+		return g2d::Engine::Instance();
 	}
 }
 
