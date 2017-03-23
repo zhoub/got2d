@@ -8,7 +8,9 @@ Scene::Scene(float boundSize)
 	: m_spatial(boundSize)
 	, m_mouseButtonState{ 0, 1, 2 }
 {
+	//for main camera
 	CreateCameraNode();
+
 	RegisterKeyEventReceiver();
 	RegisterMouseEventReceiver();
 }
@@ -153,6 +155,7 @@ void Scene::UnRegisterMouseEventReceiver()
 	GetMouse().OnPressing -= m_mousePressingReceiver;
 	GetMouse().OnPressingEnd -= m_mousePressingEndReceiver;
 	GetMouse().OnMoving -= m_mouseMovingReceiver;
+	GetMouse().OnDoubleClick -= m_mouseDoubleClickReceiver;
 }
 
 void Scene::Update(uint32_t elapsedTime, uint32_t deltaTime)

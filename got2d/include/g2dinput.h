@@ -14,9 +14,11 @@ namespace g2d
 	};
 
 	// 键盘状态获取接口
-	class Keyboard
+	class G2DAPI Keyboard
 	{
 	public:
+		static Keyboard& Instance();
+
 		// 键盘按键是否被按下
 		virtual SwitchState GetPressState(KeyCode key) const = 0;
 
@@ -34,9 +36,11 @@ namespace g2d
 	};
 
 	// 鼠标状态获取接口
-	class Mouse
+	class G2DAPI Mouse
 	{
 	public:
+		static Mouse& Instance();
+
 		// 光标的屏幕坐标
 		virtual const gml::coord& GetCursorPosition() const = 0;
 
@@ -58,4 +62,14 @@ namespace g2d
 
 		bool IsJustPressed(MouseButton button) { return GetPressState(button) == SwitchState::JustPressed; }
 	};
+
+	inline Keyboard& GetKeyboard()
+	{
+		return Keyboard::Instance();
+	}
+
+	inline Mouse& GetMouse()
+	{
+		return Mouse::Instance();
+	}
 }

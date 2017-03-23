@@ -180,7 +180,7 @@ private:
 
 namespace g2d
 {
-	Message G2DAPI TranslateMessageWin32(uint32_t message, uint32_t wparam, uint32_t lparam)
+	G2DAPI Message TranslateMessageWin32(uint32_t message, uint32_t wparam, uint32_t lparam)
 	{
 		static const Mapping mapping;
 		if (mapping.ExistMessage(message))
@@ -199,8 +199,6 @@ namespace g2d
 				*/
 				int x = GET_X_LPARAM(lparam);
 				int y = GET_Y_LPARAM(lparam);
-				bool ctrl = (wparam & MK_CONTROL) != 0;
-				bool shift = (wparam & MK_SHIFT) != 0;
 				return Message(msg, x, y);
 			}
 

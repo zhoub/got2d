@@ -123,5 +123,5 @@ namespace g2d
 		Message(const Message& m, KeyCode key);
 	};
 
-	Message G2DAPI TranslateMessageWin32(uint32_t message, uint32_t wparam, uint32_t lparam);
+	G2DAPI Message TranslateMessageWin32(uint32_t message, uint32_t wparam, uint32_t lparam);
 }

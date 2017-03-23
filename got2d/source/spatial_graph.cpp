@@ -188,7 +188,7 @@ void SpatialGraph::Add(g2d::Entity& entity)
 	}
 	else
 	{
-		//m_root->m_isEmpty = false;
+		// FOR HINT: m_root->m_isEmpty = false;
 		node = m_root->AddToDynamicList(entity);
 	}
 	m_linkRef[&entity] = node;

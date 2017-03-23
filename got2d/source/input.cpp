@@ -6,6 +6,16 @@ Keyboard Keyboard::Instance;
 
 Mouse Mouse::Instance;
 
+g2d::Keyboard& g2d::Keyboard::Instance()
+{
+	return ::GetKeyboard();
+}
+
+g2d::Mouse& g2d::Mouse::Instance()
+{
+	return ::GetMouse();
+}
+
 bool KeyEventReceiver::operator==(const KeyEventReceiver& other) const
 {
 	return (UserData == other.UserData && Functor == other.Functor);

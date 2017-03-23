@@ -90,7 +90,7 @@ AutoWinClassRegister::~AutoWinClassRegister()
 Framework::Framework(HINSTANCE instance)
 	: m_autoClassRegister(instance)
 {
-	OnMessageInternal = [](const g2d::Message& message) {};
+	OnMessageInternal = &Framework::EmptyMessageHandler;
 }
 
 Framework::~Framework()
@@ -229,11 +229,7 @@ void Framework::FirstTick()
 
 	if (OnMessage != nullptr)
 	{
-		OnMessageInternal = [&](const g2d::Message& message)
-		{
-			if (message.Event != g2d::MessageEvent::Invalid)
-				OnMessage(message);
-		};
+		OnMessageInternal = &Framework::SolidMessageHandler;
 	}
 }
 
@@ -312,10 +308,18 @@ void Framework::OnWindowResize(uint32_t width, uint32_t height)
 	}
 }
 
+void Framework::SolidMessageHandler(const g2d::Message& message)
+{
+	if (message.Event != g2d::MessageEvent::Invalid)
+		OnMessage(message);
+}
+
 void Framework::OnWindowMessage(uint32_t m, uint32_t wp, uint32_t lp)
 {
 	g2d::Message message = g2d::TranslateMessageWin32(m, wp, lp);
-	OnMessageInternal(message);
+	(this->*OnMessageInternal)(message);
 }
+
+
 
 

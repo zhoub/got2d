@@ -510,8 +510,8 @@ gml::coord RenderSystem::ViewToScreen(const gml::vec2 & view) const
 {
 	int wWidth = static_cast<int>(GetWindowWidth());
 	int wHeight = static_cast<int>(GetWindowHeight());
-	int x = (int)(view.x + wWidth * 0.5f + 0.5f);
-	int y = (int)(view.y + wHeight* 0.5f + 0.5f);
+	int x = static_cast<int>(round(view.x + wWidth * 0.5f));
+	int y = static_cast<int>(round(view.y + wHeight* 0.5f));
 	return { x, y };
 }
 

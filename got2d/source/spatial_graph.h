@@ -6,6 +6,7 @@
 #include "scope_utility.h"
 
 class Camera;
+
 class QuadTreeNode
 {
 public:

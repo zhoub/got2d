@@ -62,5 +62,9 @@ private:
 	uint32_t m_tickInterval;
 	bool m_running = true;
 	bool m_initial = false;
-	std::function<void(const g2d::Message& message)> OnMessageInternal;
+
+	typedef void(Framework::*MessageHandler)(const g2d::Message& message);
+	void EmptyMessageHandler(const g2d::Message& message) { }
+	void SolidMessageHandler(const g2d::Message& message);
+	MessageHandler OnMessageInternal;
 };
