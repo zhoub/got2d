@@ -123,7 +123,8 @@ private:
 	uint32_t m_visibleMask = g2d::DEF_VISIBLE_MASK;
 
 	std::vector<::SceneNode*> m_children;
-	std::vector<::SceneNode*> m_releasedNodes;
+	std::vector<::SceneNode*> m_addedChildren;
+	std::vector<::SceneNode*> m_releasedChildren;
 
 	struct Component
 	{

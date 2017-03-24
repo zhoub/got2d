@@ -44,12 +44,6 @@ bool BaseNode::_AddComponent(g2d::Component* component, bool autoRelease, g2d::S
 	}
 	else
 	{
-		auto itFound = std::find_if(std::begin(m_components), std::end(m_components), [component](const Component& c) { return component == c.ComponentPtr; });
-		if (itFound != std::end(m_components))
-		{
-			return false;
-		}
-
 		auto itFoundAdded = std::find_if(std::begin(m_addedComponents), std::end(m_addedComponents), [component](const Component& c) { return component == c.ComponentPtr; });
 		if (itFoundAdded != std::end(m_addedComponents))
 		{
@@ -63,6 +57,12 @@ bool BaseNode::_AddComponent(g2d::Component* component, bool autoRelease, g2d::S
 			return true;
 		}
 
+		auto itFound = std::find_if(std::begin(m_components), std::end(m_components), [component](const Component& c) { return component == c.ComponentPtr; });
+		if (itFound != std::end(m_components))
+		{
+			return false;
+		}
+
 		m_addedComponents.push_back({ component , autoRelease });
 		component->SetSceneNode(node);
 		return true;
@@ -71,16 +71,31 @@ bool BaseNode::_AddComponent(g2d::Component* component, bool autoRelease, g2d::S
 
 bool BaseNode::_RemoveComponent(g2d::Component* component, bool forceNotReleased)
 {
-	auto itFound = std::find_if(std::begin(m_components), std::end(m_components), [component](const Component& c) { return component == c.ComponentPtr; });
-	if (itFound != std::end(m_components))
-	{
-		m_releasedComponents.push_back({ itFound->ComponentPtr, forceNotReleased });
-		return true;
-	}
-	else
+	auto itFoundReleased = std::find_if(std::begin(m_releasedComponents), std::end(m_releasedComponents), [component](const Component& c) { return component == c.ComponentPtr; });
+	if (itFoundReleased != std::end(m_releasedComponents))
 	{
 		return false;
 	}
+
+	auto itFoundAdded = std::find_if(std::begin(m_addedComponents), std::end(m_addedComponents), [component](const Component& c) { return component == c.ComponentPtr; });
+	if (itFoundAdded != std::end(m_addedComponents))
+	{
+		if (!forceNotReleased && itFoundAdded->AutoRelease)
+		{
+			itFoundAdded->ComponentPtr->Release();
+		}
+		m_addedComponents.erase(itFoundAdded);
+		return true;
+	}
+
+	auto itFound = std::find_if(std::begin(m_components), std::end(m_components), [component](const Component& c) { return component == c.ComponentPtr; });
+	if (itFound == std::end(m_components))
+	{
+		return false;
+	}
+
+	m_releasedComponents.push_back({ component, forceNotReleased });
+	return true;
 }
 
 g2d::Component* BaseNode::_GetComponentByIndex(uint32_t index) const
@@ -97,18 +112,32 @@ void BaseNode::OnCreateChild(::Scene& scene, ::SceneNode& child)
 
 g2d::SceneNode* BaseNode::_CreateSceneNodeChild(::Scene& scene, ::SceneNode& parent, g2d::Entity& e, bool autoRelease)
 {
-	uint32_t childID = static_cast<uint32_t>(m_children.size());
+	uint32_t childID = static_cast<uint32_t>(m_children.size() + m_addedChildren.size());
 	auto rst = new ::SceneNode(scene, parent, childID, &e, autoRelease);
-	m_children.push_back(rst);
+	if (childID == 0)
+	{
+		m_children.push_back(rst);
+	}
+	else
+	{
+		m_addedChildren.push_back(rst);
+	}
 	OnCreateChild(scene, *rst);
 	return rst;
 }
 
 g2d::SceneNode* BaseNode::_CreateSceneNodeChild(::Scene& scene, g2d::Entity& e, bool autoRelease)
 {
-	uint32_t childID = static_cast<uint32_t>(m_children.size());
+	uint32_t childID = static_cast<uint32_t>(m_children.size() + m_addedChildren.size());
 	auto rst = new ::SceneNode(scene, childID, &e, autoRelease);
-	m_children.push_back(rst);
+	if (childID == 0)
+	{
+		m_children.push_back(rst);
+	}
+	else
+	{
+		m_addedChildren.push_back(rst);
+	}
 	OnCreateChild(scene, *rst);
 	return rst;
 }
@@ -171,8 +200,8 @@ void BaseNode::_Update(uint32_t deltaTime)
 		child->Update(deltaTime);
 	}
 	DelayRemoveChildren();
-
 	DelayRemoveComponents();
+	DelayAddChildren();
 	DelayAddComponents();
 }
 
@@ -215,12 +244,20 @@ void BaseNode::MoveChild(uint32_t from, uint32_t to)
 void BaseNode::Remove(::SceneNode* child)
 {
 	ENSURE(child != nullptr);
-	m_releasedNodes.push_back(child);
+	m_releasedChildren.push_back(child);
+}
+
+void BaseNode::DelayAddChildren()
+{
+	for (auto ac : m_addedChildren)
+	{
+		m_children.push_back(ac);
+	}
 }
 
 void BaseNode::DelayRemoveChildren()
 {
-	for (auto removeChild : m_releasedNodes)
+	for (auto removeChild : m_releasedChildren)
 	{
 		std::replace_if(m_children.begin(), m_children.end(), [&](::SceneNode* child)->bool
 		{
@@ -235,11 +272,21 @@ void BaseNode::DelayRemoveChildren()
 			}
 		}, nullptr);
 	}
-	m_releasedNodes.clear();
+	m_releasedChildren.clear();
 
 	//remove null elements.
 	auto tail = std::remove(m_children.begin(), m_children.end(), nullptr);
 	m_children.erase(tail, m_children.end());
+
+	int index = 0;
+	for (auto& child : m_children)
+	{
+		child->SetChildIndex(index++);
+	}
+	for (auto& child : m_addedChildren)
+	{
+		child->SetChildIndex(index++);
+	}
 }
 
 void BaseNode::DelayRemoveComponents()
