@@ -24,6 +24,53 @@ void BaseNode::EmptyChildren()
 	m_children.clear();
 }
 
+
+bool BaseNode::_AddComponent(g2d::Component* component, bool autoRelease)
+{
+	ENSURE(component != nullptr);
+	uint32_t cOrder = component->GetExecuteOrder();
+	uint32_t lastOrder = m_components.back().ComponentPtr->GetExecuteOrder();
+	if (cOrder < lastOrder)
+	{
+		m_components.push_back({ component , autoRelease });
+		return true;
+	}
+	else //try insert
+	{
+		auto itCur = std::begin(m_components);
+		auto itEnd = std::end(m_components);
+		for (; itCur != itEnd; itCur++)
+		{
+			if (itCur->ComponentPtr == component)
+				return false;
+			else if (itCur->ComponentPtr->GetExecuteOrder() > cOrder)
+				break;
+		}
+		m_components.insert(itCur, { component, autoRelease });
+		return true;
+	}
+}
+
+bool BaseNode::_RemoveComponent(g2d::Component* component)
+{
+	auto itFound = std::find_if(std::begin(m_components), std::end(m_components), [component](const Component& c) { return component == c.ComponentPtr; });
+	if (itFound != std::end(m_components))
+	{
+		m_components.erase(itFound);
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
+g2d::Component* BaseNode::_GetComponentByIndex(uint32_t index) const
+{
+	ENSURE(index < _GetComponentCount());
+	return m_components.at(index).ComponentPtr;
+}
+
 void BaseNode::OnCreateChild(::Scene& scene, ::SceneNode& child)
 {
 	AdjustRenderingOrder();

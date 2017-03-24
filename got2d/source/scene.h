@@ -54,8 +54,6 @@ protected:
 
 	::SceneNode* GetChildByIndex(uint32_t index) const;
 
-	uint32_t GetChildCount() const { return static_cast<uint32_t>(m_children.size()); }
-
 	void MoveChild(uint32_t from, uint32_t to);
 
 	void Remove(::SceneNode* child);
@@ -83,7 +81,17 @@ protected:
 		for (; it != end; it++) func(*child);
 	}
 
-	virtual BaseNode* _GetParent() = 0;
+	virtual BaseNode* _GetParent() { return nullptr; }
+
+	uint32_t GetChildCount() const { return static_cast<uint32_t>(m_children.size()); }
+
+	bool _AddComponent(g2d::Component* component, bool autoRelease);
+
+	bool _RemoveComponent(g2d::Component* component);
+
+	g2d::Component* _GetComponentByIndex(uint32_t index) const;
+
+	uint32_t _GetComponentCount() const { return static_cast<uint32_t>(m_components.size()); }
 
 private:
 	void OnCreateChild(::Scene&, ::SceneNode&);
@@ -101,10 +109,18 @@ private:
 	gml::mat32 m_matrixLocal;
 	bool m_matrixLocalDirty = true;
 	bool m_isVisible = true;
-	uint32_t m_visibleMask = g2d::DEFAULT_VISIBLE_MASK;
+	uint32_t m_visibleMask = g2d::DEF_VISIBLE_MASK;
 
 	std::vector<::SceneNode*> m_children;
 	std::vector<::SceneNode*> m_pendingReleased;
+
+	struct Component
+	{
+		Component(g2d::Component* c, bool ar) : ComponentPtr(c), AutoRelease(ar) { }
+		g2d::Component* ComponentPtr = nullptr;
+		bool AutoRelease = false;
+	};
+	std::vector<Component> m_components;
 };
 
 class SceneNode : public g2d::SceneNode, public BaseNode
@@ -173,6 +189,14 @@ public:	//g2d::SceneNode
 	virtual void MovePrev() override;
 
 	virtual void MoveNext() override;
+
+	virtual bool AddComponent(g2d::Component* component, bool autoRelease) override { return _AddComponent(component, autoRelease); }
+
+	virtual bool RemoveComponent(g2d::Component* component) override { return _RemoveComponent(component); }
+
+	virtual g2d::Component* GetComponentByIndex(uint32_t index) const override { return _GetComponentByIndex(index); }
+
+	virtual uint32_t GetComponentCount() const override { return _GetComponentCount(); }
 
 	virtual const gml::mat32& GetLocalMatrix() override { return _GetLocalMatrix(); }
 
@@ -275,6 +299,14 @@ public: //g2d::SceneNode
 
 	virtual void MoveNext() override { }
 
+	virtual bool AddComponent(g2d::Component* component, bool autoRelease) override { _AddComponent(component, autoRelease); }
+
+	virtual bool RemoveComponent(g2d::Component* component) override { return _RemoveComponent(component); }
+
+	virtual g2d::Component* GetComponentByIndex(uint32_t index) const override { return _GetComponentByIndex(index); }
+
+	virtual uint32_t GetComponentCount() const override { return _GetComponentCount(); }
+
 	virtual const gml::mat32& GetLocalMatrix() override { return _GetLocalMatrix(); }
 
 	virtual const gml::mat32& GetWorldMatrix() override { return _GetLocalMatrix(); }
@@ -325,9 +357,6 @@ public:	//g2d::Scene
 	virtual g2d::Camera* GetCameraByIndex(uint32_t) const override;
 
 	virtual void Render() override;
-
-private:	//BaseNode
-	virtual ::BaseNode* _GetParent() override { return nullptr; }
 
 	virtual void AdjustRenderingOrder() override;
 
