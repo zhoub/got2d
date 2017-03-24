@@ -18,6 +18,7 @@ gml::aabb2d g2d::Entity::GetWorldAABB() const
 
 void g2d::Entity::SetSceneNode(g2d::SceneNode* node)
 {
+	ENSURE(node != nullptr);
 	m_sceneNode = node;
 }
 
@@ -29,6 +30,12 @@ void g2d::Entity::SetRenderingOrder(uint32_t order)
 uint32_t g2d::Entity::GetVisibleMask() const
 {
 	return GetSceneNode()->GetVisibleMask();
+}
+
+void g2d::Component::SetSceneNode(g2d::SceneNode* node)
+{
+	ENSURE(node != nullptr);
+	m_sceneNode = node;
 }
 
 Quad::Quad()
@@ -188,5 +195,4 @@ gml::coord Camera::WorldToScreen(const gml::vec2& pos) const
 	auto renderSystem = g2d::GetEngine()->GetRenderSystem();
 	auto viewPos = gml::transform_point(m_matView, pos);
 	return renderSystem->ViewToScreen(viewPos);
-
 }

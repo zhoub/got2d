@@ -105,6 +105,8 @@ void Testbed::Start()
 	Hexgon* hexgonEntity = new Hexgon();
 	hexgonNode = mainScene->CreateSceneNodeChild(hexgonEntity, true);
 	hexgonNode->SetPosition({ 0,0 });
+	hexgonNode->AddComponent(new HexgonColorChanger(), true);
+	hexgonNode->AddComponent(new EntityDragging(), true);
 }
 
 void Testbed::End()

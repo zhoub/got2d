@@ -31,5 +31,9 @@ uint32_t G2DAPI NextClassID();
 #define RTTI_IMPL \
 public:\
 	virtual uint32_t GetClassID() const override \
+	{ return GetStaticClassID(); }\
+	static uint32_t GetStaticClassID()\
 	{ static uint32_t s_ClassID = NextClassID(); return s_ClassID; }\
 private:
+
+template<typename T> bool Is(GObject* gobj) { return gobj->GetClassID() == T::GetStaticClassID(); }

@@ -7,8 +7,11 @@
 #include <gmlrect.h>
 namespace g2d
 {
-	constexpr uint32_t DEFAULT_VISIBLE_MASK = 0xFFFFFFFF;
+	constexpr uint32_t DEF_VISIBLE_MASK = 0xFFFFFFFF;
+	constexpr int DEF_COMPONENT_ORDER = 0x5000;
 
+	class Component;
+	class Entity;
 	class Camera;
 	class SceneNode;
 	class Scene;
@@ -108,8 +111,37 @@ namespace g2d
 
 		// 键位被持续按下的最后一下
 		virtual void OnKeyPressingEnd(KeyCode key, const g2d::Mouse&, const g2d::Keyboard& keyboard) { }
+	};
 
-		
+	// 组件基类，挂在场景节点上，一个SceneNode可以悬挂多个Component
+	// 因为实体和节点是一一对应的， 当用户使用引擎内置的实体的时候，无法定制消息
+	// 组件的设置，是为了给用户提供使用系统内置的实体，又需要处理自定义消息的能力。
+	// 重载 EventReceiver 的接口已获得自定义事件响应
+	class G2DAPI Component : public GObject, public EventReceiver
+	{
+		SceneNode* m_sceneNode = nullptr;
+	public:
+		// 用户自定义实体需要组件的内存释放的接口
+		// 引擎内部会调用这个接口释放entity资源
+		// 只会在析构时候被调用
+		virtual void Release() = 0;
+
+		// 用户重载这个函数以修正组件执行顺序
+		// 这个值越大执行顺序约靠后
+		virtual int GetExecuteOrder() const { return DEF_COMPONENT_ORDER; }
+
+		// 组件挂载的的场景节点
+		// 这个接口一般提供给用户自定义的component内部获取node相关属性
+		SceneNode* GetSceneNode() const { return m_sceneNode; }
+
+		// 组件挂载场景节点上的实体对象
+		// 这个接口一般提供给用户自定义的component内部获取entity相关属性
+		Entity* GetEntity() const;
+
+	public://内部使用
+		   // 初始化场景节点的时候
+		   // 设置关联
+		void SetSceneNode(g2d::SceneNode* node);
 	};
 
 	// 实体基类，节点逻辑的实现全在entity内
@@ -117,6 +149,8 @@ namespace g2d
 	// 重载 EventReceiver的接口已获得自定义事件响应
 	class G2DAPI Entity : public GObject, public EventReceiver
 	{
+		SceneNode* m_sceneNode = nullptr;
+		uint32_t m_renderingOrder = 0;
 	public:
 		// 用户自定义实体需要实现内存释放的接口
 		// 引擎内部会调用这个接口释放entity资源
@@ -148,12 +182,9 @@ namespace g2d
 		void SetRenderingOrder(uint32_t order);
 
 		uint32_t GetRenderingOrder() const { return m_renderingOrder; }
-
-	private:
-		SceneNode* m_sceneNode = nullptr;
-		uint32_t m_renderingOrder = 0;
 	};
 
+	// 一张图片
 	class G2DAPI Quad : public Entity
 	{
 	public:
@@ -272,6 +303,19 @@ namespace g2d
 		// 当节点是同级最后一个的时候什么也不做
 		virtual void MoveNext() = 0;
 
+		// 添加组件接口
+		virtual bool AddComponent(Component*, bool autoRelease) = 0;
+
+		// 移除确定组件
+		virtual bool RemoveComponent(Component*) = 0;
+
+		// 根据下标索引获取组件，
+		// 注意， 不同组件会根据优先级变化，组件的索引是会发生改变的
+		virtual Component* GetComponentByIndex(uint32_t index) const = 0;
+
+		// 组件的个数
+		virtual uint32_t GetComponentCount() const = 0;
+
 		// 当前节点的局部矩阵
 		virtual const gml::mat32& GetLocalMatrix() = 0;
 
@@ -339,6 +383,9 @@ namespace g2d
 		virtual gml::vec2 WorldToParent(const gml::vec2& pos) = 0;
 	};
 
+	// 根据类型获取
+	template<typename T> Component* GetComponent(SceneNode* node);
+
 	class G2DAPI Scene : public SceneNode
 	{
 	public:
@@ -360,4 +407,21 @@ namespace g2d
 		// 需要用户主动调用
 		virtual void Render() = 0;
 	};
+
+	inline Entity* Component::GetEntity() const
+	{
+		return GetSceneNode()->GetEntity();
+	}
+
+	template<typename T> Component* GetComponent(SceneNode* node)
+	{
+		auto count = node->GetComponentCount();
+		for (uint32_t i = 0; i < count; i++)
+		{
+			auto component = node->GetComponentByIndex(i);
+			if (T::GetStaticClassID() == component->GetClassID())
+				return component;
+		}
+		return nullptr;
+	}
 }

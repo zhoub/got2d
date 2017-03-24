@@ -83,7 +83,7 @@ public:	//g2d::camera
 
 private:
 	uint32_t m_id;
-	uint32_t m_visibleMask = g2d::DEFAULT_VISIBLE_MASK;
+	uint32_t m_visibleMask = g2d::DEF_VISIBLE_MASK;
 	int m_renderingOrder = 0;
 	bool m_activity = true;
 	gml::mat32 m_matView;
