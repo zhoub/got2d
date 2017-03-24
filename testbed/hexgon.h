@@ -114,6 +114,7 @@ private:
 	g2d::Material* m_material;
 };
 
+class EntityDragging;
 class HexgonColorChanger : public g2d::Component
 {
 	RTTI_IMPL;
@@ -150,13 +151,7 @@ public: //events
 		hexgonEntity->SetColors(colors);
 	}
 
-	virtual void OnLDoubleClick(const g2d::Mouse& mouse, const g2d::Keyboard& keyboard) override
-	{
-		for (int i = 0; i < 7; i++)
-		{
-			colors[i] = gml::color4::green();
-		}
-	}
+	virtual void OnLDoubleClick(const g2d::Mouse& mouse, const g2d::Keyboard& keyboard) override;
 
 	virtual void OnLDragBegin(const g2d::Mouse& mouse, const g2d::Keyboard& keyboard) override
 	{
@@ -182,6 +177,7 @@ public: //events
 
 	Hexgon* hexgonEntity;
 	std::vector<gml::color4> colors;
+	EntityDragging*  dragComponent = nullptr;
 };
 
 class EntityDragging : public g2d::Component
@@ -204,3 +200,23 @@ public: //implement
 	}
 	gml::vec2 m_dragOffset;
 };
+
+void HexgonColorChanger::OnLDoubleClick(const g2d::Mouse& mouse, const g2d::Keyboard& keyboard)
+{
+	/*
+	for (int i = 0; i < 7; i++)
+	{
+	colors[i] = gml::color4::green();
+	}
+	*/
+	auto component = g2d::GetComponent<EntityDragging>(GetSceneNode());
+	if (component != nullptr)
+	{
+		dragComponent = component;
+		GetSceneNode()->RemoveComponentWithoutReleased(component);
+	}
+	else
+	{
+		GetSceneNode()->AddComponent(dragComponent, true);
+	}
+}

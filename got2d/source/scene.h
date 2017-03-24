@@ -91,7 +91,7 @@ protected:
 
 	bool _AddComponent(g2d::Component* component, bool autoRelease, g2d::SceneNode* node);
 
-	bool _RemoveComponent(g2d::Component* component);
+	bool _RemoveComponent(g2d::Component* component, bool forceNotReleased);
 
 	g2d::Component* _GetComponentByIndex(uint32_t index) const;
 
@@ -107,7 +107,13 @@ private:
 
 	void SetLocalMatrixDirty();
 
-	void RemoveReleasedChildren();
+	void DelayAddChildren();
+
+	void DelayRemoveChildren();
+
+	void DelayRemoveComponents();
+
+	void DelayAddComponents();
 
 	virtual void AdjustRenderingOrder() = 0;
 
@@ -121,7 +127,8 @@ private:
 	uint32_t m_visibleMask = g2d::DEF_VISIBLE_MASK;
 
 	std::vector<::SceneNode*> m_children;
-	std::vector<::SceneNode*> m_pendingReleased;
+	std::vector<::SceneNode*> m_addedChildren;
+	std::vector<::SceneNode*> m_releasedChildren;
 
 	struct Component
 	{
@@ -130,6 +137,8 @@ private:
 		bool AutoRelease = false;
 	};
 	std::vector<Component> m_components;
+	std::vector<Component> m_addedComponents;
+	std::vector<Component> m_releasedComponents;
 };
 
 class SceneNode : public g2d::SceneNode, public BaseNode
@@ -207,7 +216,9 @@ public:	//g2d::SceneNode
 
 	virtual bool AddComponent(g2d::Component* component, bool autoRelease) override { return _AddComponent(component, autoRelease, this); }
 
-	virtual bool RemoveComponent(g2d::Component* component) override { return _RemoveComponent(component); }
+	virtual bool RemoveComponent(g2d::Component* component) override { return _RemoveComponent(component, false); }
+
+	virtual bool RemoveComponentWithoutReleased(g2d::Component* component) override { return _RemoveComponent(component, true); }
 
 	virtual g2d::Component* GetComponentByIndex(uint32_t index) const override { return _GetComponentByIndex(index); }
 
@@ -322,7 +333,9 @@ public: //g2d::SceneNode
 
 	virtual bool AddComponent(g2d::Component* component, bool autoRelease) override { return _AddComponent(component, autoRelease, this); }
 
-	virtual bool RemoveComponent(g2d::Component* component) override { return _RemoveComponent(component); }
+	virtual bool RemoveComponent(g2d::Component* component) override { return _RemoveComponent(component, false); }
+
+	virtual bool RemoveComponentWithoutReleased(g2d::Component* component) override { return _RemoveComponent(component, true); }
 
 	virtual g2d::Component* GetComponentByIndex(uint32_t index) const override { return _GetComponentByIndex(index); }
 
