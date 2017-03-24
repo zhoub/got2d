@@ -297,6 +297,9 @@ namespace g2d
 		// 移除确定组件
 		virtual bool RemoveComponent(Component*) = 0;
 
+		// 移除确定组件
+		virtual bool RemoveComponentWithoutReleased(Component*) = 0;
+
 		// 根据下标索引获取组件，
 		// 注意， 不同组件会根据优先级变化，组件的索引是会发生改变的
 		virtual Component* GetComponentByIndex(uint32_t index) const = 0;
@@ -372,7 +375,7 @@ namespace g2d
 	};
 
 	// 根据类型获取
-	template<typename T> Component* GetComponent(SceneNode* node);
+	template<typename T> T* GetComponent(SceneNode* node);
 
 	class G2DAPI Scene : public SceneNode
 	{
@@ -401,14 +404,14 @@ namespace g2d
 		return GetSceneNode()->GetEntity();
 	}
 
-	template<typename T> Component* GetComponent(SceneNode* node)
+	template<typename T> T* GetComponent(SceneNode* node)
 	{
 		auto count = node->GetComponentCount();
 		for (uint32_t i = 0; i < count; i++)
 		{
 			auto component = node->GetComponentByIndex(i);
 			if (T::GetStaticClassID() == component->GetClassID())
-				return component;
+				return reinterpret_cast<T*>(component);
 		}
 		return nullptr;
 	}
