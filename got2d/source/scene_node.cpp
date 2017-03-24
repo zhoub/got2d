@@ -500,7 +500,7 @@ void SceneNode::OnCursorEnterFrom(::SceneNode* adjacency)
 	m_entity->OnCursorEnterFrom(adjacency, GetMouse(), GetKeyboard());
 	TraversalComponent([&](g2d::Component* component)
 	{
-		component->OnCursorLeaveTo(adjacency, GetMouse(), GetKeyboard());
+		component->OnCursorEnterFrom(adjacency, GetMouse(), GetKeyboard());
 	});
 }
 
