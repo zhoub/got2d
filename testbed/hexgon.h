@@ -160,16 +160,7 @@ public: //events
 
 	virtual void OnLDragBegin(const g2d::Mouse& mouse, const g2d::Keyboard& keyboard) override
 	{
-		auto worldP = GetSceneNode()->GetScene()->GetMainCamera()->ScreenToWorld(mouse.GetCursorPosition());
-		m_dragOffset = GetSceneNode()->WorldToLocal(worldP);
 		hexgonEntity->SetColors(gml::color4::yellow());
-	}
-
-	virtual void OnLDragging(const g2d::Mouse& mouse, const g2d::Keyboard& keyboard) override
-	{
-		auto worldP = GetSceneNode()->GetScene()->GetMainCamera()->ScreenToWorld(mouse.GetCursorPosition());
-		auto parentP = GetSceneNode()->WorldToParent(worldP);
-		GetSceneNode()->SetPosition(parentP - m_dragOffset);
 	}
 
 	virtual void OnLDragEnd(const g2d::Mouse& mouse, const g2d::Keyboard& keyboard) override
@@ -191,5 +182,25 @@ public: //events
 
 	Hexgon* hexgonEntity;
 	std::vector<gml::color4> colors;
+};
+
+class EntityDragging : public g2d::Component
+{
+	RTTI_IMPL;
+public: //implement
+	virtual void Release() override { delete this; }
+
+	virtual void OnLDragBegin(const g2d::Mouse& mouse, const g2d::Keyboard& keyboard) override
+	{
+		auto worldP = GetSceneNode()->GetScene()->GetMainCamera()->ScreenToWorld(mouse.GetCursorPosition());
+		m_dragOffset = GetSceneNode()->WorldToLocal(worldP);
+	}
+
+	virtual void OnLDragging(const g2d::Mouse& mouse, const g2d::Keyboard& keyboard) override
+	{
+		auto worldP = GetSceneNode()->GetScene()->GetMainCamera()->ScreenToWorld(mouse.GetCursorPosition());
+		auto parentP = GetSceneNode()->WorldToParent(worldP);
+		GetSceneNode()->SetPosition(parentP - m_dragOffset);
+	}
 	gml::vec2 m_dragOffset;
 };
