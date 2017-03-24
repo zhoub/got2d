@@ -85,13 +85,18 @@ protected:
 
 	uint32_t GetChildCount() const { return static_cast<uint32_t>(m_children.size()); }
 
-	bool _AddComponent(g2d::Component* component, bool autoRelease);
+	bool _AddComponent(g2d::Component* component, bool autoRelease, g2d::SceneNode* node);
 
 	bool _RemoveComponent(g2d::Component* component);
 
 	g2d::Component* _GetComponentByIndex(uint32_t index) const;
 
 	uint32_t _GetComponentCount() const { return static_cast<uint32_t>(m_components.size()); }
+
+	template<typename FUNC> void TraversalComponent(FUNC f)
+	{
+		for (auto& c : m_components) f(c.ComponentPtr);
+	}
 
 private:
 	void OnCreateChild(::Scene&, ::SceneNode&);
@@ -190,7 +195,7 @@ public:	//g2d::SceneNode
 
 	virtual void MoveNext() override;
 
-	virtual bool AddComponent(g2d::Component* component, bool autoRelease) override { return _AddComponent(component, autoRelease); }
+	virtual bool AddComponent(g2d::Component* component, bool autoRelease) override { return _AddComponent(component, autoRelease, this); }
 
 	virtual bool RemoveComponent(g2d::Component* component) override { return _RemoveComponent(component); }
 
@@ -299,7 +304,7 @@ public: //g2d::SceneNode
 
 	virtual void MoveNext() override { }
 
-	virtual bool AddComponent(g2d::Component* component, bool autoRelease) override { _AddComponent(component, autoRelease); }
+	virtual bool AddComponent(g2d::Component* component, bool autoRelease) override { _AddComponent(component, autoRelease, this); }
 
 	virtual bool RemoveComponent(g2d::Component* component) override { return _RemoveComponent(component); }
 

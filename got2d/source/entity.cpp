@@ -31,6 +31,11 @@ uint32_t g2d::Entity::GetVisibleMask() const
 	return GetSceneNode()->GetVisibleMask();
 }
 
+void g2d::Component::SetSceneNode(g2d::SceneNode* node)
+{
+	m_sceneNode = node;
+}
+
 Quad::Quad()
 {
 	uint32_t indices[] = { 0, 1, 2, 0, 2, 3 };
@@ -188,5 +193,4 @@ gml::coord Camera::WorldToScreen(const gml::vec2& pos) const
 	auto renderSystem = g2d::GetEngine()->GetRenderSystem();
 	auto viewPos = gml::transform_point(m_matView, pos);
 	return renderSystem->ViewToScreen(viewPos);
-
 }

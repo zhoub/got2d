@@ -117,7 +117,7 @@ namespace g2d
 	// 因为实体和节点是一一对应的， 当用户使用引擎内置的实体的时候，无法定制消息
 	// 组件的设置，是为了给用户提供使用系统内置的实体，又需要处理自定义消息的能力。
 	// 重载 EventReceiver 的接口已获得自定义事件响应
-	class G2DAPI Component : public GObject, EventReceiver
+	class G2DAPI Component : public GObject, public EventReceiver
 	{
 		SceneNode* m_sceneNode = nullptr;
 	public:
@@ -137,6 +137,11 @@ namespace g2d
 		// 组件挂载场景节点上的实体对象
 		// 这个接口一般提供给用户自定义的component内部获取entity相关属性
 		Entity* GetEntity() const;
+
+	public://内部使用
+		   // 初始化场景节点的时候
+		   // 设置关联
+		void SetSceneNode(g2d::SceneNode* node);
 	};
 
 	// 实体基类，节点逻辑的实现全在entity内

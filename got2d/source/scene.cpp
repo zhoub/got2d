@@ -183,35 +183,40 @@ void Scene::AdjustRenderingOrder()
 
 void Scene::OnMessage(const g2d::Message& message, uint32_t currentTimeStamp)
 {
-	TraversalChildren([&](::SceneNode* child) {
+	TraversalChildren([&](::SceneNode* child)
+	{
 		child->OnMessage(message);
 	});
 }
 
 void Scene::OnKeyPress(g2d::KeyCode key)
 {
-	TraversalChildren([&](::SceneNode* child) {
+	TraversalChildren([&](::SceneNode* child)
+	{
 		child->OnKeyPress(key);
 	});
 }
 
 void Scene::OnKeyPressingBegin(g2d::KeyCode key)
 {
-	TraversalChildren([&](::SceneNode* child) {
+	TraversalChildren([&](::SceneNode* child)
+	{
 		child->OnKeyPressingBegin(key);
 	});
 }
 
 void Scene::OnKeyPressing(g2d::KeyCode key)
 {
-	TraversalChildren([&](::SceneNode* child) {
+	TraversalChildren([&](::SceneNode* child)
+	{
 		child->OnKeyPressing(key);
 	});
 }
 
 void Scene::OnKeyPressingEnd(g2d::KeyCode key)
 {
-	TraversalChildren([&](::SceneNode* child) {
+	TraversalChildren([&](::SceneNode* child)
+	{
 		child->OnKeyPressingEnd(key);
 	});
 }

@@ -28,14 +28,16 @@ bool MouseEventReceiver::operator==(const MouseEventReceiver& other) const
 
 void KeyEvent::NotifyAll(g2d::KeyCode key)
 {
-	Traversal([&](const KeyEventReceiver&receiver) {
+	Traversal([&](const KeyEventReceiver&receiver)
+	{
 		receiver.Functor(receiver.UserData, key);
 	});
 }
 
 void MouseEvent::NotifyAll(g2d::MouseButton button)
 {
-	Traversal([&](const MouseEventReceiver&receiver) {
+	Traversal([&](const MouseEventReceiver&receiver)
+	{
 		receiver.Functor(receiver.UserData, button);
 	});
 }
