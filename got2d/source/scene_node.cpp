@@ -12,6 +12,13 @@ BaseNode::BaseNode()
 
 BaseNode::~BaseNode()
 {
+	for (auto& c : m_components)
+	{
+		if (c.AutoRelease)
+		{
+			c.ComponentPtr->Release();
+		}
+	}
 	EmptyChildren();
 }
 
@@ -28,30 +35,40 @@ void BaseNode::EmptyChildren()
 bool BaseNode::_AddComponent(g2d::Component* component, bool autoRelease, g2d::SceneNode* node)
 {
 	ENSURE(component != nullptr);
-	int cOrder = component->GetExecuteOrder();
-	int lastOrder = m_components.back().ComponentPtr->GetExecuteOrder();
-	if (cOrder < lastOrder)
+	if (m_components.empty())
 	{
 		m_components.push_back({ component , autoRelease });
 		component->SetSceneNode(node);
 		component->OnInitial();
 		return true;
 	}
-	else //try insert
+	else
 	{
-		auto itCur = std::begin(m_components);
-		auto itEnd = std::end(m_components);
-		for (; itCur != itEnd; itCur++)
+		int cOrder = component->GetExecuteOrder();
+		int lastOrder = m_components.back().ComponentPtr->GetExecuteOrder();
+		if (cOrder < lastOrder)
 		{
-			if (itCur->ComponentPtr == component)
-				return false;
-			else if (itCur->ComponentPtr->GetExecuteOrder() > cOrder)
-				break;
+			m_components.push_back({ component , autoRelease });
+			component->SetSceneNode(node);
+			component->OnInitial();
+			return true;
 		}
-		m_components.insert(itCur, { component, autoRelease });
-		component->SetSceneNode(node);
-		component->OnInitial();
-		return true;
+		else //try insert
+		{
+			auto itCur = std::begin(m_components);
+			auto itEnd = std::end(m_components);
+			for (; itCur != itEnd; itCur++)
+			{
+				if (itCur->ComponentPtr == component)
+					return false;
+				else if (itCur->ComponentPtr->GetExecuteOrder() > cOrder)
+					break;
+			}
+			m_components.insert(itCur, { component, autoRelease });
+			component->SetSceneNode(node);
+			component->OnInitial();
+			return true;
+		}
 	}
 }
 

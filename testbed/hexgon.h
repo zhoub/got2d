@@ -4,17 +4,27 @@
 #include <g2drender.h>
 #include <vector>
 
+
+
 class Hexgon : public g2d::Entity
 {
 	RTTI_IMPL;
 public://implement
 	virtual void Release() override { delete this; }
+
 	virtual const gml::aabb2d& GetLocalAABB() const override { return m_aabb; };
+
+	virtual void OnRender() override
+	{
+		g2d::GetEngine()->GetRenderSystem()->RenderMesh(
+			g2d::RenderLayer::Default,
+			m_mesh, m_material,
+			GetSceneNode()->GetWorldMatrix());
+	}
 
 public:
 	Hexgon()
 	{
-		colors.resize(7);
 		//mesh
 		{
 			m_mesh = g2d::Mesh::Create(7, 6 * 3);
@@ -68,17 +78,58 @@ public:
 		m_material->Release();
 	}
 
-	virtual void OnRender() override
+	void GetColors(std::vector<gml::color4>& outColors)
 	{
-		g2d::GetEngine()->GetRenderSystem()->RenderMesh(
-			g2d::RenderLayer::Default,
-			m_mesh, m_material,
-			GetSceneNode()->GetWorldMatrix());
+		if (outColors.size() < 7) outColors.resize(7);
+
+		g2d::GeometryVertex* vertices = m_mesh->GetRawVertices();
+		for (int i = 0; i < 7; i++)
+		{
+			outColors[i] = vertices[i].vtxcolor;
+		}
+	}
+
+	void SetColors(const std::vector<gml::color4>& colors)
+	{
+		int count = __min(colors.size(), 7);
+		g2d::GeometryVertex* vertices = m_mesh->GetRawVertices();
+		for (int i = 0; i < count; i++)
+		{
+			vertices[i].vtxcolor = colors[i];
+		}
+	}
+
+	void SetColors(const gml::color4& color)
+	{
+		g2d::GeometryVertex* vertices = m_mesh->GetRawVertices();
+		for (int i = 0; i < 7; i++)
+		{
+			vertices[i].vtxcolor = color;
+		}
+	}
+
+private:
+	gml::aabb2d m_aabb;
+	g2d::Mesh* m_mesh;
+	g2d::Material* m_material;
+};
+
+class HexgonColorChanger : public g2d::Component
+{
+	RTTI_IMPL;
+public: //implement
+	virtual void Release() override { delete this; }
+
+public: //events
+	virtual void OnInitial() override
+	{
+		colors.resize(7);
+		hexgonEntity = reinterpret_cast<Hexgon*>(GetEntity());
+		hexgonEntity->GetColors(colors);
 	}
 
 	virtual void OnLClick(const g2d::Mouse& mouse, const g2d::Keyboard& keyboard) override
 	{
-		g2d::GeometryVertex* vertices = m_mesh->GetRawVertices();
 		for (int i = 0; i < 7; i++)
 		{
 			colors[i] = gml::color4::random();
@@ -87,34 +138,20 @@ public:
 
 	virtual void OnCursorEnterFrom(g2d::SceneNode* adjacency, const g2d::Mouse& mouse, const g2d::Keyboard& keyboard) override
 	{
-		g2d::GeometryVertex* vertices = m_mesh->GetRawVertices();
-		for (int i = 0; i < 7; i++)
-		{
-			colors[i] = vertices[i].vtxcolor;
-		}
-
+		hexgonEntity->GetColors(colors);
 	}
 	virtual void OnCursorHovering(const g2d::Mouse& mouse, const g2d::Keyboard& keyboard) override
 	{
-		g2d::GeometryVertex* vertices = m_mesh->GetRawVertices();
-		for (int i = 0; i < 7; i++)
-		{
-			vertices[i].vtxcolor = gml::color4::red();
-		}
+		hexgonEntity->SetColors(gml::color4::red());
 	}
 
 	virtual void OnCursorLeaveTo(g2d::SceneNode* adjacency, const g2d::Mouse& mouse, const g2d::Keyboard& keyboard) override
 	{
-		g2d::GeometryVertex* vertices = m_mesh->GetRawVertices();
-		for (int i = 0; i < 7; i++)
-		{
-			vertices[i].vtxcolor = colors[i];
-		}
+		hexgonEntity->SetColors(colors);
 	}
 
 	virtual void OnLDoubleClick(const g2d::Mouse& mouse, const g2d::Keyboard& keyboard) override
 	{
-		g2d::GeometryVertex* vertices = m_mesh->GetRawVertices();
 		for (int i = 0; i < 7; i++)
 		{
 			colors[i] = gml::color4::green();
@@ -125,11 +162,7 @@ public:
 	{
 		auto worldP = GetSceneNode()->GetScene()->GetMainCamera()->ScreenToWorld(mouse.GetCursorPosition());
 		m_dragOffset = GetSceneNode()->WorldToLocal(worldP);
-		g2d::GeometryVertex* vertices = m_mesh->GetRawVertices();
-		for (int i = 0; i < 7; i++)
-		{
-			vertices[i].vtxcolor = gml::color4::yellow();
-		}
+		hexgonEntity->SetColors(gml::color4::yellow());
 	}
 
 	virtual void OnLDragging(const g2d::Mouse& mouse, const g2d::Keyboard& keyboard) override
@@ -141,29 +174,22 @@ public:
 
 	virtual void OnLDragEnd(const g2d::Mouse& mouse, const g2d::Keyboard& keyboard) override
 	{
-		g2d::GeometryVertex* vertices = m_mesh->GetRawVertices();
-		for (int i = 0; i < 7; i++)
-		{
-			vertices[i].vtxcolor = colors[i];
-		}
+		hexgonEntity->SetColors(colors);
 	}
 
 	virtual void OnKeyPress(g2d::KeyCode key, const g2d::Mouse& mouse, const g2d::Keyboard& keyboard) override
 	{
 		if ((int)key == 'C')
 		{
-			g2d::GeometryVertex* vertices = m_mesh->GetRawVertices();
 			for (int i = 0; i < 7; i++)
 			{
-				vertices[i].vtxcolor = colors[i] = gml::color4::random();
+				colors[i] = gml::color4::random();
 			}
+			hexgonEntity->SetColors(colors);
 		}
 	}
 
-private:
-	gml::aabb2d m_aabb;
-	g2d::Mesh* m_mesh;
-	g2d::Material* m_material;
+	Hexgon* hexgonEntity;
 	std::vector<gml::color4> colors;
 	gml::vec2 m_dragOffset;
 };
