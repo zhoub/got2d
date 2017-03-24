@@ -189,6 +189,10 @@ public:
 
 	void OnKeyPressingEnd(g2d::KeyCode key);
 
+	void CollectSceneNodes(std::vector<::SceneNode*>& collection);
+
+	void CollectComponents(std::vector<g2d::Component*>& collection);
+
 public:	//g2d::SceneNode
 	virtual g2d::Scene* GetScene() const override;
 
@@ -307,6 +311,8 @@ public:
 	void Update(uint32_t elapsedTime, uint32_t deltaTime);
 
 	void OnMessage(const g2d::Message& message, uint32_t currentTimeStamp);
+
+	void SceneTreeChanged();
 
 public: //g2d::SceneNode
 	virtual g2d::Scene* GetScene() const override { return const_cast<::Scene*>(this); }
@@ -433,6 +439,12 @@ private:
 
 	void OnMouseMoving();
 
+	void Recollect();
+
+	void CollectSceneNodes();
+
+	void CollectComponents();
+
 	KeyEventReceiver m_keyPressReceiver;
 	KeyEventReceiver m_keyPressingBeginReceiver;
 	KeyEventReceiver m_keyPressingReceiver;
@@ -463,4 +475,8 @@ private:
 	} m_mouseButtonState[3];
 	::SceneNode* m_hoverNode = nullptr;
 	bool m_canTickHovering = false;
+
+	std::vector<::SceneNode*> m_collectionSceneNodes;
+	std::vector<g2d::Component*> m_collectionComponents;
+	bool m_sceneTreeChanged = true;
 };

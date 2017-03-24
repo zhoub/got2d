@@ -100,5 +100,8 @@
     <ClCompile Include="source\message.cpp">
       <Filter>源文件\input</Filter>
     </ClCompile>
+    <ClCompile Include="source\base_nodes.cpp">
+      <Filter>源文件\scene</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

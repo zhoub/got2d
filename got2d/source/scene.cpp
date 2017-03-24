@@ -193,6 +193,11 @@ void Scene::OnMessage(const g2d::Message& message, uint32_t currentTimeStamp)
 	});
 }
 
+void Scene::SceneTreeChanged()
+{
+	m_sceneTreeChanged = true;
+}
+
 void Scene::OnKeyPress(g2d::KeyCode key)
 {
 	TraversalComponent([&](g2d::Component* component)
@@ -262,7 +267,6 @@ void Scene::OnMousePressingBegin(g2d::MouseButton button)
 {
 	m_mouseButtonState[(int)button].OnPressingBegin(m_hoverNode);
 }
-
 
 void Scene::MouseButtonState::OnPressing(::SceneNode* hitNode)
 {
@@ -423,4 +427,31 @@ g2d::Camera* Scene::GetCameraByIndex(uint32_t index) const
 {
 	ENSURE(index < m_cameras.size());
 	return m_cameras[index];
+}
+
+void Scene::Recollect()
+{
+	if (m_sceneTreeChanged)
+	{
+		CollectSceneNodes();
+		CollectComponents();
+	}
+}
+
+void Scene::CollectSceneNodes()
+{
+	m_collectionSceneNodes.clear();
+	TraversalChildren([&](::SceneNode* child)
+	{
+		child->CollectSceneNodes(m_collectionSceneNodes);
+	});
+}
+
+void Scene::CollectComponents()
+{
+	m_collectionComponents.clear();
+	TraversalChildren([&](::SceneNode* child)
+	{
+		child->CollectComponents(m_collectionComponents);
+	});
 }

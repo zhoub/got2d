@@ -91,7 +91,7 @@ public:
 
 	void SetColors(const std::vector<gml::color4>& colors)
 	{
-		int count = __min(colors.size(), 7);
+		int count = __min((int)colors.size(), 7);
 		g2d::GeometryVertex* vertices = m_mesh->GetRawVertices();
 		for (int i = 0; i < count; i++)
 		{
