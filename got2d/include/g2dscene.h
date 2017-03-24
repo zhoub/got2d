@@ -184,6 +184,7 @@ namespace g2d
 		uint32_t GetRenderingOrder() const { return m_renderingOrder; }
 	};
 
+	// 一张图片
 	class G2DAPI Quad : public Entity
 	{
 	public:
@@ -370,7 +371,7 @@ namespace g2d
 		virtual gml::vec2 WorldToParent(const gml::vec2& pos) = 0;
 	};
 
-	//根据类型获取
+	// 根据类型获取
 	template<typename T> Component* GetComponent(SceneNode* node);
 
 	class G2DAPI Scene : public SceneNode

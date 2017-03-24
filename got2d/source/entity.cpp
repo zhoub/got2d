@@ -18,6 +18,7 @@ gml::aabb2d g2d::Entity::GetWorldAABB() const
 
 void g2d::Entity::SetSceneNode(g2d::SceneNode* node)
 {
+	ENSURE(node != nullptr);
 	m_sceneNode = node;
 }
 
@@ -33,6 +34,7 @@ uint32_t g2d::Entity::GetVisibleMask() const
 
 void g2d::Component::SetSceneNode(g2d::SceneNode* node)
 {
+	ENSURE(node != nullptr);
 	m_sceneNode = node;
 }
 
