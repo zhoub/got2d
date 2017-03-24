@@ -19,6 +19,18 @@ BaseNode::~BaseNode()
 			c.ComponentPtr->Release();
 		}
 	}
+	m_components.clear();
+
+	for (auto& c : m_addedComponents)
+	{
+		if (c.AutoRelease)
+		{
+			c.ComponentPtr->Release();
+		}
+	}
+	m_addedComponents.clear();
+	m_releasedComponents.clear();
+
 	EmptyChildren();
 }
 
@@ -29,6 +41,13 @@ void BaseNode::EmptyChildren()
 		delete child;
 	}
 	m_children.clear();
+
+	for (auto& child : m_addedChildren)
+	{
+		delete child;
+	}
+	m_addedChildren.clear();
+	m_releasedChildren.clear();
 }
 
 
@@ -253,6 +272,7 @@ void BaseNode::DelayAddChildren()
 	{
 		m_children.push_back(ac);
 	}
+	m_addedChildren.clear();
 }
 
 void BaseNode::DelayRemoveChildren()
