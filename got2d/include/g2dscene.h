@@ -309,8 +309,11 @@ namespace g2d
 		// 移除确定组件
 		virtual bool RemoveComponent(Component*) = 0;
 
-		// 移除确定组件
+		// 移除确定组件，并且强制不调用Release接口
 		virtual bool RemoveComponentWithoutReleased(Component*) = 0;
+		
+		// 获取某个组件的释放条件，如果组件不存在，返回假。
+		virtual bool IsComponentAutoRelease(Component*) const = 0;
 
 		// 根据下标索引获取组件，
 		// 注意， 不同组件会根据优先级变化，组件的索引是会发生改变的

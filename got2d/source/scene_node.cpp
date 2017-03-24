@@ -12,6 +12,7 @@ BaseNode::BaseNode()
 
 BaseNode::~BaseNode()
 {
+	
 	for (auto& c : m_components)
 	{
 		if (c.AutoRelease)
@@ -29,7 +30,6 @@ BaseNode::~BaseNode()
 		}
 	}
 	m_addedComponents.clear();
-	m_releasedComponents.clear();
 
 	EmptyChildren();
 }
@@ -47,7 +47,6 @@ void BaseNode::EmptyChildren()
 		delete child;
 	}
 	m_addedChildren.clear();
-	m_releasedChildren.clear();
 }
 
 
@@ -115,6 +114,16 @@ bool BaseNode::_RemoveComponent(g2d::Component* component, bool forceNotReleased
 
 	m_releasedComponents.push_back({ component, forceNotReleased });
 	return true;
+}
+
+bool BaseNode::_IsComponentAutoRelease(g2d::Component* component) const
+{
+	auto itFound = std::find_if(std::begin(m_components), std::end(m_components), [component](const Component& c) { return component == c.ComponentPtr; });
+	if (itFound == std::end(m_components))
+	{
+		return false;
+	}
+	return itFound->AutoRelease;
 }
 
 g2d::Component* BaseNode::_GetComponentByIndex(uint32_t index) const

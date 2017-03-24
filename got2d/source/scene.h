@@ -56,7 +56,7 @@ protected:
 
 	::SceneNode* _FirstChild() const { return m_children.empty() ? nullptr : *m_children.begin(); };
 
-	::SceneNode* _LastChild() const { return m_children.empty() ? nullptr : m_children[m_children.size()-1]; }
+	::SceneNode* _LastChild() const { return m_children.empty() ? nullptr : m_children[m_children.size() - 1]; }
 
 	void MoveChild(uint32_t from, uint32_t to);
 
@@ -92,6 +92,8 @@ protected:
 	bool _AddComponent(g2d::Component* component, bool autoRelease, g2d::SceneNode* node);
 
 	bool _RemoveComponent(g2d::Component* component, bool forceNotReleased);
+
+	bool _IsComponentAutoRelease(g2d::Component* component) const;
 
 	g2d::Component* _GetComponentByIndex(uint32_t index) const;
 
@@ -220,6 +222,8 @@ public:	//g2d::SceneNode
 
 	virtual bool RemoveComponentWithoutReleased(g2d::Component* component) override { return _RemoveComponent(component, true); }
 
+	virtual bool IsComponentAutoRelease(g2d::Component* component) const override { return _IsComponentAutoRelease(component); }
+
 	virtual g2d::Component* GetComponentByIndex(uint32_t index) const override { return _GetComponentByIndex(index); }
 
 	virtual uint32_t GetComponentCount() const override { return _GetComponentCount(); }
@@ -336,6 +340,8 @@ public: //g2d::SceneNode
 	virtual bool RemoveComponent(g2d::Component* component) override { return _RemoveComponent(component, false); }
 
 	virtual bool RemoveComponentWithoutReleased(g2d::Component* component) override { return _RemoveComponent(component, true); }
+
+	virtual bool IsComponentAutoRelease(g2d::Component* component) const override { return _IsComponentAutoRelease(component); }
 
 	virtual g2d::Component* GetComponentByIndex(uint32_t index) const override { return _GetComponentByIndex(index); }
 
