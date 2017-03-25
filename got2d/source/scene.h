@@ -8,15 +8,65 @@
 
 
 class SpatialGraph;
+class BaseNode;
 class SceneNode;
 class Scene;
 
+// for collection
+// in order to not to do the converting
+struct NodeComponent
+{
+	NodeComponent(g2d::Component* c, bool ar) : ComponentPtr(c), AutoRelease(ar) { }
+	g2d::Component* ComponentPtr = nullptr;
+	bool AutoRelease = false;
+};
+
 class BaseNode
 {
-	friend class SceneNode;
-	friend class Scene;
+public:
+	virtual BaseNode* _GetParent() { return nullptr; }
+
+	virtual void AdjustRenderingOrder() = 0;
+
+public:
+	::SceneNode* _GetChildByIndex(uint32_t index) const;
+
+	uint32_t _GetChildCount() const { return static_cast<uint32_t>(m_children.size()); }
+
+	void RemoveChildNode(::SceneNode* child);
+
+	void MoveChild(uint32_t from, uint32_t to);
+
+	template<typename FUNC>
+	void TraversalChildrenByIndex(uint32_t startIndex, FUNC func)
+	{
+		for (uint32_t size = static_cast<uint32_t>(m_children.size()); startIndex < size; startIndex++)
+			func(startIndex, m_children[startIndex]);
+	}
+
+	template<typename FUNC>
+	void TraversalChildren(FUNC func)
+	{
+		for (auto& child : m_children) func(child);
+	}
+
+	template<typename FUNC>
+	void InverseTraversalChildren(FUNC func)
+	{
+		auto it = std::rbegin(m_children);
+		auto end = std::rend(m_children);
+		for (; it != end; it++) func(*child);
+	}
+
+	template<typename FUNC> void TraversalComponent(FUNC f)
+	{
+		for (auto& c : m_components) f(c.ComponentPtr);
+	}
+
 protected:
 	BaseNode();
+
+	BaseNode(const BaseNode&) = delete;
 
 	~BaseNode();
 
@@ -50,44 +100,9 @@ protected:
 
 	void _SetVisible(bool visible) { m_isVisible = visible; }
 
-	void _Update(uint32_t deltaTime);
-
-	::SceneNode* _GetChildByIndex(uint32_t index) const;
-
 	::SceneNode* _FirstChild() const { return m_children.empty() ? nullptr : *m_children.begin(); };
 
 	::SceneNode* _LastChild() const { return m_children.empty() ? nullptr : m_children[m_children.size() - 1]; }
-
-	void MoveChild(uint32_t from, uint32_t to);
-
-	void Remove(::SceneNode* child);
-
-	void EmptyChildren();
-
-	template<typename FUNC>
-	void TraversalChildrenByIndex(uint32_t startIndex, FUNC func)
-	{
-		for (uint32_t size = static_cast<uint32_t>(m_children.size()); startIndex < size; startIndex++)
-			func(startIndex, m_children[startIndex]);
-	}
-
-	template<typename FUNC>
-	void TraversalChildren(FUNC func)
-	{
-		for (auto& child : m_children) func(child);
-	}
-
-	template<typename FUNC>
-	void InverseTraversalChildren(FUNC func)
-	{
-		auto it = std::rbegin(m_children);
-		auto end = std::rend(m_children);
-		for (; it != end; it++) func(*child);
-	}
-
-	virtual BaseNode* _GetParent() { return nullptr; }
-
-	uint32_t GetChildCount() const { return static_cast<uint32_t>(m_children.size()); }
 
 	bool _AddComponent(g2d::Component* component, bool autoRelease, g2d::SceneNode* node);
 
@@ -99,25 +114,65 @@ protected:
 
 	uint32_t _GetComponentCount() const { return static_cast<uint32_t>(m_components.size()); }
 
-	template<typename FUNC> void TraversalComponent(FUNC f)
+	void OnUpdateChildren(uint32_t deltaTime);
+
+	void EmptyChildren();
+
+	void OnMessageComponentsAndChildren(const g2d::Message& message);
+
+	void OnKeyPressComponentsAndChildren(g2d::KeyCode key);
+
+	void OnKeyPressingBeginComponentsAndChildren(g2d::KeyCode key);
+
+	void OnKeyPressingComponentsAndChildren(g2d::KeyCode key);
+
+	void OnKeyPressingEndComponentsAndChildren(g2d::KeyCode key);
+
+	template<typename CFUNC>
+	void DispatchComponent(const CFUNC& cf)
 	{
-		for (auto& c : m_components) f(c.ComponentPtr);
+		DelayRemoveComponents();
+		for (auto& c : m_collectionComponents)
+		{
+			cf(c.ComponentPtr);
+		}
+		CollectComponents();
 	}
 
 private:
+	template<typename NFUNC>
+	void DispatchChildren(const NFUNC& nf)
+	{
+		DelayRemoveChildren();
+		for (auto& child : m_collectionChildren)
+		{
+			nf(child);
+		};
+		CollectChildren();
+	}
+
+	template<typename CFUNC, typename NFUNC>
+	void DispatchRecursive(const CFUNC& cf, const NFUNC& nf)
+	{
+		DispatchComponent(cf);
+		DispatchChildren(nf);
+	}
+
 	void OnCreateChild(::Scene&, ::SceneNode&);
 
 	void SetLocalMatrixDirty();
 
-	void DelayAddChildren();
+	void RecollectChildren();
+
+	void RecollectComponents();
 
 	void DelayRemoveChildren();
 
 	void DelayRemoveComponents();
 
-	void DelayAddComponents();
+	void CollectComponents();
 
-	virtual void AdjustRenderingOrder() = 0;
+	void CollectChildren();
 
 	gml::vec2 m_position;
 	gml::vec2 m_pivot;
@@ -129,18 +184,14 @@ private:
 	uint32_t m_visibleMask = g2d::DEF_VISIBLE_MASK;
 
 	std::vector<::SceneNode*> m_children;
-	std::vector<::SceneNode*> m_addedChildren;
 	std::vector<::SceneNode*> m_releasedChildren;
+	std::vector<::SceneNode*> m_collectionChildren;
+	bool m_childrenChanged = true;
 
-	struct Component
-	{
-		Component(g2d::Component* c, bool ar) : ComponentPtr(c), AutoRelease(ar) { }
-		g2d::Component* ComponentPtr = nullptr;
-		bool AutoRelease = false;
-	};
-	std::vector<Component> m_components;
-	std::vector<Component> m_addedComponents;
-	std::vector<Component> m_releasedComponents;
+	std::vector<NodeComponent> m_components;
+	std::vector<NodeComponent> m_releasedComponents;
+	std::vector<NodeComponent> m_collectionComponents;
+	bool m_componentsChanged = true;
 };
 
 class SceneNode : public g2d::SceneNode, public BaseNode
@@ -153,9 +204,9 @@ public:
 
 	~SceneNode();
 
-	void Update(uint32_t deltaTime);
+	void OnUpdate(uint32_t deltaTime);
 
-	void SetChildIndex(uint32_t index) { m_childID = index; }
+	void SetChildIndex(uint32_t index) { m_childIndex = index; }
 
 	void SetRenderingOrder(uint32_t& index);
 
@@ -204,9 +255,11 @@ public:	//g2d::SceneNode
 
 	virtual g2d::SceneNode* GetChildByIndex(uint32_t index) const override { return _GetChildByIndex(index); }
 
+	virtual uint32_t GetChildCount() const override { return _GetChildCount(); }
+
 	virtual g2d::SceneNode* CreateSceneNodeChild(g2d::Entity* entity, bool autoRelease) override { return _CreateSceneNodeChild(m_scene, *this, *entity, autoRelease); }
 
-	virtual void RemoveFromParent() override { m_bparent.Remove(this); }
+	virtual void Remove() override { m_bparent.RemoveChildNode(this); }
 
 	virtual void MoveToFront() override;
 
@@ -258,6 +311,8 @@ public:	//g2d::SceneNode
 
 	virtual g2d::Entity* GetEntity() const override { return m_entity; }
 
+	virtual uint32_t GetChildIndex() const override { return m_childIndex; }
+
 	virtual bool IsVisible() const override { return _IsVisible(); }
 
 	virtual bool IsStatic() const override { return m_isStatic; }
@@ -268,6 +323,11 @@ public:	//g2d::SceneNode
 
 	virtual gml::vec2 WorldToParent(const gml::vec2& pos) override;
 
+protected:	// BaseNode
+	virtual void AdjustRenderingOrder() override;
+
+	virtual ::BaseNode* _GetParent() override { return &m_bparent; }
+
 private:
 	void SetWorldMatrixDirty();
 
@@ -277,19 +337,15 @@ private:
 
 	::SceneNode* GetNextSibling() const;
 
-	virtual void AdjustRenderingOrder() override;
-
-	virtual ::BaseNode* _GetParent() override { return &m_bparent; }
-
+	uint32_t m_childIndex = 0;
+	uint32_t m_baseRenderingOrder = 0;
 	::Scene& m_scene;
 	::BaseNode& m_bparent;
 	g2d::SceneNode& m_iparent;
 	g2d::Entity* m_entity = nullptr;
 	bool m_autoRelease = false;
-	uint32_t m_childID = 0;
-	uint32_t m_baseRenderingOrder = 0;
 	bool m_isStatic = false;
-	bool m_matrixDirtyUpdate = true;
+	bool m_matrixDirtyEntityUpdate = true;
 	bool m_matrixWorldDirty = true;
 	gml::mat32 m_matrixWorld;
 };
@@ -323,9 +379,11 @@ public: //g2d::SceneNode
 
 	virtual g2d::SceneNode* GetChildByIndex(uint32_t index) const override { return _GetChildByIndex(index); }
 
+	virtual uint32_t GetChildCount() const override { return _GetChildCount(); }
+
 	virtual g2d::SceneNode* CreateSceneNodeChild(g2d::Entity* entity, bool autoRelease) override { return _CreateSceneNodeChild(*this, *entity, autoRelease); }
 
-	virtual void RemoveFromParent() override { }
+	virtual void Remove() override { }
 
 	virtual void MoveToFront() override { }
 
@@ -376,6 +434,8 @@ public: //g2d::SceneNode
 	virtual gml::vec2 GetWorldPosition() override { return _GetPosition(); };
 
 	virtual g2d::Entity* GetEntity() const override { return nullptr; }
+
+	virtual uint32_t GetChildIndex() const override { return 0; }
 
 	virtual bool IsVisible() const override { return _IsVisible(); }
 

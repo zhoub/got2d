@@ -182,6 +182,7 @@
     <ClInclude Include="source\spatial_graph.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="source\base_nodes.cpp" />
     <ClCompile Include="source\engine.cpp" />
     <ClCompile Include="source\entity.cpp" />
     <ClCompile Include="source\input.cpp" />

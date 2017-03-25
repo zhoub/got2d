@@ -279,20 +279,25 @@ namespace g2d
 		// 如果没有孩子则返回nullptr
 		virtual g2d::SceneNode* LastChild() const = 0;
 
-		// 获取该索引值对应的孩子
-		// 如果没有找到则返回nullptr
+		// 使用索引获得子节点
 		virtual g2d::SceneNode* GetChildByIndex(uint32_t index) const = 0;
+
+		// 获取子节点的数目
+		virtual uint32_t GetChildCount() const = 0;
 
 		// 创建子节点，必须传入Entity对象
 		virtual SceneNode* CreateSceneNodeChild(Entity*, bool autoRelease) = 0;
 
-		// 从父亲节点移除，这个似乎是引擎保留接口
-		virtual void RemoveFromParent() = 0;
+		// 析构节点，把当前节点从树种删除。
+		// 会同时把实体、组件对象全部删除。
+		virtual void Remove() = 0;
 
-		// 把当前节点移动到同级第一个，以保证渲染顺序
+		// 把当前节点移动到同级最后一个
+		// 以保证第一个渲染！
 		virtual void MoveToFront() = 0;
 
-		// 把当前节点移动到同级最后一个，以保证渲染顺序
+		// 把当前节点移动到同级第一个
+		// 以保证第一个渲染！
 		virtual void MoveToBack() = 0;
 
 		// 跟同级前一个节点交换位置，以保证渲染顺序
@@ -372,6 +377,9 @@ namespace g2d
 
 		// 获取节点绑定的Entity对象
 		virtual Entity* GetEntity() const = 0;
+		
+		// 获取当前节点是父亲的第几个节点
+		virtual uint32_t GetChildIndex() const = 0;
 
 		// 节点是否可见设置
 		virtual bool IsVisible() const = 0;

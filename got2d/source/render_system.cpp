@@ -485,7 +485,10 @@ void RenderSystem::FlushRequests()
 		}
 		list.clear();
 	}
-	FlushBatch(batchMesh, *material);
+	if (material != nullptr)
+	{
+		FlushBatch(batchMesh, *material);
+	}
 }
 
 void RenderSystem::RenderMesh(uint32_t layer, g2d::Mesh* mesh, g2d::Material* material, const gml::mat32& worldMatrix)

@@ -136,6 +136,8 @@ void Scene::Release()
 	UnRegisterKeyEventReceiver();
 	UnRegisterMouseEventReceiver();
 	::GetEngineImpl()->RemoveScene(*this);
+	// 需要先清空节点，以保证SceneNode可以访问到Scene
+	// SceneNode析构的时候需要从Scene中获取SpatialGraph
 	EmptyChildren();
 	delete this;
 }
@@ -166,8 +168,8 @@ void Scene::Update(uint32_t elapsedTime, uint32_t deltaTime)
 		m_canTickHovering = false;
 	}
 
-	_Update(deltaTime);
-	AdjustRenderingOrder();
+	OnUpdateChildren(deltaTime);
+
 	m_canTickHovering = true;
 }
 
@@ -183,62 +185,27 @@ void Scene::AdjustRenderingOrder()
 
 void Scene::OnMessage(const g2d::Message& message, uint32_t currentTimeStamp)
 {
-	TraversalComponent([&](g2d::Component* component)
-	{
-		component->OnMessage(message);
-	});
-	TraversalChildren([&](::SceneNode* child)
-	{
-		child->OnMessage(message);
-	});
+	OnMessageComponentsAndChildren(message);
 }
 
 void Scene::OnKeyPress(g2d::KeyCode key)
 {
-	TraversalComponent([&](g2d::Component* component)
-	{
-		component->OnKeyPress(key, GetMouse(), GetKeyboard());
-	});
-	TraversalChildren([&](::SceneNode* child)
-	{
-		child->OnKeyPress(key);
-	});
+	OnKeyPressComponentsAndChildren(key);
 }
 
 void Scene::OnKeyPressingBegin(g2d::KeyCode key)
 {
-	TraversalComponent([&](g2d::Component* component)
-	{
-		component->OnKeyPressingBegin(key, GetMouse(), GetKeyboard());
-	});
-	TraversalChildren([&](::SceneNode* child)
-	{
-		child->OnKeyPressingBegin(key);
-	});
+	OnKeyPressingBeginComponentsAndChildren(key);
 }
 
 void Scene::OnKeyPressing(g2d::KeyCode key)
 {
-	TraversalComponent([&](g2d::Component* component)
-	{
-		component->OnKeyPressing(key, GetMouse(), GetKeyboard());
-	});
-	TraversalChildren([&](::SceneNode* child)
-	{
-		child->OnKeyPressing(key);
-	});
+	OnKeyPressingComponentsAndChildren(key);
 }
 
 void Scene::OnKeyPressingEnd(g2d::KeyCode key)
 {
-	TraversalComponent([&](g2d::Component* component)
-	{
-		component->OnKeyPressingEnd(key, GetMouse(), GetKeyboard());
-	});
-	TraversalChildren([&](::SceneNode* child)
-	{
-		child->OnKeyPressingEnd(key);
-	});
+	OnKeyPressingEndComponentsAndChildren(key);
 }
 
 void Scene::OnMousePress(g2d::MouseButton button)
@@ -262,7 +229,6 @@ void Scene::OnMousePressingBegin(g2d::MouseButton button)
 {
 	m_mouseButtonState[(int)button].OnPressingBegin(m_hoverNode);
 }
-
 
 void Scene::MouseButtonState::OnPressing(::SceneNode* hitNode)
 {
