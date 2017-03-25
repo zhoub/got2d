@@ -170,7 +170,6 @@ void Scene::Update(uint32_t elapsedTime, uint32_t deltaTime)
 
 	OnUpdateChildren(deltaTime);
 
-	AdjustRenderingOrder();
 	m_canTickHovering = true;
 }
 
