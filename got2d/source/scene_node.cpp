@@ -102,7 +102,7 @@ void SceneNode::SetWorldMatrixDirty()
 	{
 		child->SetWorldMatrixDirty();
 	});
-	m_matrixDirtyUpdate = true;
+	m_matrixDirtyEntityUpdate = true;
 }
 
 void SceneNode::AdjustSpatial()
@@ -117,10 +117,11 @@ void SceneNode::Update(uint32_t deltaTime)
 	{
 		component->OnUpdate(deltaTime);
 	});
-	if (m_matrixDirtyUpdate)
+	if (m_matrixDirtyEntityUpdate)
 	{
-		//现在阶段只需要在test visible之前处理好就行.
-		//也就是 Scene::Render之前
+		// 如果是静态对象，需要重新修正其在四叉树的位置
+		// 现在阶段只需要在test visible之前处理好就行.
+		// 也就是 Scene::Render之前
 		if (IsStatic())
 		{
 			AdjustSpatial();
@@ -130,9 +131,31 @@ void SceneNode::Update(uint32_t deltaTime)
 		{
 			component->OnUpdateMatrixChanged();
 		});
-		m_matrixDirtyUpdate = false;
+		m_matrixDirtyEntityUpdate = false;
 	}
 	_Update(deltaTime);
+}
+
+void SceneNode::SingleUpdate(uint32_t deltaTime)
+{
+	m_entity->OnUpdate(deltaTime);
+	if (m_matrixDirtyEntityUpdate)
+	{
+		// 如果是静态对象，需要重新修正其在四叉树的位置
+		// 现在阶段只需要在test visible之前处理好就行.
+		// 也就是 Scene::Render之前
+		if (IsStatic())
+		{
+			AdjustSpatial();
+		}
+		m_entity->OnUpdateMatrixChanged();
+		m_matrixDirtyEntityUpdate = false;
+		m_matrixDirtyComponentUpdate = true;
+	}
+	else
+	{
+		m_matrixDirtyComponentUpdate = false;
+	}
 }
 
 void SceneNode::AdjustRenderingOrder()
@@ -192,6 +215,16 @@ void SceneNode::SetRenderingOrder(uint32_t& index)
 	return m_bparent._GetChildByIndex(m_childID + 1);
 }
 
+g2d::SceneNode * SceneNode::CreateSceneNodeChild(g2d::Entity * entity, bool autoRelease)
+{
+	auto child = _CreateSceneNodeChild(m_scene, *this, *entity, autoRelease);
+	if (child != nullptr)
+	{
+		m_scene.SetSceneTreeChanged();
+	}
+	return child;
+}
+
 void SceneNode::MoveToFront()
 {
 	m_bparent.MoveChild(m_childID, 0);
@@ -210,6 +243,19 @@ void SceneNode::MovePrev()
 void SceneNode::MoveNext()
 {
 	m_bparent.MoveChild(m_childID, m_childID + 1);
+}
+
+bool SceneNode::AddComponent(g2d::Component * component, bool autoRelease)
+{
+	if (_AddComponent(component, autoRelease, this))
+	{
+		m_scene.SetComponentsChanged();
+		return true;
+	}
+	else
+	{
+		return false;
+	}
 }
 
 void SceneNode::SetStatic(bool s)
@@ -244,295 +290,278 @@ gml::vec2 SceneNode::WorldToParent(const gml::vec2& pos)
 void SceneNode::OnMessage(const g2d::Message& message)
 {
 	m_entity->OnMessage(message);
-	TraversalComponent([&](g2d::Component* component)
-	{
-		component->OnMessage(message);
-	});
-	TraversalChildren([&](::SceneNode* child)
-	{
-		child->OnMessage(message);
-	});
 }
 
 void SceneNode::OnCursorEnterFrom(::SceneNode* adjacency)
 {
 	m_entity->OnCursorEnterFrom(adjacency, GetMouse(), GetKeyboard());
-	TraversalComponent([&](g2d::Component* component)
+	auto& components = GetComponenetCollection();
+	for (auto& c : components)
 	{
-		component->OnCursorEnterFrom(adjacency, GetMouse(), GetKeyboard());
-	});
+		c.ComponentPtr->OnCursorEnterFrom(adjacency, GetMouse(), GetKeyboard());
+	}
 }
 
 void SceneNode::OnCursorLeaveTo(::SceneNode* adjacency)
 {
 	m_entity->OnCursorLeaveTo(adjacency, GetMouse(), GetKeyboard());
-	TraversalComponent([&](g2d::Component* component)
+	auto& components = GetComponenetCollection();
+	for (auto& c : components)
 	{
-		component->OnCursorLeaveTo(adjacency, GetMouse(), GetKeyboard());
-	});
+		c.ComponentPtr->OnCursorLeaveTo(adjacency, GetMouse(), GetKeyboard());
+	}
 }
 
 void SceneNode::OnCursorHovering()
 {
 	m_entity->OnCursorHovering(GetMouse(), GetKeyboard());
-	TraversalComponent([](g2d::Component* component)
+	auto& components = GetComponenetCollection();
+	for (auto& c : components)
 	{
-		component->OnCursorHovering(GetMouse(), GetKeyboard());
-	});
+		c.ComponentPtr->OnCursorHovering(GetMouse(), GetKeyboard());
+	}
 }
 
 void SceneNode::OnClick(g2d::MouseButton button)
 {
+	auto& components = GetComponenetCollection();
 	if (button == g2d::MouseButton::Left)
 	{
 		m_entity->OnLClick(GetMouse(), GetKeyboard());
-		TraversalComponent([](g2d::Component* component)
+		for (auto& c : components)
 		{
-			component->OnLClick(GetMouse(), GetKeyboard());
-		});
+			c.ComponentPtr->OnLClick(GetMouse(), GetKeyboard());
+		}
 	}
 	else if (button == g2d::MouseButton::Right)
 	{
 		m_entity->OnRClick(GetMouse(), GetKeyboard());
-		TraversalComponent([](g2d::Component* component)
+		for (auto& c : components)
 		{
-			component->OnRClick(GetMouse(), GetKeyboard());
-		});
+			c.ComponentPtr->OnRClick(GetMouse(), GetKeyboard());
+		}
 	}
 	else
 	{
 		m_entity->OnMClick(GetMouse(), GetKeyboard());
-		TraversalComponent([](g2d::Component* component)
+		for (auto& c : components)
 		{
-			component->OnMClick(GetMouse(), GetKeyboard());
-		});
+			c.ComponentPtr->OnMClick(GetMouse(), GetKeyboard());
+		}
 	}
 }
 
 void SceneNode::OnDoubleClick(g2d::MouseButton button)
 {
+	auto& components = GetComponenetCollection();
 	if (button == g2d::MouseButton::Left)
 	{
 		m_entity->OnLDoubleClick(GetMouse(), GetKeyboard());
-		TraversalComponent([](g2d::Component* component)
+		for (auto& c : components)
 		{
-			component->OnLDoubleClick(GetMouse(), GetKeyboard());
-		});
+			c.ComponentPtr->OnLDoubleClick(GetMouse(), GetKeyboard());
+		}
 	}
 	else if (button == g2d::MouseButton::Right)
 	{
 		m_entity->OnRDoubleClick(GetMouse(), GetKeyboard());
-		TraversalComponent([](g2d::Component* component)
+		for (auto& c : components)
 		{
-			component->OnRDoubleClick(GetMouse(), GetKeyboard());
-		});
+			c.ComponentPtr->OnRDoubleClick(GetMouse(), GetKeyboard());
+		}
 	}
 	else
 	{
 		m_entity->OnMDoubleClick(GetMouse(), GetKeyboard());
-		TraversalComponent([](g2d::Component* component)
+		for (auto& c : components)
 		{
-			component->OnMDoubleClick(GetMouse(), GetKeyboard());
-		});
+			c.ComponentPtr->OnMDoubleClick(GetMouse(), GetKeyboard());
+		}
 	}
 }
 
 void SceneNode::OnDragBegin(g2d::MouseButton button)
 {
+	auto& components = GetComponenetCollection();
 	if (button == g2d::MouseButton::Left)
 	{
 		m_entity->OnLDragBegin(GetMouse(), GetKeyboard());
-		TraversalComponent([](g2d::Component* component)
+		for (auto& c : components)
 		{
-			component->OnLDragBegin(GetMouse(), GetKeyboard());
-		});
+			c.ComponentPtr->OnLDragBegin(GetMouse(), GetKeyboard());
+		}
 	}
 	else if (button == g2d::MouseButton::Right)
 	{
 		m_entity->OnRDragBegin(GetMouse(), GetKeyboard());
-		TraversalComponent([](g2d::Component* component)
+		for (auto& c : components)
 		{
-			component->OnRDragBegin(GetMouse(), GetKeyboard());
-		});
+			c.ComponentPtr->OnRDragBegin(GetMouse(), GetKeyboard());
+		}
 	}
 	else
 	{
 		m_entity->OnMDragBegin(GetMouse(), GetKeyboard());
-		TraversalComponent([](g2d::Component* component)
+		for (auto& c : components)
 		{
-			component->OnMDragBegin(GetMouse(), GetKeyboard());
-		});
+			c.ComponentPtr->OnMDragBegin(GetMouse(), GetKeyboard());
+		}
 	}
 }
 
 void SceneNode::OnDragging(g2d::MouseButton button)
 {
+	auto& components = GetComponenetCollection();
 	if (button == g2d::MouseButton::Left)
 	{
 		m_entity->OnLDragging(GetMouse(), GetKeyboard());
-		TraversalComponent([](g2d::Component* component)
+		for (auto& c : components)
 		{
-			component->OnLDragging(GetMouse(), GetKeyboard());
-		});
+			c.ComponentPtr->OnLDragging(GetMouse(), GetKeyboard());
+		}
 	}
 	else if (button == g2d::MouseButton::Right)
 	{
 		m_entity->OnRDragging(GetMouse(), GetKeyboard());
-		TraversalComponent([](g2d::Component* component)
+		for (auto& c : components)
 		{
-			component->OnRDragging(GetMouse(), GetKeyboard());
-		});
+			c.ComponentPtr->OnRDragging(GetMouse(), GetKeyboard());
+		}
 	}
 	else
 	{
 		m_entity->OnMDragging(GetMouse(), GetKeyboard());
-		TraversalComponent([](g2d::Component* component)
+		for (auto& c : components)
 		{
-			component->OnMDragging(GetMouse(), GetKeyboard());
-		});
+			c.ComponentPtr->OnMDragging(GetMouse(), GetKeyboard());
+		}
 	}
 }
 
 void SceneNode::OnDragEnd(g2d::MouseButton button)
 {
+	auto& components = GetComponenetCollection();
 	if (button == g2d::MouseButton::Left)
 	{
 		m_entity->OnLDragEnd(GetMouse(), GetKeyboard());
-		TraversalComponent([](g2d::Component* component)
+		for (auto& c : components)
 		{
-			component->OnLDragEnd(GetMouse(), GetKeyboard());
-		});
+			c.ComponentPtr->OnLDragEnd(GetMouse(), GetKeyboard());
+		}
 	}
 	else if (button == g2d::MouseButton::Right)
 	{
 		m_entity->OnRDragEnd(GetMouse(), GetKeyboard());
-		TraversalComponent([](g2d::Component* component)
+		for (auto& c : components)
 		{
-			component->OnRDragEnd(GetMouse(), GetKeyboard());
-		});
+			c.ComponentPtr->OnRDragEnd(GetMouse(), GetKeyboard());
+		}
 	}
 	else
 	{
 		m_entity->OnMDragEnd(GetMouse(), GetKeyboard());
-		TraversalComponent([](g2d::Component* component)
+		for (auto& c : components)
 		{
-			component->OnMDragEnd(GetMouse(), GetKeyboard());
-		});
+			c.ComponentPtr->OnMDragEnd(GetMouse(), GetKeyboard());
+		}
 	}
 }
 
 void SceneNode::OnDropping(::SceneNode* dropped, g2d::MouseButton button)
 {
+	auto& components = GetComponenetCollection();
 	if (button == g2d::MouseButton::Left)
 	{
 		m_entity->OnLDropping(dropped, GetMouse(), ::GetKeyboard());
-		TraversalComponent([&](g2d::Component* component)
+		for (auto& c : components)
 		{
-			component->OnLDropping(dropped, GetMouse(), GetKeyboard());
-		});
+			c.ComponentPtr->OnLDropping(dropped, GetMouse(), ::GetKeyboard());
+		}
 	}
 	else if (button == g2d::MouseButton::Right)
 	{
 		m_entity->OnRDropping(dropped, GetMouse(), GetKeyboard());
-		TraversalComponent([&](g2d::Component* component)
+		for (auto& c : components)
 		{
-			component->OnRDropping(dropped, GetMouse(), GetKeyboard());
-		});
+			c.ComponentPtr->OnRDropping(dropped, GetMouse(), GetKeyboard());
+		}
 	}
 	else
 	{
 		m_entity->OnMDropping(dropped, GetMouse(), GetKeyboard());
-		TraversalComponent([&](g2d::Component* component)
+		for (auto& c : components)
 		{
-			component->OnMDropping(dropped, GetMouse(), GetKeyboard());
-		});
+			c.ComponentPtr->OnMDropping(dropped, GetMouse(), GetKeyboard());
+		}
 	}
 }
 
 void SceneNode::OnDropTo(::SceneNode* dropped, g2d::MouseButton button)
 {
+	auto& components = GetComponenetCollection();
 	if (button == g2d::MouseButton::Left)
 	{
 		m_entity->OnLDropTo(dropped, GetMouse(), GetKeyboard());
-		TraversalComponent([&](g2d::Component* component)
+		for (auto& c : components)
 		{
-			component->OnLDropTo(dropped, GetMouse(), GetKeyboard());
-		});
+			c.ComponentPtr->OnLDropTo(dropped, GetMouse(), GetKeyboard());
+		}
 	}
 	else if (button == g2d::MouseButton::Right)
 	{
 		m_entity->OnRDropTo(dropped, GetMouse(), GetKeyboard());
-		TraversalComponent([&](g2d::Component* component)
+		for (auto& c : components)
 		{
-			component->OnRDropTo(dropped, GetMouse(), GetKeyboard());
-		});
+			c.ComponentPtr->OnRDropTo(dropped, GetMouse(), GetKeyboard());
+		}
 	}
 	else
 	{
 		m_entity->OnMDropTo(dropped, GetMouse(), GetKeyboard());
-		TraversalComponent([&](g2d::Component* component)
+		for (auto& c : components)
 		{
-			component->OnMDropTo(dropped, GetMouse(), GetKeyboard());
-		});
+			c.ComponentPtr->OnMDropTo(dropped, GetMouse(), GetKeyboard());
+		}
 	}
 }
 
 void SceneNode::OnKeyPress(g2d::KeyCode key)
 {
 	m_entity->OnKeyPress(key, GetMouse(), GetKeyboard());
-	TraversalComponent([&](g2d::Component* component)
-	{
-		component->OnKeyPress(key, GetMouse(), GetKeyboard());
-	});
 }
 
 void SceneNode::OnKeyPressingBegin(g2d::KeyCode key)
 {
 	m_entity->OnKeyPressingBegin(key, GetMouse(), GetKeyboard());
-	TraversalComponent([&](g2d::Component* component)
-	{
-		component->OnKeyPressingBegin(key, GetMouse(), GetKeyboard());
-	});
 }
 
 void SceneNode::OnKeyPressing(g2d::KeyCode key)
 {
 	m_entity->OnKeyPressing(key, GetMouse(), GetKeyboard());
-	TraversalComponent([&](g2d::Component* component)
-	{
-		component->OnKeyPressing(key, GetMouse(), GetKeyboard());
-	});
 }
 
 void SceneNode::OnKeyPressingEnd(g2d::KeyCode key)
 {
 	m_entity->OnKeyPressingEnd(key, GetMouse(), GetKeyboard());
-	TraversalComponent([&](g2d::Component* component)
-	{
-		component->OnKeyPressingEnd(key, GetMouse(), GetKeyboard());
-	});
 }
 
 void SceneNode::CollectSceneNodes(std::vector<::SceneNode*>& collection)
 {
 	collection.push_back(this);
+	DelayRemoveChildren();
+	DelayRemoveComponents();
 	TraversalChildren([&](::SceneNode* child)
 	{
 		child->CollectSceneNodes(collection);
 	});
 }
 
-void SceneNode::CollectComponents(std::vector<g2d::Component*>& collection)
+void SceneNode::CollectComponents(std::vector<NodeComponent>& collection)
 {
 	for (auto& c : m_components)
 	{
-		collection.push_back(c.ComponentPtr);
+		collection.push_back(c);
 	}
-
-	TraversalChildren([&](::SceneNode* child)
-	{
-		child->CollectComponents(collection);
-	});
 }
 
 

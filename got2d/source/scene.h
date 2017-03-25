@@ -8,13 +8,34 @@
 
 
 class SpatialGraph;
+class BaseNode;
 class SceneNode;
 class Scene;
+
+// for collection
+// in order to not to do the converting
+struct NodeComponent
+{
+	NodeComponent(::BaseNode* node, g2d::Component* c, bool ar)
+		: Parent(node)
+		, ComponentPtr(c)
+		, AutoRelease(ar) { }
+	::BaseNode* Parent = nullptr;
+	g2d::Component* ComponentPtr = nullptr;
+	bool AutoRelease = false;
+};
 
 class BaseNode
 {
 	friend class SceneNode;
 	friend class Scene;
+protected:
+	virtual BaseNode* _GetParent() { return nullptr; }
+
+	virtual bool MatrixDirtyComponentUpdate() { return false; }
+
+	virtual void AdjustRenderingOrder() = 0;
+
 protected:
 	BaseNode();
 
@@ -85,8 +106,6 @@ protected:
 		for (; it != end; it++) func(*child);
 	}
 
-	virtual BaseNode* _GetParent() { return nullptr; }
-
 	uint32_t GetChildCount() const { return static_cast<uint32_t>(m_children.size()); }
 
 	bool _AddComponent(g2d::Component* component, bool autoRelease, g2d::SceneNode* node);
@@ -104,20 +123,18 @@ protected:
 		for (auto& c : m_components) f(c.ComponentPtr);
 	}
 
+	std::vector<NodeComponent>& GetComponenetCollection();
+
 private:
 	void OnCreateChild(::Scene&, ::SceneNode&);
 
 	void SetLocalMatrixDirty();
 
-	void DelayAddChildren();
-
 	void DelayRemoveChildren();
 
 	void DelayRemoveComponents();
 
-	void DelayAddComponents();
-
-	virtual void AdjustRenderingOrder() = 0;
+	void RecollectComponents();
 
 	gml::vec2 m_position;
 	gml::vec2 m_pivot;
@@ -129,18 +146,12 @@ private:
 	uint32_t m_visibleMask = g2d::DEF_VISIBLE_MASK;
 
 	std::vector<::SceneNode*> m_children;
-	std::vector<::SceneNode*> m_addedChildren;
 	std::vector<::SceneNode*> m_releasedChildren;
 
-	struct Component
-	{
-		Component(g2d::Component* c, bool ar) : ComponentPtr(c), AutoRelease(ar) { }
-		g2d::Component* ComponentPtr = nullptr;
-		bool AutoRelease = false;
-	};
-	std::vector<Component> m_components;
-	std::vector<Component> m_addedComponents;
-	std::vector<Component> m_releasedComponents;
+	std::vector<NodeComponent> m_components;
+	std::vector<NodeComponent> m_releasedComponents;
+	std::vector<NodeComponent> m_collectionComponents;
+	bool m_componentChanged = true;
 };
 
 class SceneNode : public g2d::SceneNode, public BaseNode
@@ -154,6 +165,8 @@ public:
 	~SceneNode();
 
 	void Update(uint32_t deltaTime);
+
+	void SingleUpdate(uint32_t deltaTime);
 
 	void SetChildIndex(uint32_t index) { m_childID = index; }
 
@@ -191,7 +204,7 @@ public:
 
 	void CollectSceneNodes(std::vector<::SceneNode*>& collection);
 
-	void CollectComponents(std::vector<g2d::Component*>& collection);
+	void CollectComponents(std::vector<NodeComponent>& collection);
 
 public:	//g2d::SceneNode
 	virtual g2d::Scene* GetScene() const override;
@@ -208,7 +221,7 @@ public:	//g2d::SceneNode
 
 	virtual g2d::SceneNode* GetChildByIndex(uint32_t index) const override { return _GetChildByIndex(index); }
 
-	virtual g2d::SceneNode* CreateSceneNodeChild(g2d::Entity* entity, bool autoRelease) override { return _CreateSceneNodeChild(m_scene, *this, *entity, autoRelease); }
+	virtual g2d::SceneNode* CreateSceneNodeChild(g2d::Entity* entity, bool autoRelease) override;
 
 	virtual void RemoveFromParent() override { m_bparent.Remove(this); }
 
@@ -220,7 +233,7 @@ public:	//g2d::SceneNode
 
 	virtual void MoveNext() override;
 
-	virtual bool AddComponent(g2d::Component* component, bool autoRelease) override { return _AddComponent(component, autoRelease, this); }
+	virtual bool AddComponent(g2d::Component* component, bool autoRelease) override;
 
 	virtual bool RemoveComponent(g2d::Component* component) override { return _RemoveComponent(component, false); }
 
@@ -272,6 +285,13 @@ public:	//g2d::SceneNode
 
 	virtual gml::vec2 WorldToParent(const gml::vec2& pos) override;
 
+protected:	// BaseNode
+	virtual bool MatrixDirtyComponentUpdate() override { return m_matrixDirtyComponentUpdate; }
+
+	virtual void AdjustRenderingOrder() override;
+
+	virtual ::BaseNode* _GetParent() override { return &m_bparent; }
+
 private:
 	void SetWorldMatrixDirty();
 
@@ -281,19 +301,16 @@ private:
 
 	::SceneNode* GetNextSibling() const;
 
-	virtual void AdjustRenderingOrder() override;
-
-	virtual ::BaseNode* _GetParent() override { return &m_bparent; }
-
+	uint32_t m_childID = 0;
+	uint32_t m_baseRenderingOrder = 0;
 	::Scene& m_scene;
 	::BaseNode& m_bparent;
 	g2d::SceneNode& m_iparent;
 	g2d::Entity* m_entity = nullptr;
 	bool m_autoRelease = false;
-	uint32_t m_childID = 0;
-	uint32_t m_baseRenderingOrder = 0;
 	bool m_isStatic = false;
-	bool m_matrixDirtyUpdate = true;
+	bool m_matrixDirtyEntityUpdate = true;
+	bool m_matrixDirtyComponentUpdate = true;
 	bool m_matrixWorldDirty = true;
 	gml::mat32 m_matrixWorld;
 };
@@ -312,7 +329,9 @@ public:
 
 	void OnMessage(const g2d::Message& message, uint32_t currentTimeStamp);
 
-	void SceneTreeChanged();
+	void SetSceneTreeChanged();
+
+	void SetComponentsChanged();
 
 public: //g2d::SceneNode
 	virtual g2d::Scene* GetScene() const override { return const_cast<::Scene*>(this); }
@@ -329,7 +348,7 @@ public: //g2d::SceneNode
 
 	virtual g2d::SceneNode* GetChildByIndex(uint32_t index) const override { return _GetChildByIndex(index); }
 
-	virtual g2d::SceneNode* CreateSceneNodeChild(g2d::Entity* entity, bool autoRelease) override { return _CreateSceneNodeChild(*this, *entity, autoRelease); }
+	virtual g2d::SceneNode* CreateSceneNodeChild(g2d::Entity* entity, bool autoRelease) override;
 
 	virtual void RemoveFromParent() override { }
 
@@ -341,7 +360,7 @@ public: //g2d::SceneNode
 
 	virtual void MoveNext() override { }
 
-	virtual bool AddComponent(g2d::Component* component, bool autoRelease) override { return _AddComponent(component, autoRelease, this); }
+	virtual bool AddComponent(g2d::Component* component, bool autoRelease) override;
 
 	virtual bool RemoveComponent(g2d::Component* component) override { return _RemoveComponent(component, false); }
 
@@ -477,6 +496,7 @@ private:
 	bool m_canTickHovering = false;
 
 	std::vector<::SceneNode*> m_collectionSceneNodes;
-	std::vector<g2d::Component*> m_collectionComponents;
+	std::vector<NodeComponent> m_collectionComponents;
 	bool m_sceneTreeChanged = true;
+	bool m_componentChanged = true;
 };

@@ -160,13 +160,25 @@ void Scene::UnRegisterMouseEventReceiver()
 
 void Scene::Update(uint32_t elapsedTime, uint32_t deltaTime)
 {
+	Recollect();
+
 	if (m_hoverNode != nullptr && m_canTickHovering && GetMouse().IsFree())
 	{
 		m_hoverNode->OnCursorHovering();
 		m_canTickHovering = false;
 	}
 
-	_Update(deltaTime);
+	for (auto& node : m_collectionSceneNodes)
+	{
+		node->SingleUpdate(deltaTime);
+	}
+	for (auto& component : m_collectionComponents)
+	{
+		component.ComponentPtr->OnUpdate(deltaTime);
+		if (component.Parent->MatrixDirtyComponentUpdate())
+			component.ComponentPtr->OnUpdateMatrixChanged();
+	}
+
 	AdjustRenderingOrder();
 	m_canTickHovering = true;
 }
@@ -183,67 +195,101 @@ void Scene::AdjustRenderingOrder()
 
 void Scene::OnMessage(const g2d::Message& message, uint32_t currentTimeStamp)
 {
-	TraversalComponent([&](g2d::Component* component)
+	Recollect();
+	for (auto& node : m_collectionSceneNodes)
 	{
-		component->OnMessage(message);
-	});
-	TraversalChildren([&](::SceneNode* child)
+		node->OnMessage(message);
+	}
+	for (auto& component : m_collectionComponents)
 	{
-		child->OnMessage(message);
-	});
+		component.ComponentPtr->OnMessage(message);
+	}
 }
 
-void Scene::SceneTreeChanged()
+void Scene::SetSceneTreeChanged()
 {
 	m_sceneTreeChanged = true;
+	m_componentChanged = true;
+}
+
+void Scene::SetComponentsChanged()
+{
+	m_componentChanged = true;
+}
+
+g2d::SceneNode * Scene::CreateSceneNodeChild(g2d::Entity * entity, bool autoRelease)
+{
+	auto child = _CreateSceneNodeChild(*this, *entity, autoRelease);
+	if (child != nullptr)
+	{
+		SetSceneTreeChanged();
+	}
+	return child;
+}
+
+bool Scene::AddComponent(g2d::Component * component, bool autoRelease) 
+{ 
+	if (_AddComponent(component, autoRelease, this))
+	{
+		SetComponentsChanged();
+		return true;
+	}
+	else
+	{
+		return false;
+	}
 }
 
 void Scene::OnKeyPress(g2d::KeyCode key)
 {
-	TraversalComponent([&](g2d::Component* component)
+	Recollect();
+	for (auto& component : m_collectionComponents)
 	{
-		component->OnKeyPress(key, GetMouse(), GetKeyboard());
-	});
-	TraversalChildren([&](::SceneNode* child)
+		component.ComponentPtr->OnKeyPress(key, GetMouse(), GetKeyboard());
+	}
+	for (auto& node : m_collectionSceneNodes)
 	{
-		child->OnKeyPress(key);
-	});
+		node->OnKeyPress(key);
+	}
 }
 
 void Scene::OnKeyPressingBegin(g2d::KeyCode key)
 {
-	TraversalComponent([&](g2d::Component* component)
+	Recollect();
+	for (auto& node : m_collectionSceneNodes)
 	{
-		component->OnKeyPressingBegin(key, GetMouse(), GetKeyboard());
-	});
-	TraversalChildren([&](::SceneNode* child)
+		node->OnKeyPressingBegin(key);
+	}
+	for (auto& component : m_collectionComponents)
 	{
-		child->OnKeyPressingBegin(key);
-	});
+		component.ComponentPtr->OnKeyPressingBegin(key, GetMouse(), GetKeyboard());
+	}
 }
 
 void Scene::OnKeyPressing(g2d::KeyCode key)
 {
-	TraversalComponent([&](g2d::Component* component)
+	Recollect();
+	for (auto& node : m_collectionSceneNodes)
 	{
-		component->OnKeyPressing(key, GetMouse(), GetKeyboard());
-	});
-	TraversalChildren([&](::SceneNode* child)
+		node->OnKeyPressing(key);
+	}
+	for (auto& component : m_collectionComponents)
 	{
-		child->OnKeyPressing(key);
-	});
+		component.ComponentPtr->OnKeyPressing(key, GetMouse(), GetKeyboard());
+	}
 }
 
 void Scene::OnKeyPressingEnd(g2d::KeyCode key)
 {
-	TraversalComponent([&](g2d::Component* component)
+	Recollect();
+	for (auto& node : m_collectionSceneNodes)
 	{
-		component->OnKeyPressingEnd(key, GetMouse(), GetKeyboard());
-	});
-	TraversalChildren([&](::SceneNode* child)
+		node->OnKeyPressingEnd(key);
+	}
+	for (auto& component : m_collectionComponents)
 	{
-		child->OnKeyPressingEnd(key);
-	});
+		component.ComponentPtr->OnKeyPressingEnd(key, GetMouse(), GetKeyboard());
+	}
 }
 
 void Scene::OnMousePress(g2d::MouseButton button)
@@ -434,13 +480,21 @@ void Scene::Recollect()
 	if (m_sceneTreeChanged)
 	{
 		CollectSceneNodes();
+		m_sceneTreeChanged = false;
+	}
+
+	if (m_componentChanged)
+	{
 		CollectComponents();
+		m_componentChanged = false;
 	}
 }
 
 void Scene::CollectSceneNodes()
 {
 	m_collectionSceneNodes.clear();
+	DelayRemoveChildren();
+	DelayRemoveComponents();
 	TraversalChildren([&](::SceneNode* child)
 	{
 		child->CollectSceneNodes(m_collectionSceneNodes);
@@ -450,8 +504,8 @@ void Scene::CollectSceneNodes()
 void Scene::CollectComponents()
 {
 	m_collectionComponents.clear();
-	TraversalChildren([&](::SceneNode* child)
+	for (auto& c : m_collectionSceneNodes)
 	{
-		child->CollectComponents(m_collectionComponents);
-	});
+		c->CollectComponents(m_collectionComponents);
+	}
 }
