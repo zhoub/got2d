@@ -16,11 +16,7 @@ class Scene;
 // in order to not to do the converting
 struct NodeComponent
 {
-	NodeComponent(::BaseNode* node, g2d::Component* c, bool ar)
-		: Parent(node)
-		, ComponentPtr(c)
-		, AutoRelease(ar) { }
-	::BaseNode* Parent = nullptr;
+	NodeComponent(g2d::Component* c, bool ar) : ComponentPtr(c), AutoRelease(ar) { }
 	g2d::Component* ComponentPtr = nullptr;
 	bool AutoRelease = false;
 };
@@ -33,11 +29,11 @@ public:
 	virtual void AdjustRenderingOrder() = 0;
 
 public:
-	uint32_t GetChildCount() const { return static_cast<uint32_t>(m_children.size()); }
-
 	::SceneNode* _GetChildByIndex(uint32_t index) const;
 
-	void Remove(::SceneNode* child);
+	uint32_t GetChildCount() const { return static_cast<uint32_t>(m_children.size()); }
+
+	void RemoveChildNode(::SceneNode* child);
 
 	void MoveChild(uint32_t from, uint32_t to);
 
@@ -132,9 +128,6 @@ protected:
 
 	void OnKeyPressingEndComponentsAndChildren(g2d::KeyCode key);
 
-	std::vector<NodeComponent>& GetComponentCollection();
-
-private:
 	template<typename CFUNC>
 	void DispatchComponent(const CFUNC& cf)
 	{
@@ -146,6 +139,7 @@ private:
 		DelayRemoveComponents();
 	}
 
+private:
 	template<typename NFUNC>
 	void DispatchChildren(const NFUNC& nf)
 	{
@@ -165,6 +159,8 @@ private:
 	}
 
 	std::vector<::SceneNode*>& GetChildrenCollection();
+
+	std::vector<NodeComponent>& GetComponentCollection();
 
 	void OnCreateChild(::Scene&, ::SceneNode&);
 
@@ -195,7 +191,7 @@ private:
 	std::vector<NodeComponent> m_components;
 	std::vector<NodeComponent> m_releasedComponents;
 	std::vector<NodeComponent> m_collectionComponents;
-	bool m_componentChanged = true;
+	bool m_componentsChanged = true;
 };
 
 class SceneNode : public g2d::SceneNode, public BaseNode
@@ -210,7 +206,7 @@ public:
 
 	void OnUpdate(uint32_t deltaTime);
 
-	void SetChildIndex(uint32_t index) { m_childID = index; }
+	void SetChildIndex(uint32_t index) { m_childIndex = index; }
 
 	void SetRenderingOrder(uint32_t& index);
 
@@ -261,7 +257,7 @@ public:	//g2d::SceneNode
 
 	virtual g2d::SceneNode* CreateSceneNodeChild(g2d::Entity* entity, bool autoRelease) override { return _CreateSceneNodeChild(m_scene, *this, *entity, autoRelease); }
 
-	virtual void RemoveFromParent() override { m_bparent.Remove(this); }
+	virtual void Remove() override { m_bparent.RemoveChildNode(this); }
 
 	virtual void MoveToFront() override;
 
@@ -323,6 +319,8 @@ public:	//g2d::SceneNode
 
 	virtual gml::vec2 WorldToParent(const gml::vec2& pos) override;
 
+	uint32_t GetChildIndex() const { return m_childIndex; }
+
 protected:	// BaseNode
 	virtual void AdjustRenderingOrder() override;
 
@@ -337,7 +335,7 @@ private:
 
 	::SceneNode* GetNextSibling() const;
 
-	uint32_t m_childID = 0;
+	uint32_t m_childIndex = 0;
 	uint32_t m_baseRenderingOrder = 0;
 	::Scene& m_scene;
 	::BaseNode& m_bparent;
@@ -381,7 +379,7 @@ public: //g2d::SceneNode
 
 	virtual g2d::SceneNode* CreateSceneNodeChild(g2d::Entity* entity, bool autoRelease) override { return _CreateSceneNodeChild(*this, *entity, autoRelease); }
 
-	virtual void RemoveFromParent() override { }
+	virtual void Remove() override { }
 
 	virtual void MoveToFront() override { }
 

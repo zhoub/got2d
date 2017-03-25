@@ -6,7 +6,7 @@ SceneNode::SceneNode(::Scene& scene, ::SceneNode& parent, uint32_t childID, g2d:
 	, m_iparent(parent)
 	, m_bparent(parent)
 	, m_entity(entity)
-	, m_childID(childID)
+	, m_childIndex(childID)
 	, m_autoRelease(autoRelease)
 {
 	ENSURE(entity != nullptr);
@@ -19,7 +19,7 @@ SceneNode::SceneNode(::Scene& scene, uint32_t childID, g2d::Entity* entity, bool
 	, m_iparent(scene)
 	, m_bparent(scene)
 	, m_entity(entity)
-	, m_childID(childID)
+	, m_childIndex(childID)
 	, m_autoRelease(autoRelease)
 {
 	ENSURE(entity != nullptr);
@@ -113,11 +113,11 @@ void SceneNode::AdjustSpatial()
 void SceneNode::OnUpdate(uint32_t deltaTime)
 {
 	m_entity->OnUpdate(deltaTime);
-	auto& components = GetComponentCollection();
-	for (auto& c : components)
+	auto onUpdate = [&](g2d::Component* component)
 	{
-		c.ComponentPtr->OnUpdate(deltaTime);
-	}
+		component->OnUpdate(deltaTime);
+	};
+	DispatchComponent(onUpdate);
 	if (m_matrixDirtyEntityUpdate)
 	{
 		// 如果是静态对象，需要重新修正其在四叉树的位置
@@ -128,10 +128,11 @@ void SceneNode::OnUpdate(uint32_t deltaTime)
 			AdjustSpatial();
 		}
 		m_entity->OnUpdateMatrixChanged();
-		for (auto& c : components)
+		auto onUpdateMatrixChanged = [&](g2d::Component* component)
 		{
-			c.ComponentPtr->OnUpdate(deltaTime);
-		}
+			component->OnUpdateMatrixChanged();
+		};
+		DispatchComponent(onUpdateMatrixChanged);
 		m_matrixDirtyEntityUpdate = false;
 	}
 
@@ -154,7 +155,7 @@ void SceneNode::AdjustRenderingOrder()
 	::BaseNode* current = this;
 	while (parent != nullptr)
 	{
-		parent->TraversalChildrenByIndex(m_childID + 1, [&](uint32_t index, ::SceneNode* child)
+		parent->TraversalChildrenByIndex(m_childIndex + 1, [&](uint32_t index, ::SceneNode* child)
 		{
 			child->SetRenderingOrder(curIndex);
 		});
@@ -179,40 +180,40 @@ void SceneNode::SetRenderingOrder(uint32_t& index)
 
 ::SceneNode* SceneNode::GetPrevSibling() const
 {
-	if (m_childID == 0)
+	if (m_childIndex == 0)
 	{
 		return nullptr;
 	}
-	return m_bparent._GetChildByIndex(m_childID - 1);
+	return m_bparent._GetChildByIndex(m_childIndex - 1);
 }
 
 ::SceneNode* SceneNode::GetNextSibling() const
 {
-	if (m_childID == m_bparent.GetChildCount() - 1)
+	if (m_childIndex == m_bparent.GetChildCount() - 1)
 	{
 		return nullptr;
 	}
-	return m_bparent._GetChildByIndex(m_childID + 1);
+	return m_bparent._GetChildByIndex(m_childIndex + 1);
 }
 
 void SceneNode::MoveToFront()
 {
-	m_bparent.MoveChild(m_childID, m_bparent.GetChildCount() - 1);
+	m_bparent.MoveChild(m_childIndex, m_bparent.GetChildCount() - 1);
 }
 
 void SceneNode::MoveToBack()
 {
-	m_bparent.MoveChild(m_childID, 0);
+	m_bparent.MoveChild(m_childIndex, 0);
 }
 
 void SceneNode::MovePrev()
 {
-	m_bparent.MoveChild(m_childID, m_childID - 1);
+	m_bparent.MoveChild(m_childIndex, m_childIndex - 1);
 }
 
 void SceneNode::MoveNext()
 {
-	m_bparent.MoveChild(m_childID, m_childID + 1);
+	m_bparent.MoveChild(m_childIndex, m_childIndex + 1);
 }
 
 void SceneNode::SetStatic(bool s)
@@ -252,233 +253,247 @@ void SceneNode::OnMessage(const g2d::Message& message)
 void SceneNode::OnCursorEnterFrom(::SceneNode* adjacency)
 {
 	m_entity->OnCursorEnterFrom(adjacency, GetMouse(), GetKeyboard());
-	auto& components = GetComponentCollection();
-	for (auto& c : components)
+	auto onCursorEnterFrom = [&](g2d::Component* component)
 	{
-		c.ComponentPtr->OnCursorEnterFrom(adjacency, GetMouse(), GetKeyboard());
-	}
+		component->OnCursorEnterFrom(adjacency, GetMouse(), GetKeyboard());;
+	};
+	DispatchComponent(onCursorEnterFrom);
 }
 
 void SceneNode::OnCursorLeaveTo(::SceneNode* adjacency)
 {
 	m_entity->OnCursorLeaveTo(adjacency, GetMouse(), GetKeyboard());
-	auto& components = GetComponentCollection();
-	for (auto& c : components)
+	auto onCursorLeaveTo = [&](g2d::Component* component)
 	{
-		c.ComponentPtr->OnCursorLeaveTo(adjacency, GetMouse(), GetKeyboard());
-	}
+		component->OnCursorLeaveTo(adjacency, GetMouse(), GetKeyboard());
+	};
+	DispatchComponent(onCursorLeaveTo);
 }
 
 void SceneNode::OnCursorHovering()
 {
 	m_entity->OnCursorHovering(GetMouse(), GetKeyboard());
-	auto& components = GetComponentCollection();
-	for (auto& c : components)
+	auto onCursorHovering = [](g2d::Component* component)
 	{
-		c.ComponentPtr->OnCursorHovering(GetMouse(), GetKeyboard());
-	}
+		component->OnCursorHovering(GetMouse(), GetKeyboard());
+	};
+	DispatchComponent(onCursorHovering);
 }
 
 void SceneNode::OnClick(g2d::MouseButton button)
 {
-	auto& components = GetComponentCollection();
 	if (button == g2d::MouseButton::Left)
 	{
 		m_entity->OnLClick(GetMouse(), GetKeyboard());
-		for (auto& c : components)
+		auto onClick = [](g2d::Component* component)
 		{
-			c.ComponentPtr->OnLClick(GetMouse(), GetKeyboard());
-		}
+			component->OnLClick(GetMouse(), GetKeyboard());
+		};
+		DispatchComponent(onClick);
 	}
 	else if (button == g2d::MouseButton::Right)
 	{
 		m_entity->OnRClick(GetMouse(), GetKeyboard());
-		for (auto& c : components)
+		auto onClick = [](g2d::Component* component)
 		{
-			c.ComponentPtr->OnRClick(GetMouse(), GetKeyboard());
-		}
+			component->OnRClick(GetMouse(), GetKeyboard());
+		};
+		DispatchComponent(onClick);
 	}
 	else
 	{
 		m_entity->OnMClick(GetMouse(), GetKeyboard());
-		for (auto& c : components)
+		auto onClick = [](g2d::Component* component)
 		{
-			c.ComponentPtr->OnMClick(GetMouse(), GetKeyboard());
-		}
+			component->OnMClick(GetMouse(), GetKeyboard());
+		};
+		DispatchComponent(onClick);
 	}
 }
 
 void SceneNode::OnDoubleClick(g2d::MouseButton button)
 {
-	auto& components = GetComponentCollection();
 	if (button == g2d::MouseButton::Left)
 	{
 		m_entity->OnLDoubleClick(GetMouse(), GetKeyboard());
-		for (auto& c : components)
+		auto onDoubleClick = [](g2d::Component* component)
 		{
-			c.ComponentPtr->OnLDoubleClick(GetMouse(), GetKeyboard());
-		}
+			component->OnLDoubleClick(GetMouse(), GetKeyboard());
+		};
+		DispatchComponent(onDoubleClick);
 	}
 	else if (button == g2d::MouseButton::Right)
 	{
 		m_entity->OnRDoubleClick(GetMouse(), GetKeyboard());
-		for (auto& c : components)
+		auto onDoubleClick = [](g2d::Component* component)
 		{
-			c.ComponentPtr->OnRDoubleClick(GetMouse(), GetKeyboard());
-		}
+			component->OnRDoubleClick(GetMouse(), GetKeyboard());
+		};
+		DispatchComponent(onDoubleClick);
 	}
 	else
 	{
-		m_entity->OnMDoubleClick(GetMouse(), GetKeyboard());
-		for (auto& c : components)
+		m_entity->OnMDoubleClick(GetMouse(), GetKeyboard()); 
+		auto onDoubleClick = [](g2d::Component* component)
 		{
-			c.ComponentPtr->OnMDoubleClick(GetMouse(), GetKeyboard());
-		}
+			component->OnMDoubleClick(GetMouse(), GetKeyboard());
+		};
+		DispatchComponent(onDoubleClick);
 	}
 }
 
 void SceneNode::OnDragBegin(g2d::MouseButton button)
 {
-	auto& components = GetComponentCollection();
 	if (button == g2d::MouseButton::Left)
 	{
 		m_entity->OnLDragBegin(GetMouse(), GetKeyboard());
-		for (auto& c : components)
+		auto onDragBegin = [](g2d::Component* component)
 		{
-			c.ComponentPtr->OnLDragBegin(GetMouse(), GetKeyboard());
-		}
+			component->OnLDragBegin(GetMouse(), GetKeyboard());
+		};
+		DispatchComponent(onDragBegin);
 	}
 	else if (button == g2d::MouseButton::Right)
 	{
 		m_entity->OnRDragBegin(GetMouse(), GetKeyboard());
-		for (auto& c : components)
+		auto onDragBegin = [](g2d::Component* component)
 		{
-			c.ComponentPtr->OnRDragBegin(GetMouse(), GetKeyboard());
-		}
+			component->OnRDragBegin(GetMouse(), GetKeyboard());
+		};
+		DispatchComponent(onDragBegin);
 	}
 	else
 	{
 		m_entity->OnMDragBegin(GetMouse(), GetKeyboard());
-		for (auto& c : components)
+		auto onDragBegin = [](g2d::Component* component)
 		{
-			c.ComponentPtr->OnMDragBegin(GetMouse(), GetKeyboard());
-		}
+			component->OnMDragBegin(GetMouse(), GetKeyboard());
+		};
+		DispatchComponent(onDragBegin);		
 	}
 }
 
 void SceneNode::OnDragging(g2d::MouseButton button)
 {
-	auto& components = GetComponentCollection();
 	if (button == g2d::MouseButton::Left)
 	{
 		m_entity->OnLDragging(GetMouse(), GetKeyboard());
-		for (auto& c : components)
+		auto onDragging = [](g2d::Component* component)
 		{
-			c.ComponentPtr->OnLDragging(GetMouse(), GetKeyboard());
-		}
+			component->OnLDragging(GetMouse(), GetKeyboard());
+		};
+		DispatchComponent(onDragging);
 	}
 	else if (button == g2d::MouseButton::Right)
 	{
 		m_entity->OnRDragging(GetMouse(), GetKeyboard());
-		for (auto& c : components)
+		auto onDragging = [](g2d::Component* component)
 		{
-			c.ComponentPtr->OnRDragging(GetMouse(), GetKeyboard());
-		}
+			component->OnRDragging(GetMouse(), GetKeyboard());
+		};
+		DispatchComponent(onDragging);
 	}
 	else
 	{
 		m_entity->OnMDragging(GetMouse(), GetKeyboard());
-		for (auto& c : components)
+		auto onDragging = [](g2d::Component* component)
 		{
-			c.ComponentPtr->OnMDragging(GetMouse(), GetKeyboard());
-		}
+			component->OnMDragging(GetMouse(), GetKeyboard());
+		};
+		DispatchComponent(onDragging);
 	}
 }
 
 void SceneNode::OnDragEnd(g2d::MouseButton button)
 {
-	auto& components = GetComponentCollection();
 	if (button == g2d::MouseButton::Left)
 	{
 		m_entity->OnLDragEnd(GetMouse(), GetKeyboard());
-		for (auto& c : components)
+		auto onDragEnd = [](g2d::Component* component)
 		{
-			c.ComponentPtr->OnLDragEnd(GetMouse(), GetKeyboard());
-		}
+			component->OnLDragEnd(GetMouse(), GetKeyboard());
+		};
+		DispatchComponent(onDragEnd);
 	}
 	else if (button == g2d::MouseButton::Right)
 	{
 		m_entity->OnRDragEnd(GetMouse(), GetKeyboard());
-		for (auto& c : components)
+		auto onDragEnd = [](g2d::Component* component)
 		{
-			c.ComponentPtr->OnRDragEnd(GetMouse(), GetKeyboard());
-		}
+			component->OnRDragEnd(GetMouse(), GetKeyboard());
+		};
+		DispatchComponent(onDragEnd);
 	}
 	else
 	{
 		m_entity->OnMDragEnd(GetMouse(), GetKeyboard());
-		for (auto& c : components)
+		auto onDragEnd = [](g2d::Component* component)
 		{
-			c.ComponentPtr->OnMDragEnd(GetMouse(), GetKeyboard());
-		}
+			component->OnMDragEnd(GetMouse(), GetKeyboard());
+		};
+		DispatchComponent(onDragEnd);
 	}
 }
 
 void SceneNode::OnDropping(::SceneNode* dropped, g2d::MouseButton button)
 {
-	auto& components = GetComponentCollection();
 	if (button == g2d::MouseButton::Left)
 	{
 		m_entity->OnLDropping(dropped, GetMouse(), ::GetKeyboard());
-		for (auto& c : components)
+		auto onDropping = [&](g2d::Component* component)
 		{
-			c.ComponentPtr->OnLDropping(dropped, GetMouse(), ::GetKeyboard());
-		}
+			component->OnLDropping(dropped, GetMouse(), ::GetKeyboard());
+		};
+		DispatchComponent(onDropping);
 	}
 	else if (button == g2d::MouseButton::Right)
 	{
 		m_entity->OnRDropping(dropped, GetMouse(), GetKeyboard());
-		for (auto& c : components)
+		auto onDropping = [&](g2d::Component* component)
 		{
-			c.ComponentPtr->OnRDropping(dropped, GetMouse(), GetKeyboard());
-		}
+			component->OnRDropping(dropped, GetMouse(), GetKeyboard());
+		};
+		DispatchComponent(onDropping);
 	}
 	else
 	{
 		m_entity->OnMDropping(dropped, GetMouse(), GetKeyboard());
-		for (auto& c : components)
+		auto onDropping = [&](g2d::Component* component)
 		{
-			c.ComponentPtr->OnMDropping(dropped, GetMouse(), GetKeyboard());
-		}
+			component->OnMDropping(dropped, GetMouse(), GetKeyboard());
+		};
+		DispatchComponent(onDropping);
 	}
 }
 
 void SceneNode::OnDropTo(::SceneNode* dropped, g2d::MouseButton button)
 {
-	auto& components = GetComponentCollection();
 	if (button == g2d::MouseButton::Left)
 	{
 		m_entity->OnLDropTo(dropped, GetMouse(), GetKeyboard());
-		for (auto& c : components)
+		auto dropTo = [&] (g2d::Component* component)
 		{
-			c.ComponentPtr->OnLDropTo(dropped, GetMouse(), GetKeyboard());
-		}
+			component->OnLDropTo(dropped, GetMouse(), GetKeyboard());
+		};
+		DispatchComponent(dropTo);
 	}
 	else if (button == g2d::MouseButton::Right)
 	{
 		m_entity->OnRDropTo(dropped, GetMouse(), GetKeyboard());
-		for (auto& c : components)
+		auto dropTo = [&](g2d::Component* component)
 		{
-			c.ComponentPtr->OnRDropTo(dropped, GetMouse(), GetKeyboard());
-		}
+			component->OnRDropTo(dropped, GetMouse(), GetKeyboard());
+		};
+		DispatchComponent(dropTo);
 	}
 	else
 	{
 		m_entity->OnMDropTo(dropped, GetMouse(), GetKeyboard());
-		for (auto& c : components)
+		auto dropTo = [&](g2d::Component* component)
 		{
-			c.ComponentPtr->OnMDropTo(dropped, GetMouse(), GetKeyboard());
-		}
+			component->OnMDropTo(dropped, GetMouse(), GetKeyboard());
+		};
+		DispatchComponent(dropTo);
 	}
 }
 

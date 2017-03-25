@@ -286,8 +286,9 @@ namespace g2d
 		// 创建子节点，必须传入Entity对象
 		virtual SceneNode* CreateSceneNodeChild(Entity*, bool autoRelease) = 0;
 
-		// 从父亲节点移除，这个似乎是引擎保留接口
-		virtual void RemoveFromParent() = 0;
+		// 析构节点，把当前节点从树种删除。
+		// 会同时把实体、组件对象全部删除。
+		virtual void Remove() = 0;
 
 		// 把当前节点移动到同级最后一个
 		// 以保证第一个渲染！

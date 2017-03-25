@@ -136,6 +136,8 @@ void Scene::Release()
 	UnRegisterKeyEventReceiver();
 	UnRegisterMouseEventReceiver();
 	::GetEngineImpl()->RemoveScene(*this);
+	// 需要先清空节点，以保证SceneNode可以访问到Scene
+	// SceneNode析构的时候需要从Scene中获取SpatialGraph
 	EmptyChildren();
 	delete this;
 }
