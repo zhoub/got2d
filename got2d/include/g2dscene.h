@@ -289,10 +289,12 @@ namespace g2d
 		// 从父亲节点移除，这个似乎是引擎保留接口
 		virtual void RemoveFromParent() = 0;
 
-		// 把当前节点移动到同级第一个，以保证渲染顺序
+		// 把当前节点移动到同级最后一个
+		// 以保证第一个渲染！
 		virtual void MoveToFront() = 0;
 
-		// 把当前节点移动到同级最后一个，以保证渲染顺序
+		// 把当前节点移动到同级第一个
+		// 以保证第一个渲染！
 		virtual void MoveToBack() = 0;
 
 		// 跟同级前一个节点交换位置，以保证渲染顺序

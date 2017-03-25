@@ -160,25 +160,13 @@ void Scene::UnRegisterMouseEventReceiver()
 
 void Scene::Update(uint32_t elapsedTime, uint32_t deltaTime)
 {
-	Recollect();
-
 	if (m_hoverNode != nullptr && m_canTickHovering && GetMouse().IsFree())
 	{
 		m_hoverNode->OnCursorHovering();
 		m_canTickHovering = false;
 	}
 
-	for (auto& node : m_collectionSceneNodes)
-	{
-		node->Update(deltaTime);
-	}
-
-	for (auto& component : m_collectionComponents)
-	{
-		component.ComponentPtr->OnUpdate(deltaTime);
-		if (component.Parent->MatrixDirtyComponentUpdate())
-			component.ComponentPtr->OnUpdateMatrixChanged();
-	}
+	OnUpdateChildren(deltaTime);
 
 	AdjustRenderingOrder();
 	m_canTickHovering = true;
@@ -196,101 +184,77 @@ void Scene::AdjustRenderingOrder()
 
 void Scene::OnMessage(const g2d::Message& message, uint32_t currentTimeStamp)
 {
-	Recollect();
-	for (auto& node : m_collectionSceneNodes)
+	auto& components = GetComponentCollection();
+	for (auto& c : components)
 	{
-		node->OnMessage(message);
+		c.ComponentPtr->OnMessage(message);
 	}
-	for (auto& component : m_collectionComponents)
-	{
-		component.ComponentPtr->OnMessage(message);
-	}
-}
 
-void Scene::SetSceneTreeChanged()
-{
-	m_sceneTreeChanged = true;
-	m_componentChanged = true;
-}
-
-void Scene::SetComponentsChanged()
-{
-	m_componentChanged = true;
-}
-
-g2d::SceneNode * Scene::CreateSceneNodeChild(g2d::Entity * entity, bool autoRelease)
-{
-	auto child = _CreateSceneNodeChild(*this, *entity, autoRelease);
-	if (child != nullptr)
+	auto& children = GetChildrenCollection();
+	for (auto& child : children)
 	{
-		SetSceneTreeChanged();
-	}
-	return child;
-}
-
-bool Scene::AddComponent(g2d::Component * component, bool autoRelease)
-{
-	if (_AddComponent(component, autoRelease, this))
-	{
-		SetComponentsChanged();
-		return true;
-	}
-	else
-	{
-		return false;
-	}
+		child->OnMessage(message);
+	};
 }
 
 void Scene::OnKeyPress(g2d::KeyCode key)
 {
-	Recollect();
-	for (auto& component : m_collectionComponents)
+	auto& components = GetComponentCollection();
+	for (auto& c : components)
 	{
-		component.ComponentPtr->OnKeyPress(key, GetMouse(), GetKeyboard());
+		c.ComponentPtr->OnKeyPress(key, GetMouse(), GetKeyboard());
 	}
-	for (auto& node : m_collectionSceneNodes)
+
+	auto& children = GetChildrenCollection();
+	for (auto& child : children)
 	{
-		node->OnKeyPress(key);
-	}
+		child->OnKeyPress(key);
+	};
 }
 
 void Scene::OnKeyPressingBegin(g2d::KeyCode key)
 {
-	Recollect();
-	for (auto& node : m_collectionSceneNodes)
+	auto& components = GetComponentCollection();
+	for (auto& c : components)
 	{
-		node->OnKeyPressingBegin(key);
+		c.ComponentPtr->OnKeyPressingBegin(key, GetMouse(), GetKeyboard());
 	}
-	for (auto& component : m_collectionComponents)
+
+	auto& children = GetChildrenCollection();
+	for (auto& child : children)
 	{
-		component.ComponentPtr->OnKeyPressingBegin(key, GetMouse(), GetKeyboard());
-	}
+		child->OnKeyPressingBegin(key);
+	};
 }
 
 void Scene::OnKeyPressing(g2d::KeyCode key)
 {
-	Recollect();
-	for (auto& node : m_collectionSceneNodes)
+	auto& components = GetComponentCollection();
+	for (auto& c : components)
 	{
-		node->OnKeyPressing(key);
+		c.ComponentPtr->OnKeyPressing(key, GetMouse(), GetKeyboard());
 	}
-	for (auto& component : m_collectionComponents)
+
+	auto& children = GetChildrenCollection();
+	for (auto& child : children)
 	{
-		component.ComponentPtr->OnKeyPressing(key, GetMouse(), GetKeyboard());
-	}
+		child->OnKeyPressing(key);
+	};
 }
 
 void Scene::OnKeyPressingEnd(g2d::KeyCode key)
 {
-	Recollect();
-	for (auto& node : m_collectionSceneNodes)
+	auto& components = this->GetComponentCollection();
+	for (auto& c : components)
 	{
-		node->OnKeyPressingEnd(key);
+		c.ComponentPtr->OnKeyPressingEnd(key, GetMouse(), GetKeyboard());
 	}
-	for (auto& component : m_collectionComponents)
+
+	auto& children = GetChildrenCollection();
+	for (auto& child : children)
 	{
-		component.ComponentPtr->OnKeyPressingEnd(key, GetMouse(), GetKeyboard());
-	}
+		child->OnKeyPressingEnd(key);
+	};
 }
 
 void Scene::OnMousePress(g2d::MouseButton button)
@@ -474,46 +438,4 @@ g2d::Camera* Scene::GetCameraByIndex(uint32_t index) const
 {
 	ENSURE(index < m_cameras.size());
 	return m_cameras[index];
-}
-
-void Scene::Recollect()
-{
-	if (m_sceneTreeChanged)
-	{
-		CollectSceneNodes();
-		if (m_hoverNode != nullptr)
-		{
-			auto itEnd = std::end(m_collectionSceneNodes);
-			if (itEnd != std::find(std::begin(m_collectionSceneNodes), itEnd, m_hoverNode))
-			{
-				m_hoverNode = nullptr;
-			}
-		}
-		m_sceneTreeChanged = false;
-	}
-
-	if (m_componentChanged)
-	{
-		CollectComponents();
-		m_componentChanged = false;
-	}
-}
-
-void Scene::CollectSceneNodes()
-{
-	m_collectionSceneNodes.clear();
-
-	TraversalChildren([&](::SceneNode* child)
-	{
-		child->CollectSceneNodes(m_collectionSceneNodes);
-	});
-}
-
-void Scene::CollectComponents()
-{
-	m_collectionComponents.clear();
-	for (auto& c : m_collectionSceneNodes)
-	{
-		c->CollectComponents(m_collectionComponents);
-	}
 }

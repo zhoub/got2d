@@ -7,10 +7,13 @@ BaseNode::BaseNode()
 	, m_scale(gml::vec2::one())
 	, m_rotation(0)
 	, m_matrixLocal(gml::mat32::identity())
-{ }
+{
+}
 
 BaseNode::~BaseNode()
 {
+	// 需要先移除那些需要移除的
+	// 因为有些对象会被强制修改auto release选项
 	DelayRemoveComponents();
 	for (auto& c : m_components)
 	{
@@ -22,6 +25,14 @@ BaseNode::~BaseNode()
 	m_components.clear();
 	m_releasedComponents.clear();
 	EmptyChildren();
+}
+void BaseNode::OnUpdateChildren(uint32_t deltaTime)
+{
+	auto children = GetChildrenCollection();
+	for (auto& child : children)
+	{
+		child->OnUpdate(deltaTime);
+	}
 }
 
 void BaseNode::EmptyChildren()
@@ -138,20 +149,26 @@ g2d::Component* BaseNode::_GetComponentByIndex(uint32_t index) const
 	return m_components.at(index).ComponentPtr;
 }
 
-std::vector<NodeComponent>& BaseNode::GetComponenetCollection()
+std::vector<NodeComponent>& BaseNode::GetComponentCollection()
 {
 	if (m_componentChanged)
 	{
 		DelayRemoveComponents();
 		RecollectComponents();
+		m_componentChanged = false;
 	}
 	return m_collectionComponents;
 }
 
 std::vector<::SceneNode*>& BaseNode::GetChildrenCollection()
 {
-	DelayRemoveChildren();
-	return m_children;
+	if (m_childrenChanged)
+	{
+		DelayRemoveChildren();
+		RecollectChildren();
+		m_childrenChanged = false;
+	}
+	return m_collectionChildren;
 }
 
 
@@ -159,6 +176,7 @@ void BaseNode::OnCreateChild(::Scene& scene, ::SceneNode& child)
 {
 	AdjustRenderingOrder();
 	scene.GetSpatialGraph()->Add(*child.GetEntity());
+	m_childrenChanged = true;
 }
 
 g2d::SceneNode* BaseNode::_CreateSceneNodeChild(::Scene& scene, ::SceneNode& parent, g2d::Entity& e, bool autoRelease)
@@ -326,6 +344,15 @@ void BaseNode::DelayRemoveComponents()
 	m_releasedComponents.clear();
 }
 
+void BaseNode::RecollectChildren()
+{
+	m_collectionChildren.clear();
+	for (auto& c : m_children)
+	{
+		m_collectionChildren.push_back(c);
+	}
+}
+
 void BaseNode::RecollectComponents()
 {
 	m_collectionComponents.clear();
@@ -333,5 +360,4 @@ void BaseNode::RecollectComponents()
 	{
 		m_collectionComponents.push_back(c);
 	}
-	m_componentChanged = false;
 }

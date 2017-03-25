@@ -30,8 +30,6 @@ class BaseNode
 public:
 	virtual BaseNode* _GetParent() { return nullptr; }
 
-	virtual bool MatrixDirtyComponentUpdate() { return false; }
-
 	virtual void AdjustRenderingOrder() = 0;
 
 public:
@@ -71,6 +69,8 @@ public:
 
 protected:
 	BaseNode();
+
+	BaseNode(const BaseNode&) = delete;
 
 	~BaseNode();
 
@@ -118,9 +118,11 @@ protected:
 
 	uint32_t _GetComponentCount() const { return static_cast<uint32_t>(m_components.size()); }
 
+	void OnUpdateChildren(uint32_t deltaTime);
+
 	void EmptyChildren();
 
-	std::vector<NodeComponent>& GetComponenetCollection();
+	std::vector<NodeComponent>& GetComponentCollection();
 
 	std::vector<::SceneNode*>& GetChildrenCollection();
 
@@ -132,6 +134,8 @@ private:
 	void DelayRemoveChildren();
 
 	void DelayRemoveComponents();
+
+	void RecollectChildren();
 
 	void RecollectComponents();
 
@@ -146,6 +150,8 @@ private:
 
 	std::vector<::SceneNode*> m_children;
 	std::vector<::SceneNode*> m_releasedChildren;
+	std::vector<::SceneNode*> m_collectionChildren;
+	bool m_childrenChanged = true;
 
 	std::vector<NodeComponent> m_components;
 	std::vector<NodeComponent> m_releasedComponents;
@@ -163,7 +169,7 @@ public:
 
 	~SceneNode();
 
-	void Update(uint32_t deltaTime);
+	void OnUpdate(uint32_t deltaTime);
 
 	void SetChildIndex(uint32_t index) { m_childID = index; }
 
@@ -218,7 +224,7 @@ public:	//g2d::SceneNode
 
 	virtual g2d::SceneNode* GetChildByIndex(uint32_t index) const override { return _GetChildByIndex(index); }
 
-	virtual g2d::SceneNode* CreateSceneNodeChild(g2d::Entity* entity, bool autoRelease) override;
+	virtual g2d::SceneNode* CreateSceneNodeChild(g2d::Entity* entity, bool autoRelease) override { return _CreateSceneNodeChild(m_scene, *this, *entity, autoRelease); }
 
 	virtual void RemoveFromParent() override { m_bparent.Remove(this); }
 
@@ -230,7 +236,7 @@ public:	//g2d::SceneNode
 
 	virtual void MoveNext() override;
 
-	virtual bool AddComponent(g2d::Component* component, bool autoRelease) override;
+	virtual bool AddComponent(g2d::Component* component, bool autoRelease) override { return _AddComponent(component, autoRelease, this); }
 
 	virtual bool RemoveComponent(g2d::Component* component) override { return _RemoveComponent(component, false); }
 
@@ -283,8 +289,6 @@ public:	//g2d::SceneNode
 	virtual gml::vec2 WorldToParent(const gml::vec2& pos) override;
 
 protected:	// BaseNode
-	virtual bool MatrixDirtyComponentUpdate() override { return m_matrixDirtyComponentUpdate; }
-
 	virtual void AdjustRenderingOrder() override;
 
 	virtual ::BaseNode* _GetParent() override { return &m_bparent; }
@@ -307,7 +311,6 @@ private:
 	bool m_autoRelease = false;
 	bool m_isStatic = false;
 	bool m_matrixDirtyEntityUpdate = true;
-	bool m_matrixDirtyComponentUpdate = true;
 	bool m_matrixWorldDirty = true;
 	gml::mat32 m_matrixWorld;
 };
@@ -326,10 +329,6 @@ public:
 
 	void OnMessage(const g2d::Message& message, uint32_t currentTimeStamp);
 
-	void SetSceneTreeChanged();
-
-	void SetComponentsChanged();
-
 public: //g2d::SceneNode
 	virtual g2d::Scene* GetScene() const override { return const_cast<::Scene*>(this); }
 
@@ -345,7 +344,7 @@ public: //g2d::SceneNode
 
 	virtual g2d::SceneNode* GetChildByIndex(uint32_t index) const override { return _GetChildByIndex(index); }
 
-	virtual g2d::SceneNode* CreateSceneNodeChild(g2d::Entity* entity, bool autoRelease) override;
+	virtual g2d::SceneNode* CreateSceneNodeChild(g2d::Entity* entity, bool autoRelease) override { return _CreateSceneNodeChild(*this, *entity, autoRelease); }
 
 	virtual void RemoveFromParent() override { }
 
@@ -357,7 +356,7 @@ public: //g2d::SceneNode
 
 	virtual void MoveNext() override { }
 
-	virtual bool AddComponent(g2d::Component* component, bool autoRelease) override;
+	virtual bool AddComponent(g2d::Component* component, bool autoRelease) override { return _AddComponent(component, autoRelease, this); }
 
 	virtual bool RemoveComponent(g2d::Component* component) override { return _RemoveComponent(component, false); }
 
@@ -455,12 +454,6 @@ private:
 
 	void OnMouseMoving();
 
-	void Recollect();
-
-	void CollectSceneNodes();
-
-	void CollectComponents();
-
 	KeyEventReceiver m_keyPressReceiver;
 	KeyEventReceiver m_keyPressingBeginReceiver;
 	KeyEventReceiver m_keyPressingReceiver;
@@ -491,9 +484,4 @@ private:
 	} m_mouseButtonState[3];
 	::SceneNode* m_hoverNode = nullptr;
 	bool m_canTickHovering = false;
-
-	std::vector<::SceneNode*> m_collectionSceneNodes;
-	std::vector<NodeComponent> m_collectionComponents;
-	bool m_sceneTreeChanged = true;
-	bool m_componentChanged = true;
 };
