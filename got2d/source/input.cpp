@@ -130,18 +130,10 @@ void Keyboard::KeyState::OnMessage(const g2d::Message& message, uint32_t current
 {
 	if (message.Event == g2d::MessageEvent::KeyDown)
 	{
-		if (state == g2d::SwitchState::JustPressed)
-		{
-			//state = g2d::SwitchState::Pressing;
-			//OnPressingBegin(*this);
-			//repeatCount = 1;
-		}
-		else if (state == g2d::SwitchState::Pressing)
-		{
-			//OnPressing(*this);
-			//repeatCount++;
-		}
-		else
+		// keydown消息会持续发送
+		// 我们在Update中模拟持续点击消息
+		// 以保证不会再消息循环中卡死
+		if (state == g2d::SwitchState::Releasing)
 		{
 			state = g2d::SwitchState::JustPressed;
 			pressTimeStamp = currentTimeStamp;

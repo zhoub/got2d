@@ -15,7 +15,7 @@ public:\
 private:
 
 #include <cassert>
-#define ENSURE(b) { assert(b); if (b); else throw; }
+#define ENSURE(b) { assert(b); if (b); else throw nullptr; }
 
 template<typename T1, typename T2>
 bool same_type(T1* a, T2* b)

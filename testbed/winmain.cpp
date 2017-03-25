@@ -56,11 +56,25 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 #include <g2drender.h>
 #include <g2dscene.h>
 
+g2d::SceneNode* CreateQuadNode(g2d::SceneNode* parent);
+
 class Moveing : public g2d::Component
 {
 	RTTI_IMPL;
 public: //implement
 	virtual void Release() override { delete this; }
+
+	virtual void OnKeyPress(g2d::KeyCode key, const g2d::Mouse& mouse, const g2d::Keyboard& keyboard) override
+	{
+		if (key == g2d::KeyCode::Enter && (GetSceneNode()->GetChildCount() < 5 || GetSceneNode()->GetParentNode()->GetParentNode() == GetSceneNode()->GetScene()))
+		{
+			CreateQuadNode(GetSceneNode());
+		}
+		else if (key == g2d::KeyCode::Delete && GetSceneNode()->GetChildIndex() == 3)
+		{
+			GetSceneNode()->Remove();
+		}
+	}
 
 	virtual void OnKeyPressing(g2d::KeyCode key, const g2d::Mouse& mouse, const g2d::Keyboard& keyboard) override
 	{
@@ -82,6 +96,18 @@ public: //implement
 		}
 	}
 };
+
+
+g2d::SceneNode* CreateQuadNode(g2d::SceneNode* parent)
+{
+	auto quad = g2d::Quad::Create()->SetSize(gml::vec2(100, 120));
+	auto child = parent->CreateSceneNodeChild(quad, true)->SetPosition(gml::vec2(50, 20));
+	child->AddComponent(new Moveing(), true);
+	child->SetStatic(false);
+	return child;
+}
+
+
 void Testbed::Start()
 {
 	mainScene = g2d::GetEngine()->CreateNewScene(2 << 10);

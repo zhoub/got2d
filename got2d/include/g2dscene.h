@@ -279,9 +279,11 @@ namespace g2d
 		// 如果没有孩子则返回nullptr
 		virtual g2d::SceneNode* LastChild() const = 0;
 
-		// 获取该索引值对应的孩子
-		// 如果没有找到则返回nullptr
+		// 使用索引获得子节点
 		virtual g2d::SceneNode* GetChildByIndex(uint32_t index) const = 0;
+
+		// 获取子节点的数目
+		virtual uint32_t GetChildCount() const = 0;
 
 		// 创建子节点，必须传入Entity对象
 		virtual SceneNode* CreateSceneNodeChild(Entity*, bool autoRelease) = 0;
@@ -375,6 +377,9 @@ namespace g2d
 
 		// 获取节点绑定的Entity对象
 		virtual Entity* GetEntity() const = 0;
+		
+		// 获取当前节点是父亲的第几个节点
+		virtual uint32_t GetChildIndex() const = 0;
 
 		// 节点是否可见设置
 		virtual bool IsVisible() const = 0;

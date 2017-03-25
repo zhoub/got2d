@@ -31,7 +31,7 @@ public:
 public:
 	::SceneNode* _GetChildByIndex(uint32_t index) const;
 
-	uint32_t GetChildCount() const { return static_cast<uint32_t>(m_children.size()); }
+	uint32_t _GetChildCount() const { return static_cast<uint32_t>(m_children.size()); }
 
 	void RemoveChildNode(::SceneNode* child);
 
@@ -131,24 +131,24 @@ protected:
 	template<typename CFUNC>
 	void DispatchComponent(const CFUNC& cf)
 	{
-		auto& components = GetComponentCollection();
-		for (auto& c : components)
+		DelayRemoveComponents();
+		for (auto& c : m_collectionComponents)
 		{
 			cf(c.ComponentPtr);
 		}
-		DelayRemoveComponents();
+		CollectComponents();
 	}
 
 private:
 	template<typename NFUNC>
 	void DispatchChildren(const NFUNC& nf)
 	{
-		auto& children = GetChildrenCollection();
-		for (auto& child : children)
+		DelayRemoveChildren();
+		for (auto& child : m_collectionChildren)
 		{
 			nf(child);
 		};
-		DelayRemoveChildren();
+		CollectChildren();
 	}
 
 	template<typename CFUNC, typename NFUNC>
@@ -157,10 +157,6 @@ private:
 		DispatchComponent(cf);
 		DispatchChildren(nf);
 	}
-
-	std::vector<::SceneNode*>& GetChildrenCollection();
-
-	std::vector<NodeComponent>& GetComponentCollection();
 
 	void OnCreateChild(::Scene&, ::SceneNode&);
 
@@ -173,6 +169,10 @@ private:
 	void DelayRemoveChildren();
 
 	void DelayRemoveComponents();
+
+	void CollectComponents();
+
+	void CollectChildren();
 
 	gml::vec2 m_position;
 	gml::vec2 m_pivot;
@@ -255,6 +255,8 @@ public:	//g2d::SceneNode
 
 	virtual g2d::SceneNode* GetChildByIndex(uint32_t index) const override { return _GetChildByIndex(index); }
 
+	virtual uint32_t GetChildCount() const override { return _GetChildCount(); }
+
 	virtual g2d::SceneNode* CreateSceneNodeChild(g2d::Entity* entity, bool autoRelease) override { return _CreateSceneNodeChild(m_scene, *this, *entity, autoRelease); }
 
 	virtual void Remove() override { m_bparent.RemoveChildNode(this); }
@@ -309,6 +311,8 @@ public:	//g2d::SceneNode
 
 	virtual g2d::Entity* GetEntity() const override { return m_entity; }
 
+	virtual uint32_t GetChildIndex() const override { return m_childIndex; }
+
 	virtual bool IsVisible() const override { return _IsVisible(); }
 
 	virtual bool IsStatic() const override { return m_isStatic; }
@@ -318,8 +322,6 @@ public:	//g2d::SceneNode
 	virtual gml::vec2 WorldToLocal(const gml::vec2& pos) override;
 
 	virtual gml::vec2 WorldToParent(const gml::vec2& pos) override;
-
-	uint32_t GetChildIndex() const { return m_childIndex; }
 
 protected:	// BaseNode
 	virtual void AdjustRenderingOrder() override;
@@ -377,6 +379,8 @@ public: //g2d::SceneNode
 
 	virtual g2d::SceneNode* GetChildByIndex(uint32_t index) const override { return _GetChildByIndex(index); }
 
+	virtual uint32_t GetChildCount() const override { return _GetChildCount(); }
+
 	virtual g2d::SceneNode* CreateSceneNodeChild(g2d::Entity* entity, bool autoRelease) override { return _CreateSceneNodeChild(*this, *entity, autoRelease); }
 
 	virtual void Remove() override { }
@@ -430,6 +434,8 @@ public: //g2d::SceneNode
 	virtual gml::vec2 GetWorldPosition() override { return _GetPosition(); };
 
 	virtual g2d::Entity* GetEntity() const override { return nullptr; }
+
+	virtual uint32_t GetChildIndex() const override { return 0; }
 
 	virtual bool IsVisible() const override { return _IsVisible(); }
 

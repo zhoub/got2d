@@ -189,7 +189,7 @@ void SceneNode::SetRenderingOrder(uint32_t& index)
 
 ::SceneNode* SceneNode::GetNextSibling() const
 {
-	if (m_childIndex == m_bparent.GetChildCount() - 1)
+	if (m_childIndex == m_bparent._GetChildCount() - 1)
 	{
 		return nullptr;
 	}
@@ -198,7 +198,7 @@ void SceneNode::SetRenderingOrder(uint32_t& index)
 
 void SceneNode::MoveToFront()
 {
-	m_bparent.MoveChild(m_childIndex, m_bparent.GetChildCount() - 1);
+	m_bparent.MoveChild(m_childIndex, m_bparent._GetChildCount() - 1);
 }
 
 void SceneNode::MoveToBack()

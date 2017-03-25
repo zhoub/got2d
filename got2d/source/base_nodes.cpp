@@ -217,7 +217,7 @@ g2d::Component* BaseNode::_GetComponentByIndex(uint32_t index) const
 	return m_components.at(index).ComponentPtr;
 }
 
-std::vector<NodeComponent>& BaseNode::GetComponentCollection()
+void BaseNode::CollectComponents()
 {
 	if (m_componentsChanged)
 	{
@@ -225,10 +225,9 @@ std::vector<NodeComponent>& BaseNode::GetComponentCollection()
 		RecollectComponents();
 		m_componentsChanged = false;
 	}
-	return m_collectionComponents;
 }
 
-std::vector<::SceneNode*>& BaseNode::GetChildrenCollection()
+void BaseNode::CollectChildren()
 {
 	if (m_childrenChanged)
 	{
@@ -236,7 +235,6 @@ std::vector<::SceneNode*>& BaseNode::GetChildrenCollection()
 		RecollectChildren();
 		m_childrenChanged = false;
 	}
-	return m_collectionChildren;
 }
 
 void BaseNode::OnCreateChild(::Scene& scene, ::SceneNode& child)
