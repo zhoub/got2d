@@ -170,8 +170,9 @@ void Scene::Update(uint32_t elapsedTime, uint32_t deltaTime)
 
 	for (auto& node : m_collectionSceneNodes)
 	{
-		node->SingleUpdate(deltaTime);
+		node->Update(deltaTime);
 	}
+
 	for (auto& component : m_collectionComponents)
 	{
 		component.ComponentPtr->OnUpdate(deltaTime);
@@ -227,8 +228,8 @@ g2d::SceneNode * Scene::CreateSceneNodeChild(g2d::Entity * entity, bool autoRele
 	return child;
 }
 
-bool Scene::AddComponent(g2d::Component * component, bool autoRelease) 
-{ 
+bool Scene::AddComponent(g2d::Component * component, bool autoRelease)
+{
 	if (_AddComponent(component, autoRelease, this))
 	{
 		SetComponentsChanged();
@@ -480,6 +481,14 @@ void Scene::Recollect()
 	if (m_sceneTreeChanged)
 	{
 		CollectSceneNodes();
+		if (m_hoverNode != nullptr)
+		{
+			auto itEnd = std::end(m_collectionSceneNodes);
+			if (itEnd != std::find(std::begin(m_collectionSceneNodes), itEnd, m_hoverNode))
+			{
+				m_hoverNode = nullptr;
+			}
+		}
 		m_sceneTreeChanged = false;
 	}
 
@@ -493,8 +502,7 @@ void Scene::Recollect()
 void Scene::CollectSceneNodes()
 {
 	m_collectionSceneNodes.clear();
-	DelayRemoveChildren();
-	DelayRemoveComponents();
+
 	TraversalChildren([&](::SceneNode* child)
 	{
 		child->CollectSceneNodes(m_collectionSceneNodes);

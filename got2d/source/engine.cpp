@@ -63,8 +63,9 @@ Engine::~Engine()
 
 void Engine::RemoveScene(::Scene& scene)
 {
-	auto newEnd = std::remove(std::begin(m_scenes), std::end(m_scenes), &scene);
-	m_scenes.erase(newEnd, std::end(m_scenes));
+	auto oldEnd = std::end(m_scenes);
+	auto newEnd = std::remove(std::begin(m_scenes), oldEnd, &scene);
+	m_scenes.erase(newEnd, oldEnd);
 }
 
 g2d::Scene* Engine::CreateNewScene(float boundSize)

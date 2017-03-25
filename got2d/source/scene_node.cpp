@@ -113,32 +113,6 @@ void SceneNode::AdjustSpatial()
 void SceneNode::Update(uint32_t deltaTime)
 {
 	m_entity->OnUpdate(deltaTime);
-	TraversalComponent([&](g2d::Component* component)
-	{
-		component->OnUpdate(deltaTime);
-	});
-	if (m_matrixDirtyEntityUpdate)
-	{
-		// 如果是静态对象，需要重新修正其在四叉树的位置
-		// 现在阶段只需要在test visible之前处理好就行.
-		// 也就是 Scene::Render之前
-		if (IsStatic())
-		{
-			AdjustSpatial();
-		}
-		m_entity->OnUpdateMatrixChanged();
-		TraversalComponent([](g2d::Component* component)
-		{
-			component->OnUpdateMatrixChanged();
-		});
-		m_matrixDirtyEntityUpdate = false;
-	}
-	_Update(deltaTime);
-}
-
-void SceneNode::SingleUpdate(uint32_t deltaTime)
-{
-	m_entity->OnUpdate(deltaTime);
 	if (m_matrixDirtyEntityUpdate)
 	{
 		// 如果是静态对象，需要重新修正其在四叉树的位置
@@ -548,17 +522,17 @@ void SceneNode::OnKeyPressingEnd(g2d::KeyCode key)
 void SceneNode::CollectSceneNodes(std::vector<::SceneNode*>& collection)
 {
 	collection.push_back(this);
-	DelayRemoveChildren();
-	DelayRemoveComponents();
-	TraversalChildren([&](::SceneNode* child)
+	auto& childrenCollection = GetChildrenCollection();
+	for (auto& child : childrenCollection)
 	{
 		child->CollectSceneNodes(collection);
-	});
+	};
 }
 
 void SceneNode::CollectComponents(std::vector<NodeComponent>& collection)
 {
-	for (auto& c : m_components)
+	auto& components = GetComponenetCollection();
+	for (auto& c : components)
 	{
 		collection.push_back(c);
 	}

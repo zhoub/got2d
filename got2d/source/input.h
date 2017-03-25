@@ -28,14 +28,16 @@ template<typename RECEIVER> class EventDelegate
 public:
 	void operator+=(const RECEIVER& receiver)
 	{
-		auto itFind = std::find(std::begin(receivers), std::end(receivers), receiver);
-		if (itFind == std::end(receivers)) receivers.push_back(receiver);
+		auto itEnd = std::end(receivers);
+		if (itEnd == std::find(std::begin(receivers), itEnd, receiver))
+			receivers.push_back(receiver);
 	}
 
 	void operator-=(const RECEIVER& receiver)
 	{
-		auto itFind = std::find(std::begin(receivers), std::end(receivers), receiver);
-		if (itFind != std::end(receivers)) receivers.erase(itFind);
+		auto itEnd = std::end(receivers);
+		auto itFound = std::find(std::begin(receivers), itEnd, receiver);
+		if (itEnd != itFound) receivers.erase(itFound);
 	}
 
 	template<typename TFUNC> void Traversal(TFUNC func)

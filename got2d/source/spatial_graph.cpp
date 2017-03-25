@@ -139,12 +139,9 @@ void QuadTreeNode::TryMarkEmpty()
 }
 void QuadTreeNode::Remove(g2d::Entity& entity)
 {
-	auto newEnd = std::remove(
-		std::begin(m_dynamicEntities),
-		std::end(m_dynamicEntities),
-		&entity);
-
-	m_dynamicEntities.erase(newEnd, std::end(m_dynamicEntities));
+	auto oldEnd = std::end(m_dynamicEntities);
+	auto newEnd = std::remove(std::begin(m_dynamicEntities), oldEnd, &entity);
+	m_dynamicEntities.erase(newEnd, oldEnd);
 
 	TryMarkEmpty();
 }

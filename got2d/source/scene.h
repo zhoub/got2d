@@ -27,14 +27,47 @@ struct NodeComponent
 
 class BaseNode
 {
-	friend class SceneNode;
-	friend class Scene;
-protected:
+public:
 	virtual BaseNode* _GetParent() { return nullptr; }
 
 	virtual bool MatrixDirtyComponentUpdate() { return false; }
 
 	virtual void AdjustRenderingOrder() = 0;
+
+public:
+	uint32_t GetChildCount() const { return static_cast<uint32_t>(m_children.size()); }
+
+	::SceneNode* _GetChildByIndex(uint32_t index) const;
+
+	void Remove(::SceneNode* child);
+
+	void MoveChild(uint32_t from, uint32_t to);
+
+	template<typename FUNC>
+	void TraversalChildrenByIndex(uint32_t startIndex, FUNC func)
+	{
+		for (uint32_t size = static_cast<uint32_t>(m_children.size()); startIndex < size; startIndex++)
+			func(startIndex, m_children[startIndex]);
+	}
+
+	template<typename FUNC>
+	void TraversalChildren(FUNC func)
+	{
+		for (auto& child : m_children) func(child);
+	}
+
+	template<typename FUNC>
+	void InverseTraversalChildren(FUNC func)
+	{
+		auto it = std::rbegin(m_children);
+		auto end = std::rend(m_children);
+		for (; it != end; it++) func(*child);
+	}
+
+	template<typename FUNC> void TraversalComponent(FUNC f)
+	{
+		for (auto& c : m_components) f(c.ComponentPtr);
+	}
 
 protected:
 	BaseNode();
@@ -71,42 +104,9 @@ protected:
 
 	void _SetVisible(bool visible) { m_isVisible = visible; }
 
-	void _Update(uint32_t deltaTime);
-
-	::SceneNode* _GetChildByIndex(uint32_t index) const;
-
 	::SceneNode* _FirstChild() const { return m_children.empty() ? nullptr : *m_children.begin(); };
 
 	::SceneNode* _LastChild() const { return m_children.empty() ? nullptr : m_children[m_children.size() - 1]; }
-
-	void MoveChild(uint32_t from, uint32_t to);
-
-	void Remove(::SceneNode* child);
-
-	void EmptyChildren();
-
-	template<typename FUNC>
-	void TraversalChildrenByIndex(uint32_t startIndex, FUNC func)
-	{
-		for (uint32_t size = static_cast<uint32_t>(m_children.size()); startIndex < size; startIndex++)
-			func(startIndex, m_children[startIndex]);
-	}
-
-	template<typename FUNC>
-	void TraversalChildren(FUNC func)
-	{
-		for (auto& child : m_children) func(child);
-	}
-
-	template<typename FUNC>
-	void InverseTraversalChildren(FUNC func)
-	{
-		auto it = std::rbegin(m_children);
-		auto end = std::rend(m_children);
-		for (; it != end; it++) func(*child);
-	}
-
-	uint32_t GetChildCount() const { return static_cast<uint32_t>(m_children.size()); }
 
 	bool _AddComponent(g2d::Component* component, bool autoRelease, g2d::SceneNode* node);
 
@@ -118,12 +118,11 @@ protected:
 
 	uint32_t _GetComponentCount() const { return static_cast<uint32_t>(m_components.size()); }
 
-	template<typename FUNC> void TraversalComponent(FUNC f)
-	{
-		for (auto& c : m_components) f(c.ComponentPtr);
-	}
+	void EmptyChildren();
 
 	std::vector<NodeComponent>& GetComponenetCollection();
+
+	std::vector<::SceneNode*>& GetChildrenCollection();
 
 private:
 	void OnCreateChild(::Scene&, ::SceneNode&);
@@ -165,8 +164,6 @@ public:
 	~SceneNode();
 
 	void Update(uint32_t deltaTime);
-
-	void SingleUpdate(uint32_t deltaTime);
 
 	void SetChildIndex(uint32_t index) { m_childID = index; }
 
