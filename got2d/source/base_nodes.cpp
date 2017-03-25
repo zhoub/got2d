@@ -26,13 +26,79 @@ BaseNode::~BaseNode()
 	m_releasedComponents.clear();
 	EmptyChildren();
 }
+
 void BaseNode::OnUpdateChildren(uint32_t deltaTime)
 {
-	auto children = GetChildrenCollection();
-	for (auto& child : children)
+	auto onUpdate = [&](::SceneNode* child)
 	{
 		child->OnUpdate(deltaTime);
-	}
+	};
+	DispatchChildren(onUpdate);
+}
+
+void BaseNode::OnMessageComponentsAndChildren(const g2d::Message& message)
+{
+	auto cf = [&](g2d::Component* component)
+	{
+		component->OnMessage(message);
+	};
+	auto nf = [&](::SceneNode* child)
+	{
+		child->OnMessage(message);
+	};
+	DispatchRecursive(cf, nf);
+}
+
+void BaseNode::OnKeyPressComponentsAndChildren(g2d::KeyCode key)
+{
+	auto cf = [&](g2d::Component* component)
+	{
+		component->OnKeyPress(key, GetMouse(), GetKeyboard());
+	};
+	auto nf = [&](::SceneNode* child)
+	{
+		child->OnKeyPress(key);
+	};
+	DispatchRecursive(cf, nf);
+}
+
+void BaseNode::OnKeyPressingBeginComponentsAndChildren(g2d::KeyCode key)
+{
+	auto cf = [&](g2d::Component* component)
+	{
+		component->OnKeyPressingBegin(key, GetMouse(), GetKeyboard());
+	};
+	auto nf = [&](::SceneNode* child)
+	{
+		child->OnKeyPressingBegin(key);
+	};
+	DispatchRecursive(cf, nf);
+}
+
+void BaseNode::OnKeyPressingComponentsAndChildren(g2d::KeyCode key)
+{
+	auto cf = [&](g2d::Component* component)
+	{
+		component->OnKeyPressing(key, GetMouse(), GetKeyboard());
+	};
+	auto nf = [&](::SceneNode* child)
+	{
+		child->OnKeyPressing(key);
+	};
+	DispatchRecursive(cf, nf);
+}
+
+void BaseNode::OnKeyPressingEndComponentsAndChildren(g2d::KeyCode key)
+{
+	auto cf = [&](g2d::Component* component)
+	{
+		component->OnKeyPressingEnd(key, GetMouse(), GetKeyboard());
+	};
+	auto nf = [&](::SceneNode* child)
+	{
+		child->OnKeyPressingEnd(key);
+	};
+	DispatchRecursive(cf, nf);
 }
 
 void BaseNode::EmptyChildren()
@@ -292,6 +358,9 @@ void BaseNode::Remove(::SceneNode* child)
 
 void BaseNode::DelayRemoveChildren()
 {
+	if (m_releasedChildren.size() == 0)
+		return;
+
 	for (auto removeChild : m_releasedChildren)
 	{
 		auto releasedFunc = [&](::SceneNode* child)->bool

@@ -132,17 +132,20 @@ void Keyboard::KeyState::OnMessage(const g2d::Message& message, uint32_t current
 	{
 		if (state == g2d::SwitchState::JustPressed)
 		{
-			//�쳣״̬
+			//state = g2d::SwitchState::Pressing;
+			//OnPressingBegin(*this);
+			//repeatCount = 1;
 		}
 		else if (state == g2d::SwitchState::Pressing)
 		{
-			//�쳣״̬
-			OnPressingEnd(*this);
-			repeatCount = 0;
+			//OnPressing(*this);
+			//repeatCount++;
 		}
-
-		state = g2d::SwitchState::JustPressed;
-		pressTimeStamp = currentTimeStamp;
+		else
+		{
+			state = g2d::SwitchState::JustPressed;
+			pressTimeStamp = currentTimeStamp;
+		}
 	}
 	else if (message.Event == g2d::MessageEvent::KeyUp)
 	{

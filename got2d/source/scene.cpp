@@ -184,77 +184,27 @@ void Scene::AdjustRenderingOrder()
 
 void Scene::OnMessage(const g2d::Message& message, uint32_t currentTimeStamp)
 {
-	auto& components = GetComponentCollection();
-	for (auto& c : components)
-	{
-		c.ComponentPtr->OnMessage(message);
-	}
-
-	auto& children = GetChildrenCollection();
-	for (auto& child : children)
-	{
-		child->OnMessage(message);
-	};
+	OnMessageComponentsAndChildren(message);
 }
 
 void Scene::OnKeyPress(g2d::KeyCode key)
 {
-	auto& components = GetComponentCollection();
-	for (auto& c : components)
-	{
-		c.ComponentPtr->OnKeyPress(key, GetMouse(), GetKeyboard());
-	}
-
-	auto& children = GetChildrenCollection();
-	for (auto& child : children)
-	{
-		child->OnKeyPress(key);
-	};
+	OnKeyPressComponentsAndChildren(key);
 }
 
 void Scene::OnKeyPressingBegin(g2d::KeyCode key)
 {
-	auto& components = GetComponentCollection();
-	for (auto& c : components)
-	{
-		c.ComponentPtr->OnKeyPressingBegin(key, GetMouse(), GetKeyboard());
-	}
-
-	auto& children = GetChildrenCollection();
-	for (auto& child : children)
-	{
-		child->OnKeyPressingBegin(key);
-	};
+	OnKeyPressingBeginComponentsAndChildren(key);
 }
 
 void Scene::OnKeyPressing(g2d::KeyCode key)
 {
-	auto& components = GetComponentCollection();
-	for (auto& c : components)
-	{
-		c.ComponentPtr->OnKeyPressing(key, GetMouse(), GetKeyboard());
-	}
-
-	auto& children = GetChildrenCollection();
-	for (auto& child : children)
-	{
-		child->OnKeyPressing(key);
-	};
+	OnKeyPressingComponentsAndChildren(key);
 }
 
 void Scene::OnKeyPressingEnd(g2d::KeyCode key)
 {
-	auto& components = this->GetComponentCollection();
-	for (auto& c : components)
-	{
-		c.ComponentPtr->OnKeyPressingEnd(key, GetMouse(), GetKeyboard());
-	}
-
-	auto& children = GetChildrenCollection();
-	for (auto& child : children)
-	{
-		child->OnKeyPressingEnd(key);
-	};
+	OnKeyPressingEndComponentsAndChildren(key);
 }
 
 void Scene::OnMousePress(g2d::MouseButton button)

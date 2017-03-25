@@ -122,22 +122,61 @@ protected:
 
 	void EmptyChildren();
 
+	void OnMessageComponentsAndChildren(const g2d::Message& message);
+
+	void OnKeyPressComponentsAndChildren(g2d::KeyCode key);
+
+	void OnKeyPressingBeginComponentsAndChildren(g2d::KeyCode key);
+
+	void OnKeyPressingComponentsAndChildren(g2d::KeyCode key);
+
+	void OnKeyPressingEndComponentsAndChildren(g2d::KeyCode key);
+
 	std::vector<NodeComponent>& GetComponentCollection();
+
+private:
+	template<typename CFUNC>
+	void DispatchComponent(const CFUNC& cf)
+	{
+		auto& components = GetComponentCollection();
+		for (auto& c : components)
+		{
+			cf(c.ComponentPtr);
+		}
+		DelayRemoveComponents();
+	}
+
+	template<typename NFUNC>
+	void DispatchChildren(const NFUNC& nf)
+	{
+		auto& children = GetChildrenCollection();
+		for (auto& child : children)
+		{
+			nf(child);
+		};
+		DelayRemoveChildren();
+	}
+
+	template<typename CFUNC, typename NFUNC>
+	void DispatchRecursive(const CFUNC& cf, const NFUNC& nf)
+	{
+		DispatchComponent(cf);
+		DispatchChildren(nf);
+	}
 
 	std::vector<::SceneNode*>& GetChildrenCollection();
 
-private:
 	void OnCreateChild(::Scene&, ::SceneNode&);
 
 	void SetLocalMatrixDirty();
 
-	void DelayRemoveChildren();
-
-	void DelayRemoveComponents();
-
 	void RecollectChildren();
 
 	void RecollectComponents();
+
+	void DelayRemoveChildren();
+
+	void DelayRemoveComponents();
 
 	gml::vec2 m_position;
 	gml::vec2 m_pivot;
@@ -204,10 +243,6 @@ public:
 	void OnKeyPressing(g2d::KeyCode key);
 
 	void OnKeyPressingEnd(g2d::KeyCode key);
-
-	void CollectSceneNodes(std::vector<::SceneNode*>& collection);
-
-	void CollectComponents(std::vector<NodeComponent>& collection);
 
 public:	//g2d::SceneNode
 	virtual g2d::Scene* GetScene() const override;

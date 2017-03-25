@@ -247,17 +247,6 @@ gml::vec2 SceneNode::WorldToParent(const gml::vec2& pos)
 void SceneNode::OnMessage(const g2d::Message& message)
 {
 	m_entity->OnMessage(message);
-	auto& components = this->GetComponentCollection();
-	for (auto& c : components)
-	{
-		c.ComponentPtr->OnMessage(message);
-	}
-
-	auto& children = this->GetChildrenCollection();
-	for (auto& child : children)
-	{
-		child->OnMessage(message);
-	};
 }
 
 void SceneNode::OnCursorEnterFrom(::SceneNode* adjacency)
@@ -496,60 +485,25 @@ void SceneNode::OnDropTo(::SceneNode* dropped, g2d::MouseButton button)
 void SceneNode::OnKeyPress(g2d::KeyCode key)
 {
 	m_entity->OnKeyPress(key, GetMouse(), GetKeyboard());
-	auto& components = GetComponentCollection();
-	for (auto& c : components)
-	{
-		c.ComponentPtr->OnKeyPress(key, GetMouse(), GetKeyboard());
-	}
+	OnKeyPressComponentsAndChildren(key);
 }
 
 void SceneNode::OnKeyPressingBegin(g2d::KeyCode key)
 {
 	m_entity->OnKeyPressingBegin(key, GetMouse(), GetKeyboard());
-	auto& components = GetComponentCollection();
-	for (auto& c : components)
-	{
-		c.ComponentPtr->OnKeyPressingBegin(key, GetMouse(), GetKeyboard());
-	}
+	OnKeyPressingBeginComponentsAndChildren(key);
 }
 
 void SceneNode::OnKeyPressing(g2d::KeyCode key)
 {
 	m_entity->OnKeyPressing(key, GetMouse(), GetKeyboard());
-	auto& components = GetComponentCollection();
-	for (auto& c : components)
-	{
-		c.ComponentPtr->OnKeyPressing(key, GetMouse(), GetKeyboard());
-	}
+	OnKeyPressingComponentsAndChildren(key);
 }
 
 void SceneNode::OnKeyPressingEnd(g2d::KeyCode key)
 {
 	m_entity->OnKeyPressingEnd(key, GetMouse(), GetKeyboard());
-	auto& components = GetComponentCollection();
-	for (auto& c : components)
-	{
-		c.ComponentPtr->OnKeyPressingEnd(key, GetMouse(), GetKeyboard());
-	}
-}
-
-void SceneNode::CollectSceneNodes(std::vector<::SceneNode*>& collection)
-{
-	collection.push_back(this);
-	auto& childrenCollection = GetChildrenCollection();
-	for (auto& child : childrenCollection)
-	{
-		child->CollectSceneNodes(collection);
-	};
-}
-
-void SceneNode::CollectComponents(std::vector<NodeComponent>& collection)
-{
-	auto& components = GetComponentCollection();
-	for (auto& c : components)
-	{
-		collection.push_back(c);
-	}
+	OnKeyPressingEndComponentsAndChildren(key);
 }
 
 

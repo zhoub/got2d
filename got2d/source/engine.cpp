@@ -92,6 +92,7 @@ void Engine::OnMessage(const g2d::Message& message)
 {
 	GetKeyboard().OnMessage(message, m_elapsedTime);
 	GetMouse().OnMessage(message, m_elapsedTime);
+
 	for (auto& scene : m_scenes)
 	{
 		scene->OnMessage(message, m_elapsedTime);

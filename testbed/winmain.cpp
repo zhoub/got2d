@@ -56,6 +56,32 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 #include <g2drender.h>
 #include <g2dscene.h>
 
+class Moveing : public g2d::Component
+{
+	RTTI_IMPL;
+public: //implement
+	virtual void Release() override { delete this; }
+
+	virtual void OnKeyPressing(g2d::KeyCode key, const g2d::Mouse& mouse, const g2d::Keyboard& keyboard) override
+	{
+		if (key == g2d::KeyCode::ArrowLeft)
+		{
+			GetSceneNode()->SetPosition(GetSceneNode()->GetPosition() + gml::vec2(-1.0f, 0));
+		}
+		else if (key == g2d::KeyCode::ArrowRight)
+		{
+			GetSceneNode()->SetPosition(GetSceneNode()->GetPosition() + gml::vec2(1.0f, 0));
+		}
+		else if (key == g2d::KeyCode::ArrowUp)
+		{
+			GetSceneNode()->SetPosition(GetSceneNode()->GetPosition() + gml::vec2(0, -1.0f));
+		}
+		else if (key == g2d::KeyCode::ArrowDown)
+		{
+			GetSceneNode()->SetPosition(GetSceneNode()->GetPosition() + gml::vec2(0, 1.0f));
+		}
+	}
+};
 void Testbed::Start()
 {
 	mainScene = g2d::GetEngine()->CreateNewScene(2 << 10);
@@ -75,7 +101,7 @@ void Testbed::Start()
 	{
 		auto quad = g2d::Quad::Create()->SetSize(gml::vec2(100, 120));
 		auto child = node->CreateSceneNodeChild(quad, true)->SetPosition(gml::vec2(50, 20));
-
+		child->AddComponent(new Moveing(), true);
 		child->SetVisibleMask((i % 2) ? 1 : 2, true);
 		child->SetStatic(true);
 
@@ -119,7 +145,7 @@ void Testbed::End()
 
 bool Testbed::Update(uint32_t deltaTime)
 {
-	
+
 	g2d::GetEngine()->Update(deltaTime);
 
 	//²âÊÔ¹â±ê×ø±êÓ³Éä
