@@ -291,7 +291,7 @@ ShaderLib::~ShaderLib()
 
 std::string ShaderLib::GetEffectName(const std::string& vsName, const std::string& psName)
 {
-	return std::move(vsName + psName);
+	return vsName + psName;
 }
 
 Shader* ShaderLib::GetShaderByName(const std::string& vsName, const std::string& psName)
