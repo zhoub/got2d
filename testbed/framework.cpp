@@ -58,9 +58,9 @@ AutoWinClassRegister::AutoWinClassRegister(HINSTANCE hInstance)
 	if (s_initialCount == 0)
 	{
 		WNDCLASSEXW wcex;
-		::ZeroMemory(&wcex, sizeof(WNDCLASSEX));
+		::ZeroMemory(&wcex, sizeof(WNDCLASSEXW));
 
-		wcex.cbSize = sizeof(WNDCLASSEX);
+		wcex.cbSize = sizeof(WNDCLASSEXW);
 		wcex.style = CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS;
 		wcex.lpfnWndProc = WndProc;
 		wcex.cbClsExtra = 0;
