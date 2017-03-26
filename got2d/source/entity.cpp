@@ -22,11 +22,6 @@ void g2d::Entity::SetSceneNode(g2d::SceneNode* node)
 	m_sceneNode = node;
 }
 
-void g2d::Entity::SetRenderingOrder(uint32_t order)
-{
-	m_renderingOrder = order;
-}
-
 uint32_t g2d::Entity::GetVisibleMask() const
 {
 	return GetSceneNode()->GetVisibleMask();

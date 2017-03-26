@@ -237,28 +237,23 @@ void BaseNode::CollectChildren()
 	}
 }
 
-void BaseNode::OnCreateChild(::Scene& scene, ::SceneNode& child)
-{
-	AdjustRenderingOrder();
-	scene.GetSpatialGraph()->Add(*child.GetEntity());
-	m_childrenChanged = true;
-}
-
-g2d::SceneNode* BaseNode::_CreateSceneNodeChild(::Scene& scene, ::SceneNode& parent, g2d::Entity& e, bool autoRelease)
+::SceneNode* BaseNode::_CreateSceneNodeChild(::Scene& scene, ::SceneNode* parent, g2d::Entity& e, bool autoRelease)
 {
 	uint32_t childID = static_cast<uint32_t>(m_children.size());
 	auto rst = new ::SceneNode(scene, parent, childID, &e, autoRelease);
 	m_children.push_back(rst);
-	OnCreateChild(scene, *rst);
+	scene.GetSpatialGraph()->Add(e);
+	m_childrenChanged = true;
 	return rst;
 }
 
-g2d::SceneNode* BaseNode::_CreateSceneNodeChild(::Scene& scene, g2d::Entity& e, bool autoRelease)
+::SceneNode* BaseNode::_CreateSceneNodeChild(::Scene& scene, g2d::Entity& e, bool autoRelease)
 {
 	uint32_t childID = static_cast<uint32_t>(m_children.size());
 	auto rst = new ::SceneNode(scene, childID, &e, autoRelease);
 	m_children.push_back(rst);
-	OnCreateChild(scene, *rst);
+	scene.GetSpatialGraph()->Add(e);
+	m_childrenChanged = true;
 	return rst;
 }
 
@@ -308,6 +303,17 @@ void BaseNode::_SetRotation(gml::radian r)
 	m_rotation = r;
 }
 
+::SceneNode * BaseNode::_FirstChild() const
+{
+	return m_children.empty() ? nullptr : *m_children.begin();
+}
+
+::SceneNode * BaseNode::_LastChild() const
+{
+	return m_children.empty() ? nullptr : m_children.back();
+}
+
+
 void BaseNode::SetLocalMatrixDirty()
 {
 	m_matrixLocalDirty = true;
@@ -345,9 +351,10 @@ void BaseNode::MoveChild(uint32_t from, uint32_t to)
 	}
 	siblings[to] = fromNode;
 	fromNode->SetChildIndex(to);
-	AdjustRenderingOrder();
 }
 
+// 删除节点虽然会影响RenderingOder的连续性
+// 但是不会影响RenderingOrder的顺序，所以不做更新
 void BaseNode::RemoveChildNode(::SceneNode* child)
 {
 	ENSURE(child != nullptr);

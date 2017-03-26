@@ -6,9 +6,6 @@
 #include <gmlmatrix.h>
 #include <vector>
 
-
-class SpatialGraph;
-class BaseNode;
 class SceneNode;
 class Scene;
 
@@ -24,11 +21,27 @@ struct NodeComponent
 class BaseNode
 {
 public:
-	virtual BaseNode* _GetParent() { return nullptr; }
+	virtual uint32_t _GetRenderingOrder() const = 0;
 
 	virtual void AdjustRenderingOrder() = 0;
 
 public:
+	void _SetVisibleMask(uint32_t mask, bool recursive);
+
+	void _SetPosition(const gml::vec2& position);
+
+	void _SetPivot(const gml::vec2& pivot);
+
+	void _SetScale(const gml::vec2& scale);
+
+	void _SetRotation(gml::radian r);
+
+	void _SetVisible(bool visible) { m_isVisible = visible; }
+
+	::SceneNode* _FirstChild() const;
+
+	::SceneNode* _LastChild() const;
+
 	::SceneNode* _GetChildByIndex(uint32_t index) const;
 
 	uint32_t _GetChildCount() const { return static_cast<uint32_t>(m_children.size()); }
@@ -37,21 +50,37 @@ public:
 
 	void MoveChild(uint32_t from, uint32_t to);
 
-	template<typename FUNC>
-	void TraversalChildrenByIndex(uint32_t startIndex, FUNC func)
-	{
-		for (uint32_t size = static_cast<uint32_t>(m_children.size()); startIndex < size; startIndex++)
-			func(startIndex, m_children[startIndex]);
-	}
+	bool _AddComponent(g2d::Component* component, bool autoRelease, g2d::SceneNode* node);
 
-	template<typename FUNC>
-	void TraversalChildren(FUNC func)
+	bool _RemoveComponent(g2d::Component* component, bool forceNotReleased);
+
+	bool _IsComponentAutoRelease(g2d::Component* component) const;
+
+	g2d::Component* _GetComponentByIndex(uint32_t index) const;
+
+	uint32_t _GetComponentCount() const { return static_cast<uint32_t>(m_components.size()); }
+
+	const gml::mat32& _GetLocalMatrix();
+
+	const gml::vec2& _GetPosition() const { return m_position; }
+
+	const gml::vec2& _GetPivot() const { return m_pivot; }
+
+	const gml::vec2& _GetScale() const { return m_scale; }
+
+	gml::radian _GetRotation() const { return m_rotation; }
+
+	uint32_t _GetVisibleMask() const { return m_visibleMask; }
+
+	bool _IsVisible() const { return m_isVisible; }
+
+public: // traversal 
+	template<typename FUNC> void TraversalChildren(FUNC func)
 	{
 		for (auto& child : m_children) func(child);
 	}
 
-	template<typename FUNC>
-	void InverseTraversalChildren(FUNC func)
+	template<typename FUNC> void InverseTraversalChildren(FUNC func)
 	{
 		auto it = std::rbegin(m_children);
 		auto end = std::rend(m_children);
@@ -70,49 +99,9 @@ protected:
 
 	~BaseNode();
 
-	g2d::SceneNode* _CreateSceneNodeChild(::Scene& scene, ::SceneNode& parent, g2d::Entity& e, bool autoRelease);
+	::SceneNode* _CreateSceneNodeChild(::Scene& scene, ::SceneNode* parent, g2d::Entity& e, bool autoRelease);
 
-	g2d::SceneNode* _CreateSceneNodeChild(::Scene& scene, g2d::Entity& e, bool autoRelease);
-
-	const gml::mat32& _GetLocalMatrix();
-
-	void _SetVisibleMask(uint32_t mask, bool recursive);
-
-	const gml::vec2& _GetPosition() const { return m_position; }
-
-	const gml::vec2& _GetPivot() const { return m_pivot; }
-
-	const gml::vec2& _GetScale() const { return m_scale; }
-
-	gml::radian _GetRotation() const { return m_rotation; }
-
-	uint32_t _GetVisibleMask() const { return m_visibleMask; }
-
-	bool _IsVisible() const { return m_isVisible; }
-
-	void _SetPosition(const gml::vec2& position);
-
-	void _SetPivot(const gml::vec2& pivot);
-
-	void _SetScale(const gml::vec2& scale);
-
-	void _SetRotation(gml::radian r);
-
-	void _SetVisible(bool visible) { m_isVisible = visible; }
-
-	::SceneNode* _FirstChild() const { return m_children.empty() ? nullptr : *m_children.begin(); };
-
-	::SceneNode* _LastChild() const { return m_children.empty() ? nullptr : m_children[m_children.size() - 1]; }
-
-	bool _AddComponent(g2d::Component* component, bool autoRelease, g2d::SceneNode* node);
-
-	bool _RemoveComponent(g2d::Component* component, bool forceNotReleased);
-
-	bool _IsComponentAutoRelease(g2d::Component* component) const;
-
-	g2d::Component* _GetComponentByIndex(uint32_t index) const;
-
-	uint32_t _GetComponentCount() const { return static_cast<uint32_t>(m_components.size()); }
+	::SceneNode* _CreateSceneNodeChild(::Scene& scene, g2d::Entity& e, bool autoRelease);
 
 	void OnUpdateChildren(uint32_t deltaTime);
 
@@ -139,7 +128,6 @@ protected:
 		CollectComponents();
 	}
 
-private:
 	template<typename NFUNC>
 	void DispatchChildren(const NFUNC& nf)
 	{
@@ -158,10 +146,9 @@ private:
 		DispatchChildren(nf);
 	}
 
-	void OnCreateChild(::Scene&, ::SceneNode&);
-
 	void SetLocalMatrixDirty();
 
+private:
 	void RecollectChildren();
 
 	void RecollectComponents();
@@ -198,7 +185,7 @@ class SceneNode : public g2d::SceneNode, public BaseNode
 {
 	RTTI_IMPL;
 public:
-	SceneNode(::Scene& scene, ::SceneNode& parent, uint32_t childID, g2d::Entity* entity, bool autoRelease);
+	SceneNode(::Scene& scene, ::SceneNode* parent, uint32_t childID, g2d::Entity* entity, bool autoRelease);
 
 	SceneNode(::Scene& parent, uint32_t childID, g2d::Entity* entity, bool autoRelease);
 
@@ -208,7 +195,9 @@ public:
 
 	void SetChildIndex(uint32_t index) { m_childIndex = index; }
 
-	void SetRenderingOrder(uint32_t& index);
+	void SetRenderingOrder(uint32_t& order);
+
+	bool ParentIsScene() const { return m_parent == nullptr; }
 
 	void OnMessage(const g2d::Message& message);
 
@@ -243,7 +232,7 @@ public:
 public:	//g2d::SceneNode
 	virtual g2d::Scene* GetScene() const override;
 
-	virtual g2d::SceneNode* GetParentNode() const override { return &m_iparent; }
+	virtual g2d::SceneNode* GetParentNode() const override;
 
 	virtual g2d::SceneNode* GetPrevSiblingNode() const override { return GetPrevSibling(); }
 
@@ -257,7 +246,7 @@ public:	//g2d::SceneNode
 
 	virtual uint32_t GetChildCount() const override { return _GetChildCount(); }
 
-	virtual g2d::SceneNode* CreateSceneNodeChild(g2d::Entity* entity, bool autoRelease) override { return _CreateSceneNodeChild(m_scene, *this, *entity, autoRelease); }
+	virtual g2d::SceneNode* CreateSceneNodeChild(g2d::Entity* entity, bool autoRelease) override;
 
 	virtual void Remove() override { m_bparent.RemoveChildNode(this); }
 
@@ -323,25 +312,31 @@ public:	//g2d::SceneNode
 
 	virtual gml::vec2 WorldToParent(const gml::vec2& pos) override;
 
-protected:	// BaseNode
+	virtual uint32_t GetRenderingOrder() const override { return m_renderingOrder; }
+
+	::SceneNode* GetPrevSibling() const;
+
+	::SceneNode* GetNextSibling() const;
+
+	// 这个是有可能返回空节点的，当为空的时候，父亲为m_scene
+	::SceneNode* GetParent() const { return m_parent; }
+
+public:	// BaseNode
+	virtual uint32_t _GetRenderingOrder() const override { return m_renderingOrder; }
+
 	virtual void AdjustRenderingOrder() override;
 
-	virtual ::BaseNode* _GetParent() override { return &m_bparent; }
 
 private:
 	void SetWorldMatrixDirty();
 
 	void AdjustSpatial();
 
-	::SceneNode* GetPrevSibling() const;
-
-	::SceneNode* GetNextSibling() const;
-
 	uint32_t m_childIndex = 0;
-	uint32_t m_baseRenderingOrder = 0;
+	uint32_t m_renderingOrder = 0xFFFFFFFF;//保证一开始是错误的
 	::Scene& m_scene;
 	::BaseNode& m_bparent;
-	g2d::SceneNode& m_iparent;
+	::SceneNode* m_parent = nullptr;
 	g2d::Entity* m_entity = nullptr;
 	bool m_autoRelease = false;
 	bool m_isStatic = false;
@@ -364,6 +359,8 @@ public:
 
 	void OnMessage(const g2d::Message& message, uint32_t currentTimeStamp);
 
+	void SetRenderingOrderDirty(BaseNode* parent);
+
 public: //g2d::SceneNode
 	virtual g2d::Scene* GetScene() const override { return const_cast<::Scene*>(this); }
 
@@ -381,7 +378,7 @@ public: //g2d::SceneNode
 
 	virtual uint32_t GetChildCount() const override { return _GetChildCount(); }
 
-	virtual g2d::SceneNode* CreateSceneNodeChild(g2d::Entity* entity, bool autoRelease) override { return _CreateSceneNodeChild(*this, *entity, autoRelease); }
+	virtual g2d::SceneNode* CreateSceneNodeChild(g2d::Entity* entity, bool autoRelease) override;
 
 	virtual void Remove() override { }
 
@@ -447,6 +444,8 @@ public: //g2d::SceneNode
 
 	virtual gml::vec2 WorldToParent(const gml::vec2& pos) override { return pos; }
 
+	virtual uint32_t GetRenderingOrder() const override { return 0; }
+
 public:	//g2d::Scene
 	virtual void Release() override;
 
@@ -458,10 +457,15 @@ public:	//g2d::Scene
 
 	virtual void Render() override;
 
+public:	// BaseNode
+	virtual uint32_t _GetRenderingOrder() const override { return 0; }
+
 	virtual void AdjustRenderingOrder() override;
 
 private:
 	void ResortCameraOrder();
+
+	void ResetRenderingOrder();
 
 	::SceneNode* FindInteractiveObject(const gml::coord& cursorPos);
 
@@ -521,6 +525,9 @@ private:
 		void OnPressing(::SceneNode* hitNode);
 		void OnPressingEnd(::SceneNode* hitNode);
 	} m_mouseButtonState[3];
+
 	::SceneNode* m_hoverNode = nullptr;
 	bool m_canTickHovering = false;
+	BaseNode* m_renderingOrderDirtyNode = nullptr;
+	uint32_t m_renderingOrderEnd = 1;
 };

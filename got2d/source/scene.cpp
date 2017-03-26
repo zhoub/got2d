@@ -131,6 +131,15 @@ void Scene::ResortCameraOrder()
 	}
 }
 
+void Scene::ResetRenderingOrder()
+{
+	if (m_renderingOrderDirtyNode != nullptr)
+	{
+		m_renderingOrderDirtyNode->AdjustRenderingOrder();
+		m_renderingOrderDirtyNode = nullptr;
+	}
+}
+
 void Scene::Release()
 {
 	UnRegisterKeyEventReceiver();
@@ -173,19 +182,38 @@ void Scene::Update(uint32_t elapsedTime, uint32_t deltaTime)
 	m_canTickHovering = true;
 }
 
-void Scene::AdjustRenderingOrder()
-{
-	uint32_t curIndex = 1;
-
-	TraversalChildren([&](::SceneNode* child)
-	{
-		child->SetRenderingOrder(curIndex);
-	});
-}
-
 void Scene::OnMessage(const g2d::Message& message, uint32_t currentTimeStamp)
 {
 	OnMessageComponentsAndChildren(message);
+}
+
+void Scene::SetRenderingOrderDirty(BaseNode* parent)
+{
+
+	if (m_renderingOrderDirtyNode == nullptr)
+	{
+		m_renderingOrderDirtyNode = parent;
+	}
+	else if (m_renderingOrderDirtyNode->_GetRenderingOrder() > parent->_GetRenderingOrder())
+	{
+		m_renderingOrderDirtyNode = parent;
+	}
+}
+
+void Scene::AdjustRenderingOrder()
+{
+	m_renderingOrderEnd = 1;
+	TraversalChildren([&](::SceneNode* child)
+	{
+		child->SetRenderingOrder(m_renderingOrderEnd);
+	});
+}
+
+g2d::SceneNode * Scene::CreateSceneNodeChild(g2d::Entity * entity, bool autoRelease)
+{
+	auto child = _CreateSceneNodeChild(*this, *entity, autoRelease);
+	child->SetRenderingOrder(m_renderingOrderEnd);
+	return child;
 }
 
 void Scene::OnKeyPress(g2d::KeyCode key)
@@ -352,6 +380,7 @@ void Scene::Render()
 {
 	GetRenderSystem()->FlushRequests();
 	ResortCameraOrder();
+	ResetRenderingOrder();
 	for (auto camera : m_cameraOrder)
 	{
 		if (camera->IsActivity())
@@ -363,7 +392,7 @@ void Scene::Render()
 			//sort visibleEntities by render order
 			std::sort(std::begin(camera->visibleEntities), std::end(camera->visibleEntities),
 				[](g2d::Entity* a, g2d::Entity* b) {
-				return a->GetRenderingOrder() < b->GetRenderingOrder();
+				return a->GetSceneNode()->GetRenderingOrder() < b->GetSceneNode()->GetRenderingOrder();
 			});
 
 			for (auto& entity : camera->visibleEntities)

@@ -5,7 +5,7 @@
 #include <map>
 #include <vector>
 
-constexpr uint32_t PRESSING_INTERVAL = 700u;
+constexpr uint32_t PRESSING_INTERVAL = 500u;
 
 //用户填充这个收听键盘消息
 struct KeyEventReceiver

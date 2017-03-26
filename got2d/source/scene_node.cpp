@@ -1,10 +1,10 @@
 #include "scene.h"
 #include "input.h"
 
-SceneNode::SceneNode(::Scene& scene, ::SceneNode& parent, uint32_t childID, g2d::Entity* entity, bool autoRelease)
+SceneNode::SceneNode(::Scene& scene, ::SceneNode* parent, uint32_t childID, g2d::Entity* entity, bool autoRelease)
 	: m_scene(scene)
-	, m_iparent(parent)
-	, m_bparent(parent)
+	, m_parent(parent)
+	, m_bparent(*parent)
 	, m_entity(entity)
 	, m_childIndex(childID)
 	, m_autoRelease(autoRelease)
@@ -16,7 +16,7 @@ SceneNode::SceneNode(::Scene& scene, ::SceneNode& parent, uint32_t childID, g2d:
 
 SceneNode::SceneNode(::Scene& scene, uint32_t childID, g2d::Entity* entity, bool autoRelease)
 	: m_scene(scene)
-	, m_iparent(scene)
+	, m_parent(nullptr)
 	, m_bparent(scene)
 	, m_entity(entity)
 	, m_childIndex(childID)
@@ -41,11 +41,24 @@ g2d::Scene* SceneNode::GetScene() const
 	return &m_scene;
 }
 
+g2d::SceneNode * SceneNode::GetParentNode() const
+{
+	if (ParentIsScene())
+	{
+		g2d::SceneNode* node = GetScene();
+		return node;
+	}
+	else
+	{
+		return m_parent;
+	}
+}
+
 const gml::mat32& SceneNode::GetWorldMatrix()
 {
 	if (m_matrixWorldDirty)
 	{
-		auto& matParent = m_iparent.GetWorldMatrix();
+		auto& matParent = GetParentNode()->GetWorldMatrix();
 		m_matrixWorld = matParent * GetLocalMatrix();
 		m_matrixWorldDirty = false;
 	}
@@ -95,6 +108,27 @@ g2d::SceneNode* SceneNode::SetRotation(gml::radian r)
 	return this;
 }
 
+void SceneNode::AdjustRenderingOrder()
+{
+	auto index = m_renderingOrder;
+	TraversalChildren([&](::SceneNode* child)
+	{
+		child->SetRenderingOrder(index);
+	});
+
+	auto current = this;
+	while (current != nullptr)
+	{
+		auto next = current->GetNextSibling();
+		while (next != nullptr)
+		{
+			next->SetRenderingOrder(index);
+			next = next->GetNextSibling();
+		}
+		current = current->GetParent();
+	}
+}
+
 void SceneNode::SetWorldMatrixDirty()
 {
 	m_matrixWorldDirty = true;
@@ -139,45 +173,6 @@ void SceneNode::OnUpdate(uint32_t deltaTime)
 	OnUpdateChildren(deltaTime);
 }
 
-void SceneNode::AdjustRenderingOrder()
-{
-	uint32_t curIndex = m_baseRenderingOrder + 1;
-
-	m_entity->SetRenderingOrder(curIndex);
-	curIndex++;
-
-	TraversalChildren([&](::SceneNode* child)
-	{
-		child->SetRenderingOrder(curIndex);
-	});
-
-	::BaseNode* parent = _GetParent();
-	::BaseNode* current = this;
-	while (parent != nullptr)
-	{
-		parent->TraversalChildrenByIndex(m_childIndex + 1, [&](uint32_t index, ::SceneNode* child)
-		{
-			child->SetRenderingOrder(curIndex);
-		});
-
-		current = parent;
-		parent = current->_GetParent();
-	}
-}
-
-void SceneNode::SetRenderingOrder(uint32_t& index)
-{
-	//for mulity-entity backup.
-	m_baseRenderingOrder = index++;
-	m_entity->SetRenderingOrder(index);
-	index++;
-
-	TraversalChildren([&](::SceneNode* child)
-	{
-		child->SetRenderingOrder(index);
-	});
-}
-
 ::SceneNode* SceneNode::GetPrevSibling() const
 {
 	if (m_childIndex == 0)
@@ -196,24 +191,35 @@ void SceneNode::SetRenderingOrder(uint32_t& index)
 	return m_bparent._GetChildByIndex(m_childIndex + 1);
 }
 
+g2d::SceneNode * SceneNode::CreateSceneNodeChild(g2d::Entity * entity, bool autoRelease)
+{
+	auto child = _CreateSceneNodeChild(m_scene, this, *entity, autoRelease);
+	m_scene.SetRenderingOrderDirty(this);
+	return child;
+}
+
 void SceneNode::MoveToFront()
 {
 	m_bparent.MoveChild(m_childIndex, m_bparent._GetChildCount() - 1);
+	m_scene.SetRenderingOrderDirty(&m_bparent);
 }
 
 void SceneNode::MoveToBack()
 {
 	m_bparent.MoveChild(m_childIndex, 0);
+	m_scene.SetRenderingOrderDirty(&m_bparent);
 }
 
 void SceneNode::MovePrev()
 {
 	m_bparent.MoveChild(m_childIndex, m_childIndex - 1);
+	m_scene.SetRenderingOrderDirty(&m_bparent);
 }
 
 void SceneNode::MoveNext()
 {
 	m_bparent.MoveChild(m_childIndex, m_childIndex + 1);
+	m_scene.SetRenderingOrderDirty(&m_bparent);
 }
 
 void SceneNode::SetStatic(bool s)
@@ -240,9 +246,18 @@ gml::vec2 SceneNode::WorldToLocal(const gml::vec2& pos)
 
 gml::vec2 SceneNode::WorldToParent(const gml::vec2& pos)
 {
-	gml::mat33 worldMatrixInv = gml::mat33(m_iparent.GetWorldMatrix()).inversed();
+	gml::mat33 worldMatrixInv = gml::mat33(GetParentNode()->GetWorldMatrix()).inversed();
 	auto p = gml::transform_point(worldMatrixInv, pos);
 	return p;
+}
+
+void SceneNode::SetRenderingOrder(uint32_t & order)
+{
+	m_renderingOrder = order++;
+	TraversalChildren([&](::SceneNode* child)
+	{
+		child->SetRenderingOrder(order);
+	});
 }
 
 void SceneNode::OnMessage(const g2d::Message& message)
@@ -333,7 +348,7 @@ void SceneNode::OnDoubleClick(g2d::MouseButton button)
 	}
 	else
 	{
-		m_entity->OnMDoubleClick(GetMouse(), GetKeyboard()); 
+		m_entity->OnMDoubleClick(GetMouse(), GetKeyboard());
 		auto onDoubleClick = [](g2d::Component* component)
 		{
 			component->OnMDoubleClick(GetMouse(), GetKeyboard());
@@ -369,7 +384,7 @@ void SceneNode::OnDragBegin(g2d::MouseButton button)
 		{
 			component->OnMDragBegin(GetMouse(), GetKeyboard());
 		};
-		DispatchComponent(onDragBegin);		
+		DispatchComponent(onDragBegin);
 	}
 }
 
@@ -471,7 +486,7 @@ void SceneNode::OnDropTo(::SceneNode* dropped, g2d::MouseButton button)
 	if (button == g2d::MouseButton::Left)
 	{
 		m_entity->OnLDropTo(dropped, GetMouse(), GetKeyboard());
-		auto dropTo = [&] (g2d::Component* component)
+		auto dropTo = [&](g2d::Component* component)
 		{
 			component->OnLDropTo(dropped, GetMouse(), GetKeyboard());
 		};
