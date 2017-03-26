@@ -74,7 +74,7 @@ public:
 
 	Texture(std::string resPath);
 
-	const std::string& GetResourceName() const{ return m_resPath; }
+	const std::string& GetResourceName() const { return m_resPath; }
 
 public: // g2d::Texture
 	virtual void Release() override;
@@ -99,8 +99,10 @@ public:
 
 	void Destroy();
 
-	ID3D11Texture2D* m_texture = nullptr;
-	ID3D11ShaderResourceView* m_shaderView = nullptr;
+	bool IsValid() const { return m_texture.pointer != nullptr; }
+
+	autor<ID3D11Texture2D> m_texture = nullptr;
+	autor<ID3D11ShaderResourceView> m_shaderView = nullptr;
 	uint32_t m_width = 0;
 	uint32_t m_height = 0;
 };
@@ -112,7 +114,7 @@ public:
 
 	void Destroy();
 
-	Texture2D* GetTexture(const std::string& resource);
+	Texture2D& GetTexture(const std::string& resource);
 
 	Texture2D& GetDefaultTexture() { return m_defaultTexture; }
 
@@ -351,7 +353,7 @@ private:
 	//render request
 	struct RenderRequest {
 		RenderRequest(g2d::Mesh& inMesh, g2d::Material& inMaterial, const gml::mat32& inWorldMatrix)
-			: mesh(inMesh) , material(inMaterial) , worldMatrix(inWorldMatrix)
+			: mesh(inMesh), material(inMaterial), worldMatrix(inWorldMatrix)
 		{	}
 		g2d::Mesh& mesh;
 		g2d::Material& material;

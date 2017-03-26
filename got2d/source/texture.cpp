@@ -58,7 +58,13 @@ bool Texture2D::Create(uint32_t width, uint32_t height)
 	texDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 	texDesc.MiscFlags = 0;
 
-	if (S_OK != GetRenderSystem()->GetDevice()->CreateTexture2D(&texDesc, nullptr, &m_texture))
+	ID3D11Texture2D* texture = nullptr;
+	ID3D11ShaderResourceView* textureView = nullptr;
+	auto fb = create_fallback([&]() {
+		SR(texture);
+		SR(textureView);
+	});
+	if (S_OK != GetRenderSystem()->GetDevice()->CreateTexture2D(&texDesc, nullptr, &texture))
 	{
 		return false;
 	}
@@ -69,13 +75,15 @@ bool Texture2D::Create(uint32_t width, uint32_t height)
 	viewDesc.ViewDimension = D3D_SRV_DIMENSION_TEXTURE2D;
 	viewDesc.Texture2D.MipLevels = -1;
 	viewDesc.Texture2D.MostDetailedMip = 0;
-	
-	if (S_OK != GetRenderSystem()->GetDevice()->CreateShaderResourceView(m_texture, &viewDesc, &m_shaderView))
+
+	if (S_OK != GetRenderSystem()->GetDevice()->CreateShaderResourceView(texture, &viewDesc, &textureView))
 	{
-		Destroy();
 		return false;
 	}
 
+	fb.cancel();
+	m_texture = texture;
+	m_shaderView = textureView;
 	m_width = width;
 	m_height = height;
 	return true;
@@ -119,8 +127,8 @@ void Texture2D::UploadImage(uint8_t* data, bool hasAlpha)
 
 void Texture2D::Destroy()
 {
-	SR(m_texture);
-	SR(m_shaderView);
+	m_texture = nullptr;
+	m_shaderView = nullptr;
 	m_width = 0;
 	m_height = 0;
 }
@@ -179,21 +187,19 @@ void TexturePool::Destroy()
 	m_defaultTexture.Destroy();
 	for (auto& t : m_textures)
 	{
-		t.second->Destroy();
 		delete t.second;
 	}
 	m_textures.clear();
 }
 
-Texture2D* TexturePool::GetTexture(const std::string& resource)
+Texture2D& TexturePool::GetTexture(const std::string& resource)
 {
 	if (m_textures.count(resource) == 0)
 	{
 		if (!LoadTextureFromFile(resource))
 		{
-			return nullptr;
+			return GetDefaultTexture();
 		}
 	}
-
-	return m_textures[resource];
+	return *m_textures.at(resource);
 }

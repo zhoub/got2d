@@ -427,24 +427,8 @@ void RenderSystem::FlushBatch(Mesh& mesh, g2d::Material& material)
 				for (uint32_t i = 0; i < pass->GetTextureCount(); i++)
 				{
 					::Texture* timpl = reinterpret_cast<::Texture*>(pass->GetTextureByIndex(i));
-					Texture2D* texture = nullptr;
-					if (timpl != nullptr)
-					{
-						texture = m_texPool.GetTexture(timpl->GetResourceName());
-						if (texture)
-						{
-							views[i] = texture->m_shaderView;
-						}
-						else
-						{
-							views[i] = nullptr;
-						}
-					}
-					else
-					{
-						texture = &(m_texPool.GetDefaultTexture());
-						views[i] = texture->m_shaderView;
-					}
+					Texture2D& texture = m_texPool.GetTexture(timpl->GetResourceName());
+					views[i] = texture.m_shaderView;
 					samplerstates[i] = nullptr;
 				}
 				UINT numView = static_cast<UINT>(views.size());
