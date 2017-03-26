@@ -120,18 +120,18 @@ protected:
 	template<typename CFUNC>
 	void DispatchComponent(const CFUNC& cf)
 	{
-		DelayRemoveComponents();
+		CollectComponents();
 		for (auto& c : m_collectionComponents)
 		{
 			cf(c.ComponentPtr);
 		}
-		CollectComponents();
+		DelayRemoveComponents();
 	}
 
 	template<typename NFUNC>
 	void DispatchChildren(const NFUNC& nf)
 	{
-		DelayRemoveChildren();
+		// 不能先collect，有可能产生添加递归的潜在问题
 		for (auto& child : m_collectionChildren)
 		{
 			nf(child);
