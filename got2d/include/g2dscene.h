@@ -150,7 +150,6 @@ namespace g2d
 	class G2DAPI Entity : public GObject, public EventReceiver
 	{
 		SceneNode* m_sceneNode = nullptr;
-		uint32_t m_renderingOrder = 0;
 	public:
 		// 用户自定义实体需要实现内存释放的接口
 		// 引擎内部会调用这个接口释放entity资源
@@ -176,12 +175,6 @@ namespace g2d
 		// 初始化场景节点的时候
 		// 设置关联
 		void SetSceneNode(g2d::SceneNode* node);
-
-		// 根据场景节点关系调整渲染顺序
-		// 用于渲染排序，在此只做记录使用
-		void SetRenderingOrder(uint32_t order);
-
-		uint32_t GetRenderingOrder() const { return m_renderingOrder; }
 	};
 
 	// 一张图片
@@ -316,7 +309,7 @@ namespace g2d
 
 		// 移除确定组件，并且强制不调用Release接口
 		virtual bool RemoveComponentWithoutReleased(Component*) = 0;
-		
+
 		// 获取某个组件的释放条件，如果组件不存在，返回假。
 		virtual bool IsComponentAutoRelease(Component*) const = 0;
 
@@ -377,7 +370,7 @@ namespace g2d
 
 		// 获取节点绑定的Entity对象
 		virtual Entity* GetEntity() const = 0;
-		
+
 		// 获取当前节点是父亲的第几个节点
 		virtual uint32_t GetChildIndex() const = 0;
 
@@ -395,6 +388,9 @@ namespace g2d
 
 		// 把坐标转换节点同级的局部空间
 		virtual gml::vec2 WorldToParent(const gml::vec2& pos) = 0;
+
+		// 供内部使用，获得当前的渲染顺序，用于排序
+		virtual uint32_t GetRenderingOrder() const = 0;
 	};
 
 	// 根据类型获取
