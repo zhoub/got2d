@@ -232,7 +232,7 @@ public:
 public:	//g2d::SceneNode
 	virtual g2d::Scene* GetScene() const override;
 
-	virtual g2d::SceneNode* GetParentNode() const override;
+	virtual g2d::SceneNode* GetParentNode() const override { return &m_iparent; }
 
 	virtual g2d::SceneNode* GetPrevSiblingNode() const override { return GetPrevSibling(); }
 
@@ -336,6 +336,7 @@ private:
 	uint32_t m_renderingOrder = 0xFFFFFFFF;//保证一开始是错误的
 	::Scene& m_scene;
 	::BaseNode& m_bparent;
+	g2d::SceneNode& m_iparent;
 	::SceneNode* m_parent = nullptr;
 	g2d::Entity* m_entity = nullptr;
 	bool m_autoRelease = false;

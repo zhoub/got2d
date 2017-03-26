@@ -4,6 +4,7 @@
 SceneNode::SceneNode(::Scene& scene, ::SceneNode* parent, uint32_t childID, g2d::Entity* entity, bool autoRelease)
 	: m_scene(scene)
 	, m_parent(parent)
+	, m_iparent(*parent)
 	, m_bparent(*parent)
 	, m_entity(entity)
 	, m_childIndex(childID)
@@ -16,6 +17,7 @@ SceneNode::SceneNode(::Scene& scene, ::SceneNode* parent, uint32_t childID, g2d:
 
 SceneNode::SceneNode(::Scene& scene, uint32_t childID, g2d::Entity* entity, bool autoRelease)
 	: m_scene(scene)
+	, m_iparent(scene)
 	, m_parent(nullptr)
 	, m_bparent(scene)
 	, m_entity(entity)
@@ -41,24 +43,11 @@ g2d::Scene* SceneNode::GetScene() const
 	return &m_scene;
 }
 
-g2d::SceneNode * SceneNode::GetParentNode() const
-{
-	if (ParentIsScene())
-	{
-		g2d::SceneNode* node = GetScene();
-		return node;
-	}
-	else
-	{
-		return m_parent;
-	}
-}
-
 const gml::mat32& SceneNode::GetWorldMatrix()
 {
 	if (m_matrixWorldDirty)
 	{
-		auto& matParent = GetParentNode()->GetWorldMatrix();
+		auto& matParent = m_iparent.GetWorldMatrix();
 		m_matrixWorld = matParent * GetLocalMatrix();
 		m_matrixWorldDirty = false;
 	}
@@ -246,7 +235,7 @@ gml::vec2 SceneNode::WorldToLocal(const gml::vec2& pos)
 
 gml::vec2 SceneNode::WorldToParent(const gml::vec2& pos)
 {
-	gml::mat33 worldMatrixInv = gml::mat33(GetParentNode()->GetWorldMatrix()).inversed();
+	gml::mat33 worldMatrixInv = gml::mat33(m_iparent.GetWorldMatrix()).inversed();
 	auto p = gml::transform_point(worldMatrixInv, pos);
 	return p;
 }
