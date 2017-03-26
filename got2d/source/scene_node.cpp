@@ -99,7 +99,7 @@ g2d::SceneNode* SceneNode::SetRotation(gml::radian r)
 
 void SceneNode::AdjustRenderingOrder()
 {
-	auto index = m_renderingOrder;
+	auto index = m_renderingOrder + 1;
 	TraversalChildren([&](::SceneNode* child)
 	{
 		child->SetRenderingOrder(index);
