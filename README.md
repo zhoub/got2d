@@ -40,6 +40,8 @@ got2d在vs2017下编写测试，项目设置保持之前使用vs2015的设置。
 
 其中当前的开发现状在 Board里可以看到。接下来要进行的工程可以在Issue里查询到。
 
+使用说明请查阅WIKI https://github.com/goteet/got2d/wiki
+
 ## 文件内容
 
 got2d 为了配置简单，原则是尽量不使用第三方库和其他(如cmake)依赖。可以直接通过vs2015打开Solution，直接编译运行。文件内容分为三部分：
