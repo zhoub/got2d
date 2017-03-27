@@ -165,7 +165,6 @@ void Testbed::Start()
 			camera->SetActivity(false);
 		}
 	}
-
 	hexgonNode->MoveToFront();
 }
 

@@ -27,6 +27,8 @@ public: //g2d::engine
 	virtual void Update(uint32_t deltaTime) override;
 
 	virtual void OnMessage(const g2d::Message& message) override;
+
+	virtual bool OnResize(uint32_t width, uint32_t height) override;
 	
 private:
 	uint32_t m_elapsedTime = 0;

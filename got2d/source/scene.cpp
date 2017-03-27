@@ -208,6 +208,14 @@ void Scene::SetRenderingOrderDirty(::SceneNode* parent)
 	}
 }
 
+void Scene::OnResize()
+{
+	for (auto& camera : m_cameras)
+	{
+		camera->OnUpdateMatrixChanged();
+	}
+}
+
 void Scene::AdjustRenderingOrder()
 {
 	m_renderingOrderEnd = 1;

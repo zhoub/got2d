@@ -114,6 +114,8 @@ private:
 class LocalTransform
 {
 public:
+	LocalTransform();
+
 	void SetPosition(const gml::vec2& position);
 
 	void SetPivot(const gml::vec2& pivot);
@@ -327,6 +329,8 @@ public:
 	void OnMessage(const g2d::Message& message, uint32_t currentTimeStamp);
 
 	void SetRenderingOrderDirty(::SceneNode* parent);
+
+	void OnResize();
 
 public: //g2d::Scene
 

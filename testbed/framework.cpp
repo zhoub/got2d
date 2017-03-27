@@ -304,7 +304,7 @@ void Framework::OnWindowResize(uint32_t width, uint32_t height)
 	//要在初始化之后再做这件事情
 	if (g2d::IsEngineInitialized())
 	{
-		g2d::GetEngine()->GetRenderSystem()->OnResize(width, height);
+		g2d::GetEngine()->OnResize(width, height);
 	}
 }
 

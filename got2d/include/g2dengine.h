@@ -51,6 +51,11 @@ namespace g2d
 		// 当用户输入的时候，往所有场景节点派发消息
 		// 需要用户主动调用
 		virtual void OnMessage(const Message& message) = 0;
+
+		// 当nativeWindow发生改变的时候，需要显示调用这个接口
+		// 更新渲染 系统相关的状态以修正投影矩阵
+		// 过后会改成 引擎初始化的时候，提供一个接口，在引擎内部自己注册listener消息
+		virtual bool OnResize(uint32_t width, uint32_t height) = 0;
 	};
 
 	inline bool IsEngineInitialized()
