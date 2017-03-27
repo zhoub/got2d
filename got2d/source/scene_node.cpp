@@ -19,20 +19,17 @@ SceneNode::SceneNode(::Scene& scene, SceneNodeContainer& parentContainer, uint32
 
 SceneNode::~SceneNode()
 {
-	/*
-	m_scene.GetSpatialGraph()->Remove(*m_entity);
-	if (m_autoRelease)
+	m_components.Traversal([&](g2d::Component* component)
 	{
-		m_entity->Release();
-	}
-	*/
+		m_scene.GetSpatialGraph()->Remove(*component);
+	});
 }
 
 const gml::mat32& SceneNode::GetWorldMatrix()
 {
 	if (m_matrixWorldDirty)
 	{
-		if (m_parent == nullptr)
+		if (m_parent != nullptr)
 		{
 			auto& matParent = m_parent->GetWorldMatrix();
 			m_matrixWorld = matParent * GetLocalMatrix();
@@ -119,7 +116,10 @@ void SceneNode::SetWorldMatrixDirty()
 
 void SceneNode::AdjustSpatial()
 {
-	//m_scene.GetSpatialGraph()->Add(*m_entity);
+	m_components.Traversal([&](g2d::Component* component)
+	{
+		m_scene.GetSpatialGraph()->Add(*component);
+	});
 }
 
 void SceneNode::OnUpdate(uint32_t deltaTime)
@@ -210,6 +210,20 @@ void SceneNode::MoveNext()
 {
 	m_parentContainer.Move(m_childIndex, m_childIndex + 1);
 	//m_scene.SetRenderingOrderDirty(&m_bparent);
+}
+
+bool SceneNode::AddComponent(g2d::Component * component, bool autoRelease)
+{
+	auto finished = m_components.Add(this, component, autoRelease);
+	if (finished)
+	{
+		m_scene.GetSpatialGraph()->Add(*component);
+		return true;
+	}
+	else
+	{
+		return false;
+	}
 }
 
 void SceneNode::SetStatic(bool s)

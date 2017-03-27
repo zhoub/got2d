@@ -222,7 +222,7 @@ public:	//g2d::SceneNode
 
 	virtual void MoveNext() override;
 
-	virtual bool AddComponent(g2d::Component* component, bool autoRelease) override { return m_components.Add(this, component, autoRelease); }
+	virtual bool AddComponent(g2d::Component* component, bool autoRelease) override;
 
 	virtual bool RemoveComponent(g2d::Component* component) override { return m_components.Remove(component, false); }
 
