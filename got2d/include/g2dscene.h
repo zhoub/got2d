@@ -27,7 +27,7 @@ namespace g2d
 		virtual void Release() = 0;
 
 		// 局部坐标系下组件的包围盒大小
-		virtual const gml::aabb2d& GetLocalAABB() const = 0;
+		virtual const gml::aabb2d& GetLocalAABB() const { static gml::aabb2d b; return b; }
 
 		// 节点在世界空间中包围盒的大小
 		// 默认实现用世界矩阵变换局部坐标系下的包围盒
@@ -224,6 +224,10 @@ namespace g2d
 	class G2DAPI SceneNode : public GObject
 	{
 	public:
+		// 析构节点，把当前节点从树种删除。
+		// 会同时把组件对象全部删除。
+		virtual void Release() = 0;
+
 		// 节点所在场景
 		// Scene作为根节点会返回自身
 		virtual Scene* GetScene() const = 0;
@@ -257,16 +261,12 @@ namespace g2d
 		// 创建子节点
 		virtual SceneNode* CreateChild() = 0;
 
-		// 析构节点，把当前节点从树种删除。
-		// 会同时把组件对象全部删除。
-		virtual void Remove() = 0;
-
 		// 把当前节点移动到同级最后一个
 		// 以保证第一个渲染！
 		virtual void MoveToFront() = 0;
 
 		// 把当前节点移动到同级第一个
-		// 以保证第一个渲染！
+		// 以保证是最后一个渲染！
 		virtual void MoveToBack() = 0;
 
 		// 跟同级前一个节点交换位置，以保证渲染顺序
@@ -284,7 +284,7 @@ namespace g2d
 		virtual bool RemoveComponent(Component*) = 0;
 
 		// 移除确定组件，并且强制不调用Release接口
-		virtual bool RemoveComponentWithoutReleased(Component*) = 0;
+		virtual bool RemoveComponentWithoutRelease(Component*) = 0;
 
 		// 获取某个组件的释放条件，如果组件不存在，返回假。
 		virtual bool IsComponentAutoRelease(Component*) const = 0;
@@ -399,6 +399,9 @@ namespace g2d
 		// 根据ID获取摄像机
 		// 默认摄像机编号为0
 		virtual Camera* GetCameraByIndex(uint32_t index) const = 0;
+
+		// 获取摄像机的数目
+		virtual uint32_t GetCameraCount() const = 0;
 
 		// 把场景中的物体加入渲染队列
 		// 需要用户主动调用

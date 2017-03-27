@@ -180,7 +180,7 @@ g2d::SceneNode * SceneNode::CreateChild()
 	return child;
 }
 
-void SceneNode::Remove()
+void SceneNode::Release()
 {
 	if (m_parent != nullptr)
 	{
@@ -277,6 +277,10 @@ gml::vec2 SceneNode::WorldToParent(const gml::vec2& pos)
 void SceneNode::SetRenderingOrder(uint32_t & order)
 {
 	m_renderingOrder = order++;
+	m_components.Traversal([&](g2d::Component* component)
+	{
+		component->SetRenderingOrder(order);
+	});
 	m_children.Traversal([&](::SceneNode* child)
 	{
 		child->SetRenderingOrder(order);

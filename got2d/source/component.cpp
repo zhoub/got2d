@@ -22,6 +22,11 @@ void g2d::Component::SetSceneNode(g2d::SceneNode* node)
 	m_sceneNode = node;
 }
 
+void g2d::Component::SetRenderingOrder(uint32_t order)
+{
+	m_renderingOrder = order++;
+}
+
 uint32_t g2d::Component::GetVisibleMask() const
 {
 	return GetSceneNode()->GetVisibleMask();
@@ -135,8 +140,7 @@ void Camera::OnUpdateMatrixChanged()
 void Camera::SetRenderingOrder(int renderingOrder)
 {
 	m_renderingOrder = renderingOrder;
-	::Scene* scene = reinterpret_cast<::Scene*>(GetSceneNode()->GetScene());
-	scene->SetCameraOrderDirty();
+	m_scene.SetCameraOrderDirty();
 }
 
 bool Camera::TestVisible(const gml::aabb2d& bounding) const

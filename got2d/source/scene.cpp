@@ -202,7 +202,7 @@ void Scene::SetRenderingOrderDirty(::SceneNode* parent)
 	{
 		m_renderingOrderDirtyNode = parent;
 	}
-	else if (m_renderingOrderDirtyNode->_GetRenderingOrder() > parent->_GetRenderingOrder())
+	else if (m_renderingOrderDirtyNode->GetRenderingOrder() > parent->GetRenderingOrder())
 	{
 		m_renderingOrderDirtyNode = parent;
 	}
@@ -438,7 +438,7 @@ void Scene::Render()
 
 g2d::Camera* Scene::CreateCameraNode()
 {
-	Camera* camera = new ::Camera();
+	Camera* camera = new ::Camera(*this);
 	CreateChild()->AddComponent(camera, true);
 	m_cameraOrderDirty = true;
 	camera->SetID(static_cast<uint32_t>(m_cameras.size()));
@@ -450,4 +450,9 @@ g2d::Camera* Scene::GetCameraByIndex(uint32_t index) const
 {
 	ENSURE(index < m_cameras.size());
 	return m_cameras[index];
+}
+
+uint32_t Scene::GetCameraCount() const
+{
+	return static_cast<uint32_t>(m_cameras.size());
 }

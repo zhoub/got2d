@@ -121,8 +121,6 @@ class EntityDragging : public g2d::Component
 public: //implement
 	virtual void Release() override { delete this; }
 
-	virtual const gml::aabb2d& GetLocalAABB() const override { static gml::aabb2d inst; return inst; }
-
 	virtual void OnLDragBegin(const g2d::Mouse& mouse, const g2d::Keyboard& keyboard) override
 	{
 		auto worldP = GetSceneNode()->GetScene()->GetMainCamera()->ScreenToWorld(mouse.GetCursorPosition());
@@ -151,8 +149,6 @@ public: //implement
 		}
 		delete this;
 	}
-
-	virtual const gml::aabb2d& GetLocalAABB() const override { static gml::aabb2d inst; return inst; }
 
 public: //events
 	virtual void OnInitial() override
@@ -191,7 +187,7 @@ public: //events
 		{
 			dragComponent = component;
 			autoReleased = GetSceneNode()->IsComponentAutoRelease(component);
-			GetSceneNode()->RemoveComponentWithoutReleased(component);
+			GetSceneNode()->RemoveComponentWithoutRelease(component);
 
 			for (int i = 0; i < 7; i++)
 			{

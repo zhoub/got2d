@@ -155,6 +155,12 @@ public:
 
 	~SceneNode();
 
+	uint32_t GetRenderingOrder() const { return m_renderingOrder; }
+
+	::SceneNode* GetParent() const { return m_parent; }
+
+	void AdjustRenderingOrder();
+
 	void OnUpdate(uint32_t deltaTime);
 
 	void SetChildIndex(uint32_t index) { m_childIndex = index; }
@@ -193,9 +199,9 @@ public:
 
 	void OnKeyPressingEnd(g2d::KeyCode key);
 
-	//void ClearChildren();
-
 public:	//g2d::SceneNode
+	virtual void Release() override;
+
 	virtual g2d::Scene* GetScene() const override;
 
 	virtual g2d::SceneNode* GetParentNode() const override { return m_parent; }
@@ -214,8 +220,6 @@ public:	//g2d::SceneNode
 
 	virtual g2d::SceneNode* CreateChild() override;
 
-	virtual void Remove() override;
-
 	virtual void MoveToFront() override;
 
 	virtual void MoveToBack() override;
@@ -228,7 +232,7 @@ public:	//g2d::SceneNode
 
 	virtual bool RemoveComponent(g2d::Component* component) override { return m_components.Remove(component, false); }
 
-	virtual bool RemoveComponentWithoutReleased(g2d::Component* component) override { return m_components.Remove(component, true); }
+	virtual bool RemoveComponentWithoutRelease(g2d::Component* component) override { return m_components.Remove(component, true); }
 
 	virtual bool IsComponentAutoRelease(g2d::Component* component) const override { return m_components.IsAutoRelease(component); }
 
@@ -276,22 +280,11 @@ public:	//g2d::SceneNode
 
 	virtual gml::vec2 WorldToParent(const gml::vec2& pos) override;
 
-public:
-
+private:
 	::SceneNode* GetPrevSibling() const;
 
 	::SceneNode* GetNextSibling() const;
 
-	// 这个是有可能返回空节点的，当为空的时候，父亲为m_scene
-	::SceneNode* GetParent() const { return m_parent; }
-
-public:	// BaseNode
-	virtual uint32_t _GetRenderingOrder() const { return m_renderingOrder; }
-
-	virtual void AdjustRenderingOrder();
-
-
-private:
 	void SetWorldMatrixDirty();
 
 	void AdjustSpatial();
@@ -320,17 +313,19 @@ class Scene : public g2d::Scene
 public:
 	Scene(float boundSize);
 
-	void SetCameraOrderDirty() { m_cameraOrderDirty = true; }
+	void SetRenderingOrderDirty(::SceneNode* parent);
 
-	SpatialGraph* GetSpatialGraph() { return &m_spatial; }
+	void SetCameraOrderDirty() { m_cameraOrderDirty = true; }
 
 	void Update(uint32_t elapsedTime, uint32_t deltaTime);
 
 	void OnMessage(const g2d::Message& message, uint32_t currentTimeStamp);
 
-	void SetRenderingOrderDirty(::SceneNode* parent);
-
 	void OnResize();
+
+	SpatialGraph* GetSpatialGraph() { return &m_spatial; }
+
+	void AdjustRenderingOrder();
 
 public: //g2d::Scene
 
@@ -352,12 +347,9 @@ public: //g2d::Scene
 
 	virtual g2d::Camera* GetCameraByIndex(uint32_t) const override;
 
+	virtual uint32_t GetCameraCount() const override;
+
 	virtual void Render() override;
-
-public:	// BaseNode
-	virtual uint32_t _GetRenderingOrder() const { return 0; }
-
-	virtual void AdjustRenderingOrder();
 
 private:
 	void ResortCameraOrder();
@@ -430,5 +422,4 @@ private:
 
 	::SceneNode* m_renderingOrderDirtyNode = nullptr;
 	uint32_t m_renderingOrderEnd = 1;
-
 };

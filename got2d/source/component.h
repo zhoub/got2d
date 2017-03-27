@@ -6,6 +6,7 @@
 #include <g2drender.h>
 #include <vector>
 
+class Scene;
 
 class Quad : public g2d::Quad
 {
@@ -37,6 +38,8 @@ class Camera : public g2d::Camera
 {
 	RTTI_IMPL;
 public:
+	Camera(::Scene& scene) : m_scene(scene) { }
+
 	void SetID(uint32_t index) { m_id = index; }
 
 	g2d::Component* FindNearestComponent(const gml::vec2& worldPosition);
@@ -82,6 +85,7 @@ public:	//g2d::camera
 	virtual gml::coord WorldToScreen(const gml::vec2 & pos) const override;
 
 private:
+	::Scene& m_scene;
 	uint32_t m_id;
 	uint32_t m_visibleMask = g2d::DEF_VISIBLE_MASK;
 	int m_renderingOrder = 0;

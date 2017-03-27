@@ -64,17 +64,15 @@ class Moveing : public g2d::Component
 public: //implement
 	virtual void Release() override { delete this; }
 
-	virtual const gml::aabb2d& GetLocalAABB() const override { static gml::aabb2d inst; return inst; }
-
 	virtual void OnKeyPress(g2d::KeyCode key, const g2d::Mouse& mouse, const g2d::Keyboard& keyboard) override
 	{
-		if (key == g2d::KeyCode::Enter && (GetSceneNode()->GetChildCount() < 5 || GetSceneNode()->GetParentNode()->GetParentNode() == nullptr))
+		if (key == g2d::KeyCode::Enter && (GetSceneNode()->GetChildCount() < 5 || GetSceneNode()->GetParentNode() == nullptr))
 		{
 			CreateQuadNode(GetSceneNode());
 		}
 		else if (key == g2d::KeyCode::Delete && GetSceneNode()->GetChildIndex() == 3)
 		{
-			GetSceneNode()->Remove();
+			GetSceneNode()->Release();
 		}
 	}
 
