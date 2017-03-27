@@ -220,10 +220,6 @@ void SceneNodeContainer::Collect()
 	return m_children.empty() ? nullptr : m_children.back();
 }
 
-
-
-// 删除节点虽然会影响RenderingOder的连续性
-// 但是不会影响RenderingOrder的顺序，所以不做更新
 void SceneNodeContainer::Remove(::SceneNode& child)
 {
 	::SceneNode* releasedChild = &child;
@@ -248,14 +244,21 @@ void SceneNodeContainer::Remove(::SceneNode& child)
 	}
 }
 
-void SceneNodeContainer::Move(uint32_t from, uint32_t to)
+bool SceneNodeContainer::Move(uint32_t from, uint32_t to)
 {
 	ENSURE(to < m_children.size() && from < m_children.size());
 	if (from == to)
-		return;
+		return false;
 
 	auto& siblings = m_children;
 	auto fromNode = siblings[from];
+	auto formOrder = siblings[from]->GetRenderingOrder();
+	auto toOrder = siblings[to]->GetRenderingOrder();
+
+	// 为了能够正确置脏 RenderingOrderDirtyNode
+	fromNode->SetRenderingOrderOnly(toOrder);
+	siblings[to]->SetRenderingOrderOnly(formOrder);
+
 	if (from > to)
 	{
 		for (auto itID = to; itID < from; itID++)
@@ -274,6 +277,7 @@ void SceneNodeContainer::Move(uint32_t from, uint32_t to)
 	}
 	siblings[to] = fromNode;
 	fromNode->SetChildIndex(to);
+	return true;
 }
 
 void SceneNodeContainer::DelayRemove()
@@ -634,4 +638,65 @@ void ComponentContainer::OnKeyPressingEnd(g2d::KeyCode key)
 		c.ComponentPtr->OnKeyPressingEnd(key, GetMouse(), GetKeyboard());
 	}
 	DelayRemove();
+}
+
+
+void SceneNodeContainer::OnMessage(const g2d::Message & message)
+{
+	// 不能先collect，有可能产生添加递归的潜在问题
+	for (auto& child : m_collection)
+	{
+		child->OnMessage(message);
+	}
+	Collect();
+}
+
+void SceneNodeContainer::OnUpdate(uint32_t deltaTime)
+{
+	// 不能先collect，有可能产生添加递归的潜在问题
+	for (auto& child : m_collection)
+	{
+		child->OnUpdate(deltaTime);
+	}
+	Collect();
+}
+
+void SceneNodeContainer::OnKeyPress(g2d::KeyCode key)
+{
+	// 不能先collect，有可能产生添加递归的潜在问题
+	for (auto& child : m_collection)
+	{
+		child->OnKeyPress(key);
+	}
+	Collect();
+}
+
+void SceneNodeContainer::OnKeyPressingBegin(g2d::KeyCode key)
+{
+	// 不能先collect，有可能产生添加递归的潜在问题
+	for (auto& child : m_collection)
+	{
+		child->OnKeyPressingBegin(key);
+	}
+	Collect();
+}
+
+void SceneNodeContainer::OnKeyPressing(g2d::KeyCode key)
+{
+	// 不能先collect，有可能产生添加递归的潜在问题
+	for (auto& child : m_collection)
+	{
+		child->OnKeyPressing(key);
+	}
+	Collect();
+}
+
+void SceneNodeContainer::OnKeyPressingEnd(g2d::KeyCode key)
+{
+	// 不能先collect，有可能产生添加递归的潜在问题
+	for (auto& child : m_collection)
+	{
+		child->OnKeyPressingEnd(key);
+	}
+	Collect();
 }

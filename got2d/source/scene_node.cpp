@@ -29,14 +29,14 @@ const gml::mat32& SceneNode::GetWorldMatrix()
 {
 	if (m_matrixWorldDirty)
 	{
-		if (m_parent != nullptr)
+		if (ParentIsScene())
 		{
-			auto& matParent = m_parent->GetWorldMatrix();
-			m_matrixWorld = matParent * GetLocalMatrix();
+			m_matrixWorld = GetLocalMatrix();
 		}
 		else
 		{
-			m_matrixWorld = GetLocalMatrix();
+			auto& matParent = m_parent->GetWorldMatrix();
+			m_matrixWorld = matParent * GetLocalMatrix();
 		}
 		m_matrixWorldDirty = false;
 	}
@@ -76,7 +76,7 @@ g2d::SceneNode* SceneNode::SetRotation(gml::radian r)
 
 void SceneNode::AdjustRenderingOrder()
 {
-	if (m_parent == nullptr && m_childIndex == 0)
+	if (ParentIsScene() && m_childIndex == 0)
 	{
 		m_scene.AdjustRenderingOrder();
 	}
@@ -168,37 +168,46 @@ g2d::SceneNode * SceneNode::CreateChild()
 
 void SceneNode::Release()
 {
-	if (m_parent != nullptr)
-	{
-		m_parentContainer.Remove(*this);
-	}
+	// 删除节点虽然会影响RenderingOder的连续性
+	// 但是不会影响RenderingOrder的顺序，所以不做更新
+	m_parentContainer.Remove(*this);
 }
 
 void SceneNode::MoveToFront()
 {
-	m_parentContainer.Move(m_childIndex, m_parentContainer.GetCount() - 1);
-	m_scene.SetRenderingOrderDirty(m_parentContainer.At(m_childIndex));
+	auto oldIndex = m_childIndex;
+	if (m_parentContainer.Move(m_childIndex, m_parentContainer.GetCount() - 1))
+	{
+		m_scene.SetRenderingOrderDirty(m_parentContainer.At(oldIndex));
+	}
 }
 
 void SceneNode::MoveToBack()
 {
-	m_parentContainer.Move(m_childIndex, 0);
-	m_scene.SetRenderingOrderDirty(this);
+	if (m_parentContainer.Move(m_childIndex, 0))
+	{
+		m_scene.SetRenderingOrderDirty(this);
+	}
 }
 
 void SceneNode::MovePrev()
 {
-	m_parentContainer.Move(m_childIndex, m_childIndex - 1);
-	m_scene.SetRenderingOrderDirty(m_parentContainer.At(m_childIndex - 1));
+	if (m_parentContainer.Move(m_childIndex, m_childIndex - 1))
+	{
+		m_scene.SetRenderingOrderDirty(this);
+	}
 }
 
 void SceneNode::MoveNext()
 {
-	m_parentContainer.Move(m_childIndex, m_childIndex + 1);
-	m_scene.SetRenderingOrderDirty(m_parentContainer.At(m_childIndex));
+	auto oldIndex = m_childIndex;
+	if (m_parentContainer.Move(m_childIndex, m_childIndex + 1))
+	{
+		m_scene.SetRenderingOrderDirty(m_parentContainer.At(oldIndex));
+	}
 }
 
-bool SceneNode::AddComponent(g2d::Component * component, bool autoRelease)
+bool SceneNode::AddComponent(g2d::Component* component, bool autoRelease)
 {
 	auto successed = m_components.Add(this, component, autoRelease);
 	if (successed)
@@ -249,15 +258,15 @@ gml::vec2 SceneNode::WorldToLocal(const gml::vec2& pos)
 
 gml::vec2 SceneNode::WorldToParent(const gml::vec2& pos)
 {
-	if (m_parent != nullptr)
+	if (ParentIsScene())
+	{
+		return pos;
+	}
+	else
 	{
 		gml::mat33 worldMatrixInv = gml::mat33(m_parent->GetWorldMatrix()).inversed();
 		auto p = gml::transform_point(worldMatrixInv, pos);
 		return p;
-	}
-	else
-	{
-		return pos;
 	}
 }
 
@@ -272,6 +281,11 @@ void SceneNode::SetRenderingOrder(uint32_t & order)
 	{
 		child->SetRenderingOrder(order);
 	});
+}
+
+void SceneNode::SetRenderingOrderOnly(uint32_t order)
+{
+	m_renderingOrder = order;
 }
 
 void SceneNode::OnMessage(const g2d::Message& message)

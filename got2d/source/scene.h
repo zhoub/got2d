@@ -141,7 +141,7 @@ public:
 
 	void Remove(::SceneNode& child);
 
-	void Move(uint32_t from, uint32_t to);
+	bool Move(uint32_t from, uint32_t to);
 
 	template<typename FUNC> void Traversal(FUNC func)
 	{
@@ -234,6 +234,9 @@ public:
 	void SetChildIndex(uint32_t index) { m_childIndex = index; }
 
 	void SetRenderingOrder(uint32_t& order);
+
+	//提供给Move函数临时交换用
+	void SetRenderingOrderOnly(uint32_t order);
 
 	bool ParentIsScene() const { return m_parent == nullptr; }
 
