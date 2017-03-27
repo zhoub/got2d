@@ -39,11 +39,11 @@ class Camera : public g2d::Camera
 public:
 	void SetID(uint32_t index) { m_id = index; }
 
-	g2d::Component* FindIntersectionObject(const gml::vec2& worldPosition);
+	g2d::Component* FindNearestComponent(const gml::vec2& worldPosition);
 
 	std::vector<Component*> visibleComponents;
 
-public:	//g2d::entity
+public:	//g2d::Component
 	virtual void Release() override { delete this; }
 
 	virtual const gml::aabb2d& GetLocalAABB() const override { return m_aabb; }
@@ -69,7 +69,7 @@ public:	//g2d::camera
 
 	virtual bool TestVisible(const gml::aabb2d& bounding) const override;
 
-	virtual bool TestVisible(g2d::Component& entity) const override;
+	virtual bool TestVisible(g2d::Component& component) const override;
 
 	virtual uint32_t GetVisibleMask() const override { return m_visibleMask; }
 

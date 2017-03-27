@@ -22,7 +22,7 @@ namespace g2d
 	{
 	public:
 		// 用户自定义实体需要组件的内存释放的接口
-		// 引擎内部会调用这个接口释放entity资源
+		// 引擎内部会调用这个接口释放Component资源
 		// 只会在析构时候被调用
 		virtual void Release() = 0;
 
@@ -202,7 +202,7 @@ namespace g2d
 		// 判断一个aabb是否会被摄像机看见
 		virtual bool TestVisible(const gml::aabb2d& bounding) const = 0;
 
-		// 判断一个entity是否会被摄像机看见
+		// 判断一个Component是否会被摄像机看见
 		// aabb为一个点，mask不匹配视为不可见
 		virtual bool TestVisible(Component& component) const = 0;
 

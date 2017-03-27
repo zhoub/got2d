@@ -173,7 +173,7 @@
     <ClInclude Include="include\g2drender.h" />
     <ClInclude Include="include\g2dscene.h" />
     <ClInclude Include="source\engine.h" />
-    <ClInclude Include="source\entity.h" />
+    <ClInclude Include="source\component.h" />
     <ClInclude Include="source\inner_utility.h" />
     <ClInclude Include="source\input.h" />
     <ClInclude Include="source\render_system.h" />
@@ -184,7 +184,7 @@
   <ItemGroup>
     <ClCompile Include="source\base_nodes.cpp" />
     <ClCompile Include="source\engine.cpp" />
-    <ClCompile Include="source\entity.cpp" />
+    <ClCompile Include="source\component.cpp" />
     <ClCompile Include="source\input.cpp" />
     <ClCompile Include="source\mesh.cpp" />
     <ClCompile Include="source\message.cpp" />

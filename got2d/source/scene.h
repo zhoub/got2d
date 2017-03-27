@@ -1,6 +1,6 @@
 #pragma once
 #include "../include/g2dscene.h"
-#include "entity.h"
+#include "component.h"
 #include "spatial_graph.h"
 #include "input.h"
 #include <gmlmatrix.h>

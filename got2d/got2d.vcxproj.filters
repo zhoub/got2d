@@ -41,9 +41,6 @@
     <ClInclude Include="source\scene.h">
       <Filter>源文件\scene</Filter>
     </ClInclude>
-    <ClInclude Include="source\entity.h">
-      <Filter>源文件\scene</Filter>
-    </ClInclude>
     <ClInclude Include="source\spatial_graph.h">
       <Filter>源文件\scene</Filter>
     </ClInclude>
@@ -61,6 +58,9 @@
     </ClInclude>
     <ClInclude Include="include\g2dmessage.h">
       <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="source\component.h">
+      <Filter>源文件\scene</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -82,9 +82,6 @@
     <ClCompile Include="source\scene.cpp">
       <Filter>源文件\scene</Filter>
     </ClCompile>
-    <ClCompile Include="source\entity.cpp">
-      <Filter>源文件\scene</Filter>
-    </ClCompile>
     <ClCompile Include="source\spatial_graph.cpp">
       <Filter>源文件\scene</Filter>
     </ClCompile>
@@ -101,6 +98,9 @@
       <Filter>源文件\input</Filter>
     </ClCompile>
     <ClCompile Include="source\base_nodes.cpp">
+      <Filter>源文件\scene</Filter>
+    </ClCompile>
+    <ClCompile Include="source\component.cpp">
       <Filter>源文件\scene</Filter>
     </ClCompile>
   </ItemGroup>

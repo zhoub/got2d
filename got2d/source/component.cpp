@@ -144,29 +144,29 @@ bool Camera::TestVisible(const gml::aabb2d& bounding) const
 	return (m_aabb.is_intersect(bounding) != gml::it_mode::none);
 }
 
-bool Camera::TestVisible(g2d::Component& entity) const
+bool Camera::TestVisible(g2d::Component& component) const
 {
-	if (IsSameType(&entity) ||
-		entity.GetLocalAABB().is_point() ||
-		(GetVisibleMask() & entity.GetVisibleMask()) == 0)
+	if (IsSameType(&component) ||
+		component.GetLocalAABB().is_point() ||
+		(GetVisibleMask() & component.GetVisibleMask()) == 0)
 	{
 		return false;
 	}
 
-	return TestVisible(entity.GetWorldAABB());
+	return TestVisible(component.GetWorldAABB());
 }
 
-g2d::Component* Camera::FindIntersectionObject(const gml::vec2& worldPosition)
+g2d::Component* Camera::FindNearestComponent(const gml::vec2& worldPosition)
 {
 	auto itCur = std::rbegin(visibleComponents);
 	auto itEnd = std::rend(visibleComponents);
 	for (; itCur != itEnd; itCur++)
 	{
-		Component* entity = *itCur;
-		auto localPos = entity->GetSceneNode()->WorldToLocal(worldPosition);
-		if (entity->GetLocalAABB().contains(localPos))
+		Component* component = *itCur;
+		auto localPos = component->GetSceneNode()->WorldToLocal(worldPosition);
+		if (component->GetLocalAABB().contains(localPos))
 		{
-			return entity;
+			return component;
 		}
 	}
 	return nullptr;

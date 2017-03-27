@@ -366,10 +366,10 @@ void Scene::OnMouseMoving()
 	{
 		auto& camera = *cur;
 		gml::vec2 worldCoord = camera->ScreenToWorld(cursorPos);
-		auto entity = camera->FindIntersectionObject(worldCoord);
-		if (entity != nullptr)
+		auto component = camera->FindNearestComponent(worldCoord);
+		if (component != nullptr)
 		{
-			return reinterpret_cast<::SceneNode*>(entity->GetSceneNode());
+			return reinterpret_cast<::SceneNode*>(component->GetSceneNode());
 		}
 	}
 	return nullptr;
@@ -395,9 +395,9 @@ void Scene::Render()
 				return a->GetRenderingOrder() < b->GetRenderingOrder();
 			});
 
-			for (auto& entity : camera->visibleComponents)
+			for (auto& component : camera->visibleComponents)
 			{
-				entity->OnRender();
+				component->OnRender();
 			}
 			GetRenderSystem()->FlushRequests();
 		}
