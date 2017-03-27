@@ -366,12 +366,29 @@ namespace g2d
 	// 根据类型获取
 	template<typename T> T* FindComponent(SceneNode* node);
 
-	class G2DAPI Scene : public SceneNode
+	class G2DAPI Scene : public GObject
 	{
 	public:
 		// 创建的场景需要用户手动释放资源
 		// 只能调用一次
 		virtual void Release() = 0;
+
+		// 获取第一个孩子
+		// 如果没有孩子则返回nullptr
+		virtual g2d::SceneNode* FirstChild() const = 0;
+
+		// 获取最后一个孩子
+		// 如果没有孩子则返回nullptr
+		virtual g2d::SceneNode* LastChild() const = 0;
+
+		// 使用索引获得子节点
+		virtual g2d::SceneNode* GetChildByIndex(uint32_t index) const = 0;
+
+		// 获取子节点的数目
+		virtual uint32_t GetChildCount() const = 0;
+
+		// 创建子节点
+		virtual SceneNode* CreateChild() = 0;
 
 		// 为场景创建一个摄像机
 		virtual Camera* CreateCameraNode() = 0;

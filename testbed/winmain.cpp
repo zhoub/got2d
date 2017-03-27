@@ -68,7 +68,7 @@ public: //implement
 
 	virtual void OnKeyPress(g2d::KeyCode key, const g2d::Mouse& mouse, const g2d::Keyboard& keyboard) override
 	{
-		if (key == g2d::KeyCode::Enter && (GetSceneNode()->GetChildCount() < 5 || GetSceneNode()->GetParentNode()->GetParentNode() == GetSceneNode()->GetScene()))
+		if (key == g2d::KeyCode::Enter && (GetSceneNode()->GetChildCount() < 5 || GetSceneNode()->GetParentNode()->GetParentNode() == nullptr))
 		{
 			CreateQuadNode(GetSceneNode());
 		}

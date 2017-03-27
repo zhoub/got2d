@@ -147,7 +147,7 @@ void Scene::Release()
 	::GetEngineImpl()->RemoveScene(*this);
 	// 需要先清空节点，以保证SceneNode可以访问到Scene
 	// SceneNode析构的时候需要从Scene中获取SpatialGraph
-	EmptyChildren();
+	m_children.ClearChildren();
 	delete this;
 }
 
@@ -177,19 +177,27 @@ void Scene::Update(uint32_t elapsedTime, uint32_t deltaTime)
 		m_canTickHovering = false;
 	}
 
-	OnUpdateChildren(deltaTime);
+	auto onUpdateChildren = [&](::SceneNode* child)
+	{
+		child->OnUpdate(deltaTime);
+	};
+	m_children.Dispatch(onUpdateChildren);
 
+	// 我们要在这里测试m_Hovering是否已经被删除
 	m_canTickHovering = true;
 }
 
 void Scene::OnMessage(const g2d::Message& message, uint32_t currentTimeStamp)
 {
-	OnMessageComponentsAndChildren(message);
+	auto nf = [&](::SceneNode* child)
+	{
+		child->OnMessage(message);
+	};
+	m_children.Dispatch(nf);
 }
 
-void Scene::SetRenderingOrderDirty(BaseNode* parent)
+void Scene::SetRenderingOrderDirty(::SceneNode* parent)
 {
-
 	if (m_renderingOrderDirtyNode == nullptr)
 	{
 		m_renderingOrderDirtyNode = parent;
@@ -203,7 +211,7 @@ void Scene::SetRenderingOrderDirty(BaseNode* parent)
 void Scene::AdjustRenderingOrder()
 {
 	m_renderingOrderEnd = 1;
-	TraversalChildren([&](::SceneNode* child)
+	m_children.Traversal([&](::SceneNode* child)
 	{
 		child->SetRenderingOrder(m_renderingOrderEnd);
 	});
@@ -211,29 +219,45 @@ void Scene::AdjustRenderingOrder()
 
 g2d::SceneNode * Scene::CreateChild()
 {
-	auto child = _CreateSceneNodeChild(*this);
+	auto child = m_children.CreateChild(*this, m_children);
 	child->SetRenderingOrder(m_renderingOrderEnd);
 	return child;
 }
 
 void Scene::OnKeyPress(g2d::KeyCode key)
 {
-	OnKeyPressComponentsAndChildren(key);
+	auto nf = [&](::SceneNode* child)
+	{
+		child->OnKeyPress(key);
+	};
+	m_children.Dispatch(nf);
 }
 
 void Scene::OnKeyPressingBegin(g2d::KeyCode key)
 {
-	OnKeyPressingBeginComponentsAndChildren(key);
+	auto nf = [&](::SceneNode* child)
+	{
+		child->OnKeyPressingBegin(key);
+	};
+	m_children.Dispatch(nf);
 }
 
 void Scene::OnKeyPressing(g2d::KeyCode key)
 {
-	OnKeyPressingComponentsAndChildren(key);
+	auto nf = [&](::SceneNode* child)
+	{
+		child->OnKeyPressing(key);
+	};
+	m_children.Dispatch(nf);
 }
 
 void Scene::OnKeyPressingEnd(g2d::KeyCode key)
 {
-	OnKeyPressingEndComponentsAndChildren(key);
+	auto nf = [&](::SceneNode* child)
+	{
+		child->OnKeyPressingEnd(key);
+	};
+	m_children.Dispatch(nf);
 }
 
 void Scene::OnMousePress(g2d::MouseButton button)

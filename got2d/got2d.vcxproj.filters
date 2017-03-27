@@ -97,10 +97,13 @@
     <ClCompile Include="source\message.cpp">
       <Filter>源文件\input</Filter>
     </ClCompile>
-    <ClCompile Include="source\base_nodes.cpp">
+    <ClCompile Include="source\component.cpp">
       <Filter>源文件\scene</Filter>
     </ClCompile>
-    <ClCompile Include="source\component.cpp">
+    <ClCompile Include="source\container.cpp">
+      <Filter>源文件\scene</Filter>
+    </ClCompile>
+    <ClCompile Include="source\local_transform.cpp">
       <Filter>源文件\scene</Filter>
     </ClCompile>
   </ItemGroup>
