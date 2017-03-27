@@ -237,22 +237,22 @@ void BaseNode::CollectChildren()
 	}
 }
 
-::SceneNode* BaseNode::_CreateSceneNodeChild(::Scene& scene, ::SceneNode* parent, g2d::Entity& e, bool autoRelease)
+::SceneNode* BaseNode::_CreateSceneNodeChild(::Scene& scene, ::SceneNode* parent)
 {
 	uint32_t childID = static_cast<uint32_t>(m_children.size());
-	auto rst = new ::SceneNode(scene, parent, childID, &e, autoRelease);
+	auto rst = new ::SceneNode(scene, parent, childID);
 	m_children.push_back(rst);
-	scene.GetSpatialGraph()->Add(e);
+	//scene.GetSpatialGraph()->Add(e);
 	m_childrenChanged = true;
 	return rst;
 }
 
-::SceneNode* BaseNode::_CreateSceneNodeChild(::Scene& scene, g2d::Entity& e, bool autoRelease)
+::SceneNode* BaseNode::_CreateSceneNodeChild(::Scene& scene)
 {
 	uint32_t childID = static_cast<uint32_t>(m_children.size());
-	auto rst = new ::SceneNode(scene, childID, &e, autoRelease);
+	auto rst = new ::SceneNode(scene, childID);
 	m_children.push_back(rst);
-	scene.GetSpatialGraph()->Add(e);
+	//scene.GetSpatialGraph()->Add(e);
 	m_childrenChanged = true;
 	return rst;
 }

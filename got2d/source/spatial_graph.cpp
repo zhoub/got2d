@@ -37,7 +37,7 @@ inline bool Contains(const gml::vec2& center, float gridSize, const gml::aabb2d&
 	return bounding.is_intersect(nodeAABB) == gml::it_mode::contain;
 }
 
-QuadTreeNode* QuadTreeNode::AddRecursive(const gml::aabb2d& entityBound, g2d::Entity& entity)
+QuadTreeNode* QuadTreeNode::AddRecursive(const gml::aabb2d& entityBound, g2d::Component& entity)
 {
 	m_isEmpty = false;
 	if (m_kCanBranch)
@@ -104,7 +104,7 @@ QuadTreeNode* QuadTreeNode::AddRecursive(const gml::aabb2d& entityBound, g2d::En
 	}
 }
 
-QuadTreeNode* QuadTreeNode::AddToDynamicList(g2d::Entity& entity)
+QuadTreeNode* QuadTreeNode::AddToDynamicList(g2d::Component& entity)
 {
 	m_isEmpty = false;
 	m_dynamicEntities.push_back(&entity);
@@ -137,7 +137,7 @@ void QuadTreeNode::TryMarkEmpty()
 		}
 	}
 }
-void QuadTreeNode::Remove(g2d::Entity& entity)
+void QuadTreeNode::Remove(g2d::Component& entity)
 {
 	auto oldEnd = std::end(m_dynamicEntities);
 	auto newEnd = std::remove(std::begin(m_dynamicEntities), oldEnd, &entity);
@@ -155,7 +155,7 @@ void QuadTreeNode::FindVisible(Camera& camera)
 	{
 		if (entity->GetSceneNode()->IsVisible() && camera.TestVisible(*entity))
 		{
-			camera.visibleEntities.push_back(entity);
+			camera.visibleComponents.push_back(entity);
 		}
 	}
 
@@ -173,7 +173,7 @@ SpatialGraph::SpatialGraph(float boundSize)
 	m_root = new QuadTreeNode(nullptr, gml::vec2::zero(), boundSize);
 }
 
-void SpatialGraph::Add(g2d::Entity& entity)
+void SpatialGraph::Add(g2d::Component& entity)
 {
 	Remove(entity);
 
@@ -191,7 +191,7 @@ void SpatialGraph::Add(g2d::Entity& entity)
 	m_linkRef[&entity] = node;
 }
 
-void SpatialGraph::Remove(g2d::Entity& entity)
+void SpatialGraph::Remove(g2d::Component& entity)
 {
 	if (m_linkRef.count(&entity))
 	{

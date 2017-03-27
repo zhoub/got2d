@@ -16,11 +16,11 @@ public:
 
 	~QuadTreeNode();
 
-	QuadTreeNode* AddRecursive(const gml::aabb2d& entityBound, g2d::Entity&  entity);
+	QuadTreeNode* AddRecursive(const gml::aabb2d& entityBound, g2d::Component&  entity);
 
-	QuadTreeNode* AddToDynamicList(g2d::Entity& entity);
+	QuadTreeNode* AddToDynamicList(g2d::Component& entity);
 
-	void Remove(g2d::Entity& entity);
+	void Remove(g2d::Component& entity);
 
 	gml::aabb2d GetBounding() { return m_bounding; }
 
@@ -45,7 +45,7 @@ private:
 	bool m_isEmpty = true;
 	QuadTreeNode* m_parent;
 	QuadTreeNode* m_directionNodes[Direction::Count];
-	std::vector<g2d::Entity*> m_dynamicEntities;
+	std::vector<g2d::Component*> m_dynamicEntities;
 	gml::aabb2d m_bounding;
 };
 
@@ -54,13 +54,13 @@ class SpatialGraph
 public:
 	SpatialGraph(float boundSize);
 	
-	void Add(g2d::Entity& entity);
+	void Add(g2d::Component& entity);
 
-	void Remove(g2d::Entity& entity);
+	void Remove(g2d::Component& entity);
 
 	void FindVisible(Camera& camera);
 
 private:
 	autod<QuadTreeNode> m_root;
-	std::map<g2d::Entity*, QuadTreeNode*> m_linkRef;
+	std::map<g2d::Component*, QuadTreeNode*> m_linkRef;
 };

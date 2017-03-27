@@ -209,9 +209,9 @@ void Scene::AdjustRenderingOrder()
 	});
 }
 
-g2d::SceneNode * Scene::CreateSceneNodeChild(g2d::Entity * entity, bool autoRelease)
+g2d::SceneNode * Scene::CreateChild()
 {
-	auto child = _CreateSceneNodeChild(*this, *entity, autoRelease);
+	auto child = _CreateSceneNodeChild(*this);
 	child->SetRenderingOrder(m_renderingOrderEnd);
 	return child;
 }
@@ -361,7 +361,7 @@ void Scene::OnMouseMoving()
 {
 	auto cur = std::rbegin(m_cameraOrder);
 	auto end = std::rend(m_cameraOrder);
-	g2d::Entity* frontEntity = nullptr;
+	g2d::Component* frontComponent = nullptr;
 	for (; cur != end; cur++)
 	{
 		auto& camera = *cur;
@@ -385,17 +385,17 @@ void Scene::Render()
 	{
 		if (camera->IsActivity())
 		{
-			camera->visibleEntities.clear();
+			camera->visibleComponents.clear();
 			GetRenderSystem()->SetViewMatrix(camera->GetViewMatrix());
 			m_spatial.FindVisible(*camera);
 
 			//sort visibleEntities by render order
-			std::sort(std::begin(camera->visibleEntities), std::end(camera->visibleEntities),
-				[](g2d::Entity* a, g2d::Entity* b) {
-				return a->GetSceneNode()->GetRenderingOrder() < b->GetSceneNode()->GetRenderingOrder();
+			std::sort(std::begin(camera->visibleComponents), std::end(camera->visibleComponents),
+				[](g2d::Component* a, g2d::Component* b) {
+				return a->GetRenderingOrder() < b->GetRenderingOrder();
 			});
 
-			for (auto& entity : camera->visibleEntities)
+			for (auto& entity : camera->visibleComponents)
 			{
 				entity->OnRender();
 			}
@@ -407,7 +407,7 @@ void Scene::Render()
 g2d::Camera* Scene::CreateCameraNode()
 {
 	Camera* camera = new ::Camera();
-	CreateSceneNodeChild(camera, true);
+	CreateChild()->AddComponent(camera, true);
 	m_cameraOrderDirty = true;
 	camera->SetID(static_cast<uint32_t>(m_cameras.size()));
 	m_cameras.push_back(camera);

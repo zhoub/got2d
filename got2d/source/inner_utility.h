@@ -31,7 +31,7 @@ namespace g2d
 	class SceneNode;
 	class Scene;
 
-	class Entity;
+	class Component;
 	class Camera;
 	class Quad;
 }

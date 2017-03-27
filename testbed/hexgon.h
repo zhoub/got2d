@@ -6,7 +6,7 @@
 
 
 
-class Hexgon : public g2d::Entity
+class Hexgon : public g2d::Component
 {
 	RTTI_IMPL;
 public://implement
@@ -121,6 +121,8 @@ class EntityDragging : public g2d::Component
 public: //implement
 	virtual void Release() override { delete this; }
 
+	virtual const gml::aabb2d& GetLocalAABB() const override { static gml::aabb2d inst; return inst; }
+
 	virtual void OnLDragBegin(const g2d::Mouse& mouse, const g2d::Keyboard& keyboard) override
 	{
 		auto worldP = GetSceneNode()->GetScene()->GetMainCamera()->ScreenToWorld(mouse.GetCursorPosition());
@@ -150,11 +152,13 @@ public: //implement
 		delete this;
 	}
 
+	virtual const gml::aabb2d& GetLocalAABB() const override { static gml::aabb2d inst; return inst; }
+
 public: //events
 	virtual void OnInitial() override
 	{
 		colors.resize(7);
-		hexgonEntity = reinterpret_cast<Hexgon*>(GetEntity());
+		hexgonEntity = g2d::FindComponent<Hexgon>(GetSceneNode());
 		hexgonEntity->GetColors(colors);
 	}
 
@@ -182,7 +186,7 @@ public: //events
 
 	virtual void OnLDoubleClick(const g2d::Mouse& mouse, const g2d::Keyboard& keyboard) override
 	{
-		auto component = g2d::GetComponent<EntityDragging>(GetSceneNode());
+		auto component = g2d::FindComponent<EntityDragging>(GetSceneNode());
 		if (component != nullptr)
 		{
 			dragComponent = component;

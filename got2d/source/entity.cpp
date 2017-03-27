@@ -7,7 +7,7 @@ g2d::Quad* g2d::Quad::Create()
 	return new ::Quad();
 }
 
-gml::aabb2d g2d::Entity::GetWorldAABB() const
+gml::aabb2d g2d::Component::GetWorldAABB() const
 {
 	if (GetLocalAABB().is_point())
 		return GetLocalAABB();
@@ -16,21 +16,15 @@ gml::aabb2d g2d::Entity::GetWorldAABB() const
 	return gml::transform(matrixWorld, GetLocalAABB());
 }
 
-void g2d::Entity::SetSceneNode(g2d::SceneNode* node)
-{
-	ENSURE(node != nullptr);
-	m_sceneNode = node;
-}
-
-uint32_t g2d::Entity::GetVisibleMask() const
-{
-	return GetSceneNode()->GetVisibleMask();
-}
-
 void g2d::Component::SetSceneNode(g2d::SceneNode* node)
 {
 	ENSURE(node != nullptr);
 	m_sceneNode = node;
+}
+
+uint32_t g2d::Component::GetVisibleMask() const
+{
+	return GetSceneNode()->GetVisibleMask();
 }
 
 Quad::Quad()
@@ -150,7 +144,7 @@ bool Camera::TestVisible(const gml::aabb2d& bounding) const
 	return (m_aabb.is_intersect(bounding) != gml::it_mode::none);
 }
 
-bool Camera::TestVisible(g2d::Entity& entity) const
+bool Camera::TestVisible(g2d::Component& entity) const
 {
 	if (IsSameType(&entity) ||
 		entity.GetLocalAABB().is_point() ||
@@ -162,13 +156,13 @@ bool Camera::TestVisible(g2d::Entity& entity) const
 	return TestVisible(entity.GetWorldAABB());
 }
 
-g2d::Entity* Camera::FindIntersectionObject(const gml::vec2& worldPosition)
+g2d::Component* Camera::FindIntersectionObject(const gml::vec2& worldPosition)
 {
-	auto itCur = std::rbegin(visibleEntities);
-	auto itEnd = std::rend(visibleEntities);
+	auto itCur = std::rbegin(visibleComponents);
+	auto itEnd = std::rend(visibleComponents);
 	for (; itCur != itEnd; itCur++)
 	{
-		Entity* entity = *itCur;
+		Component* entity = *itCur;
 		auto localPos = entity->GetSceneNode()->WorldToLocal(worldPosition);
 		if (entity->GetLocalAABB().contains(localPos))
 		{

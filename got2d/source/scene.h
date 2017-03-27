@@ -99,9 +99,9 @@ protected:
 
 	~BaseNode();
 
-	::SceneNode* _CreateSceneNodeChild(::Scene& scene, ::SceneNode* parent, g2d::Entity& e, bool autoRelease);
+	::SceneNode* _CreateSceneNodeChild(::Scene& scene, ::SceneNode* parent);
 
-	::SceneNode* _CreateSceneNodeChild(::Scene& scene, g2d::Entity& e, bool autoRelease);
+	::SceneNode* _CreateSceneNodeChild(::Scene& scene);
 
 	void OnUpdateChildren(uint32_t deltaTime);
 
@@ -185,9 +185,9 @@ class SceneNode : public g2d::SceneNode, public BaseNode
 {
 	RTTI_IMPL;
 public:
-	SceneNode(::Scene& scene, ::SceneNode* parent, uint32_t childID, g2d::Entity* entity, bool autoRelease);
+	SceneNode(::Scene& scene, ::SceneNode* parent, uint32_t childID);
 
-	SceneNode(::Scene& parent, uint32_t childID, g2d::Entity* entity, bool autoRelease);
+	SceneNode(::Scene& parent, uint32_t childID);
 
 	~SceneNode();
 
@@ -246,7 +246,7 @@ public:	//g2d::SceneNode
 
 	virtual uint32_t GetChildCount() const override { return _GetChildCount(); }
 
-	virtual g2d::SceneNode* CreateSceneNodeChild(g2d::Entity* entity, bool autoRelease) override;
+	virtual g2d::SceneNode* CreateChild() override;
 
 	virtual void Remove() override { m_bparent.RemoveChildNode(this); }
 
@@ -298,8 +298,6 @@ public:	//g2d::SceneNode
 
 	virtual gml::vec2 GetWorldPosition() override;
 
-	virtual g2d::Entity* GetEntity() const override { return m_entity; }
-
 	virtual uint32_t GetChildIndex() const override { return m_childIndex; }
 
 	virtual bool IsVisible() const override { return _IsVisible(); }
@@ -311,8 +309,6 @@ public:	//g2d::SceneNode
 	virtual gml::vec2 WorldToLocal(const gml::vec2& pos) override;
 
 	virtual gml::vec2 WorldToParent(const gml::vec2& pos) override;
-
-	virtual uint32_t GetRenderingOrder() const override { return m_renderingOrder; }
 
 	::SceneNode* GetPrevSibling() const;
 
@@ -338,8 +334,6 @@ private:
 	::BaseNode& m_bparent;
 	g2d::SceneNode& m_iparent;
 	::SceneNode* m_parent = nullptr;
-	g2d::Entity* m_entity = nullptr;
-	bool m_autoRelease = false;
 	bool m_isStatic = false;
 	bool m_matrixDirtyEntityUpdate = true;
 	bool m_matrixWorldDirty = true;
@@ -379,7 +373,7 @@ public: //g2d::SceneNode
 
 	virtual uint32_t GetChildCount() const override { return _GetChildCount(); }
 
-	virtual g2d::SceneNode* CreateSceneNodeChild(g2d::Entity* entity, bool autoRelease) override;
+	virtual g2d::SceneNode* CreateChild() override;
 
 	virtual void Remove() override { }
 
@@ -431,8 +425,6 @@ public: //g2d::SceneNode
 
 	virtual gml::vec2 GetWorldPosition() override { return _GetPosition(); };
 
-	virtual g2d::Entity* GetEntity() const override { return nullptr; }
-
 	virtual uint32_t GetChildIndex() const override { return 0; }
 
 	virtual bool IsVisible() const override { return _IsVisible(); }
@@ -444,8 +436,6 @@ public: //g2d::SceneNode
 	virtual gml::vec2 WorldToLocal(const gml::vec2& pos) override { return pos; }
 
 	virtual gml::vec2 WorldToParent(const gml::vec2& pos) override { return pos; }
-
-	virtual uint32_t GetRenderingOrder() const override { return 0; }
 
 public:	//g2d::Scene
 	virtual void Release() override;
