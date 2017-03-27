@@ -297,3 +297,341 @@ void SceneNodeContainer::Recollect()
 		m_collection.push_back(c);
 	}
 }
+
+
+
+// 以下是消息派发函数
+
+void ComponentContainer::OnRotate(gml::radian r)
+{
+	for (auto& c : m_components)
+	{
+		c.ComponentPtr->OnRotate(r);
+	}
+}
+
+void ComponentContainer::OnScale(const gml::vec2 & s)
+{
+	for (auto& c : m_components)
+	{
+		c.ComponentPtr->OnScale(s);
+	}
+}
+
+void ComponentContainer::OnMove(const gml::vec2 & p)
+{
+	for (auto& c : m_components)
+	{
+		c.ComponentPtr->OnMove(p);
+	}
+}
+
+void ComponentContainer::OnMessage(const g2d::Message & message)
+{
+	Collect();
+	for (auto& c : m_collection)
+	{
+		c.ComponentPtr->OnMessage(message);
+	}
+	DelayRemove();
+}
+
+void ComponentContainer::OnUpdate(uint32_t deltaTime)
+{
+	Collect();
+	for (auto& c : m_collection)
+	{
+		c.ComponentPtr->OnUpdate(deltaTime);
+	}
+	DelayRemove();
+}
+
+void ComponentContainer::OnUpdateMatrixChanged()
+{
+	Collect();
+	for (auto& c : m_collection)
+	{
+		c.ComponentPtr->OnUpdateMatrixChanged();
+	}
+	DelayRemove();
+}
+
+void ComponentContainer::OnCursorEnterFrom(::SceneNode * adjacency)
+{
+	Collect();
+	for (auto& c : m_collection)
+	{
+		c.ComponentPtr->OnCursorEnterFrom(adjacency, GetMouse(), GetKeyboard());
+	}
+	DelayRemove();
+}
+
+void ComponentContainer::OnCursorHovering()
+{
+	Collect();
+	for (auto& c : m_collection)
+	{
+		c.ComponentPtr->OnCursorHovering(GetMouse(), GetKeyboard());
+	}
+	DelayRemove();
+}
+
+void ComponentContainer::OnCursorLeaveTo(::SceneNode * adjacency)
+{
+	Collect();
+	for (auto& c : m_collection)
+	{
+		c.ComponentPtr->OnCursorLeaveTo(adjacency, GetMouse(), GetKeyboard());
+	}
+	DelayRemove();
+}
+
+void ComponentContainer::OnLClick()
+{
+	Collect();
+	for (auto& c : m_collection)
+	{
+		c.ComponentPtr->OnLClick(GetMouse(), GetKeyboard());
+	}
+	DelayRemove();
+}
+
+void ComponentContainer::OnRClick()
+{
+	Collect();
+	for (auto& c : m_collection)
+	{
+		c.ComponentPtr->OnRClick(GetMouse(), GetKeyboard());
+	}
+	DelayRemove();
+}
+
+void ComponentContainer::OnMClick()
+{
+	Collect();
+	for (auto& c : m_collection)
+	{
+		c.ComponentPtr->OnMClick(GetMouse(), GetKeyboard());
+	}
+	DelayRemove();
+}
+
+void ComponentContainer::OnLDoubleClick()
+{
+	Collect();
+	for (auto& c : m_collection)
+	{
+		c.ComponentPtr->OnLDoubleClick(GetMouse(), GetKeyboard());
+	}
+	DelayRemove();
+}
+
+void ComponentContainer::OnRDoubleClick()
+{
+	Collect();
+	for (auto& c : m_collection)
+	{
+		c.ComponentPtr->OnRDoubleClick(GetMouse(), GetKeyboard());
+	}
+	DelayRemove();
+}
+
+void ComponentContainer::OnMDoubleClick()
+{
+	Collect();
+	for (auto& c : m_collection)
+	{
+		c.ComponentPtr->OnMDoubleClick(GetMouse(), GetKeyboard());
+	}
+	DelayRemove();
+}
+
+void ComponentContainer::OnLDragBegin()
+{
+	Collect();
+	for (auto& c : m_collection)
+	{
+		c.ComponentPtr->OnLDragBegin(GetMouse(), GetKeyboard());
+	}
+	DelayRemove();
+}
+
+void ComponentContainer::OnRDragBegin()
+{
+	Collect();
+	for (auto& c : m_collection)
+	{
+		c.ComponentPtr->OnRDragBegin(GetMouse(), GetKeyboard());
+	}
+	DelayRemove();
+}
+
+void ComponentContainer::OnMDragBegin()
+{
+	Collect();
+	for (auto& c : m_collection)
+	{
+		c.ComponentPtr->OnMDragBegin(GetMouse(), GetKeyboard());
+	}
+	DelayRemove();
+}
+
+void ComponentContainer::OnLDragging()
+{
+	Collect();
+	for (auto& c : m_collection)
+	{
+		c.ComponentPtr->OnLDragging(GetMouse(), GetKeyboard());
+	}
+	DelayRemove();
+}
+
+void ComponentContainer::OnRDragging()
+{
+	Collect();
+	for (auto& c : m_collection)
+	{
+		c.ComponentPtr->OnRDragging(GetMouse(), GetKeyboard());
+	}
+	DelayRemove();
+}
+
+void ComponentContainer::OnMDragging()
+{
+	Collect();
+	for (auto& c : m_collection)
+	{
+		c.ComponentPtr->OnMDragging(GetMouse(), GetKeyboard());
+	}
+	DelayRemove();
+}
+
+void ComponentContainer::OnLDragEnd()
+{
+	Collect();
+	for (auto& c : m_collection)
+	{
+		c.ComponentPtr->OnLDragEnd(GetMouse(), GetKeyboard());
+	}
+	DelayRemove();
+}
+
+void ComponentContainer::OnRDragEnd()
+{
+	Collect();
+	for (auto& c : m_collection)
+	{
+		c.ComponentPtr->OnRDragEnd(GetMouse(), GetKeyboard());
+	}
+	DelayRemove();
+}
+
+void ComponentContainer::OnMDragEnd()
+{
+	Collect();
+	for (auto& c : m_collection)
+	{
+		c.ComponentPtr->OnMDragEnd(GetMouse(), GetKeyboard());
+	}
+	DelayRemove();
+}
+
+void ComponentContainer::OnLDropping(::SceneNode * dropped)
+{
+	Collect();
+	for (auto& c : m_collection)
+	{
+		c.ComponentPtr->OnLDropping(dropped, GetMouse(), GetKeyboard());
+	}
+	DelayRemove();
+}
+
+void ComponentContainer::OnRDropping(::SceneNode * dropped)
+{
+	Collect();
+	for (auto& c : m_collection)
+	{
+		c.ComponentPtr->OnRDropping(dropped, GetMouse(), GetKeyboard());
+	}
+	DelayRemove();
+}
+
+void ComponentContainer::OnMDropping(::SceneNode * dropped)
+{
+	Collect();
+	for (auto& c : m_collection)
+	{
+		c.ComponentPtr->OnMDropping(dropped, GetMouse(), GetKeyboard());
+	}
+	DelayRemove();
+}
+
+void ComponentContainer::OnLDropTo(::SceneNode * dropped)
+{
+	Collect();
+	for (auto& c : m_collection)
+	{
+		c.ComponentPtr->OnLDropTo(dropped, GetMouse(), GetKeyboard());
+	}
+	DelayRemove();
+}
+
+void ComponentContainer::OnRDropTo(::SceneNode * dropped)
+{
+	Collect();
+	for (auto& c : m_collection)
+	{
+		c.ComponentPtr->OnRDropTo(dropped, GetMouse(), GetKeyboard());
+	}
+	DelayRemove();
+}
+
+void ComponentContainer::OnMDropTo(::SceneNode * dropped)
+{
+	Collect();
+	for (auto& c : m_collection)
+	{
+		c.ComponentPtr->OnMDropTo(dropped, GetMouse(), GetKeyboard());
+	}
+	DelayRemove();
+}
+
+void ComponentContainer::OnKeyPress(g2d::KeyCode key)
+{
+	Collect();
+	for (auto& c : m_collection)
+	{
+		c.ComponentPtr->OnKeyPress(key, GetMouse(), GetKeyboard());
+	}
+	DelayRemove();
+}
+
+void ComponentContainer::OnKeyPressingBegin(g2d::KeyCode key)
+{
+	Collect();
+	for (auto& c : m_collection)
+	{
+		c.ComponentPtr->OnKeyPressingBegin(key, GetMouse(), GetKeyboard());
+	}
+	DelayRemove();
+}
+
+void ComponentContainer::OnKeyPressing(g2d::KeyCode key)
+{
+	Collect();
+	for (auto& c : m_collection)
+	{
+		c.ComponentPtr->OnKeyPressing(key, GetMouse(), GetKeyboard());
+	}
+	DelayRemove();
+}
+
+void ComponentContainer::OnKeyPressingEnd(g2d::KeyCode key)
+{
+	Collect();
+	for (auto& c : m_collection)
+	{
+		c.ComponentPtr->OnKeyPressingEnd(key, GetMouse(), GetKeyboard());
+	}
+	DelayRemove();
+}

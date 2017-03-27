@@ -38,12 +38,74 @@ public:
 		for (auto& c : m_components) f(c.ComponentPtr);
 	}
 
-	template<typename FUNC> void Dispatch(const FUNC& cf)
-	{
-		Collect();
-		for (auto& c : m_collection) cf(c.ComponentPtr);
-		DelayRemove();
-	}
+public:
+	void OnRotate(gml::radian r);
+
+	void OnScale(const gml::vec2& s);
+
+	void OnMove(const gml::vec2& p);
+
+	void OnMessage(const g2d::Message& message);
+
+	void OnUpdate(uint32_t deltaTime);
+
+	void OnUpdateMatrixChanged();
+
+	void OnCursorEnterFrom(::SceneNode* adjacency);
+
+	void OnCursorHovering();
+
+	void OnCursorLeaveTo(::SceneNode* adjacency);
+
+	void OnLClick();
+
+	void OnRClick();
+
+	void OnMClick();
+
+	void OnLDoubleClick();
+
+	void OnRDoubleClick();
+
+	void OnMDoubleClick();
+
+	void OnLDragBegin();
+
+	void OnRDragBegin();
+
+	void OnMDragBegin();
+
+	void OnLDragging();
+
+	void OnRDragging();
+
+	void OnMDragging();
+
+	void OnLDragEnd();
+
+	void OnRDragEnd();
+
+	void OnMDragEnd();
+
+	void OnLDropping(::SceneNode* dropped);
+
+	void OnRDropping(::SceneNode* dropped);
+
+	void OnMDropping(::SceneNode* dropped);
+
+	void OnLDropTo(::SceneNode* dropped);
+
+	void OnRDropTo(::SceneNode* dropped);
+
+	void OnMDropTo(::SceneNode* dropped);
+
+	void OnKeyPress(g2d::KeyCode key);
+
+	void OnKeyPressingBegin(g2d::KeyCode key);
+
+	void OnKeyPressing(g2d::KeyCode key);
+
+	void OnKeyPressingEnd(g2d::KeyCode key);
 
 private:
 	void Recollect();
@@ -93,12 +155,18 @@ public:
 		for (; it != end; it++) func(*child);
 	}
 
-	template<typename FUNC> void Dispatch(const FUNC& nf)
-	{
-		// 不能先collect，有可能产生添加递归的潜在问题
-		for (auto& child : m_collection) nf(child);
-		Collect();
-	}
+public:
+	void OnMessage(const g2d::Message& message);
+
+	void OnUpdate(uint32_t deltaTime);
+
+	void OnKeyPress(g2d::KeyCode key);
+
+	void OnKeyPressingBegin(g2d::KeyCode key);
+
+	void OnKeyPressing(g2d::KeyCode key);
+
+	void OnKeyPressingEnd(g2d::KeyCode key);
 
 private:
 	void Recollect();

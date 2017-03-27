@@ -177,11 +177,7 @@ void Scene::Update(uint32_t elapsedTime, uint32_t deltaTime)
 		m_canTickHovering = false;
 	}
 
-	auto onUpdateChildren = [&](::SceneNode* child)
-	{
-		child->OnUpdate(deltaTime);
-	};
-	m_children.Dispatch(onUpdateChildren);
+	m_children.OnUpdate(deltaTime);
 
 	// 我们要在这里测试m_Hovering是否已经被删除
 	m_canTickHovering = true;
@@ -189,11 +185,7 @@ void Scene::Update(uint32_t elapsedTime, uint32_t deltaTime)
 
 void Scene::OnMessage(const g2d::Message& message, uint32_t currentTimeStamp)
 {
-	auto nf = [&](::SceneNode* child)
-	{
-		child->OnMessage(message);
-	};
-	m_children.Dispatch(nf);
+	m_children.OnMessage(message);
 }
 
 void Scene::SetRenderingOrderDirty(::SceneNode* parent)
@@ -234,38 +226,22 @@ g2d::SceneNode * Scene::CreateChild()
 
 void Scene::OnKeyPress(g2d::KeyCode key)
 {
-	auto nf = [&](::SceneNode* child)
-	{
-		child->OnKeyPress(key);
-	};
-	m_children.Dispatch(nf);
+	m_children.OnKeyPress(key);
 }
 
 void Scene::OnKeyPressingBegin(g2d::KeyCode key)
 {
-	auto nf = [&](::SceneNode* child)
-	{
-		child->OnKeyPressingBegin(key);
-	};
-	m_children.Dispatch(nf);
+	m_children.OnKeyPressingBegin(key);
 }
 
 void Scene::OnKeyPressing(g2d::KeyCode key)
 {
-	auto nf = [&](::SceneNode* child)
-	{
-		child->OnKeyPressing(key);
-	};
-	m_children.Dispatch(nf);
+	m_children.OnKeyPressing(key);
 }
 
 void Scene::OnKeyPressingEnd(g2d::KeyCode key)
 {
-	auto nf = [&](::SceneNode* child)
-	{
-		child->OnKeyPressingEnd(key);
-	};
-	m_children.Dispatch(nf);
+	m_children.OnKeyPressingEnd(key);
 }
 
 void Scene::OnMousePress(g2d::MouseButton button)
@@ -393,7 +369,7 @@ void Scene::OnMouseMoving()
 {
 	auto cur = std::rbegin(m_cameraOrder);
 	auto end = std::rend(m_cameraOrder);
-	g2d::Component* frontComponent = nullptr;
+
 	for (; cur != end; cur++)
 	{
 		auto& camera = *cur;
@@ -408,6 +384,12 @@ void Scene::OnMouseMoving()
 }
 
 #include "render_system.h"
+
+bool RenderingOrderSorter(g2d::Component* a, g2d::Component* b)
+{
+	return a->GetRenderingOrder() < b->GetRenderingOrder();
+}
+
 void Scene::Render()
 {
 	GetRenderSystem()->FlushRequests();
@@ -415,34 +397,36 @@ void Scene::Render()
 	ResetRenderingOrder();
 	for (auto camera : m_cameraOrder)
 	{
-		if (camera->IsActivity())
+		if (!camera->IsActivity())
+			continue;
+
+		GetRenderSystem()->SetViewMatrix(camera->GetViewMatrix());
+
+		camera->visibleComponents.clear();
+		m_spatial.FindVisible(*camera);
+
+		//sort visibleEntities by render order
+		std::sort(
+			std::begin(camera->visibleComponents),
+			std::end(camera->visibleComponents),
+			RenderingOrderSorter);
+
+		for (auto& component : camera->visibleComponents)
 		{
-			camera->visibleComponents.clear();
-			GetRenderSystem()->SetViewMatrix(camera->GetViewMatrix());
-			m_spatial.FindVisible(*camera);
-
-			//sort visibleEntities by render order
-			std::sort(std::begin(camera->visibleComponents), std::end(camera->visibleComponents),
-				[](g2d::Component* a, g2d::Component* b) {
-				return a->GetRenderingOrder() < b->GetRenderingOrder();
-			});
-
-			for (auto& component : camera->visibleComponents)
-			{
-				component->OnRender();
-			}
-			GetRenderSystem()->FlushRequests();
+			component->OnRender();
 		}
+		GetRenderSystem()->FlushRequests();
 	}
 }
 
 g2d::Camera* Scene::CreateCameraNode()
 {
 	Camera* camera = new ::Camera(*this);
-	CreateChild()->AddComponent(camera, true);
-	m_cameraOrderDirty = true;
 	camera->SetID(static_cast<uint32_t>(m_cameras.size()));
 	m_cameras.push_back(camera);
+	m_cameraOrderDirty = true;
+
+	CreateChild()->AddComponent(camera, true);
 	return camera;
 }
 
@@ -455,4 +439,64 @@ g2d::Camera* Scene::GetCameraByIndex(uint32_t index) const
 uint32_t Scene::GetCameraCount() const
 {
 	return static_cast<uint32_t>(m_cameras.size());
+}
+
+void SceneNodeContainer::OnMessage(const g2d::Message & message)
+{
+	// 不能先collect，有可能产生添加递归的潜在问题
+	for (auto& child : m_collection)
+	{
+		child->OnMessage(message);
+	}
+	Collect();
+}
+
+void SceneNodeContainer::OnUpdate(uint32_t deltaTime)
+{
+	// 不能先collect，有可能产生添加递归的潜在问题
+	for (auto& child : m_collection)
+	{
+		child->OnUpdate(deltaTime);
+	}
+	Collect();
+}
+
+void SceneNodeContainer::OnKeyPress(g2d::KeyCode key)
+{
+	// 不能先collect，有可能产生添加递归的潜在问题
+	for (auto& child : m_collection)
+	{
+		child->OnKeyPress(key);
+	}
+	Collect();
+}
+
+void SceneNodeContainer::OnKeyPressingBegin(g2d::KeyCode key)
+{
+	// 不能先collect，有可能产生添加递归的潜在问题
+	for (auto& child : m_collection)
+	{
+		child->OnKeyPressingBegin(key);
+	}
+	Collect();
+}
+
+void SceneNodeContainer::OnKeyPressing(g2d::KeyCode key)
+{
+	// 不能先collect，有可能产生添加递归的潜在问题
+	for (auto& child : m_collection)
+	{
+		child->OnKeyPressing(key);
+	}
+	Collect();
+}
+
+void SceneNodeContainer::OnKeyPressingEnd(g2d::KeyCode key)
+{
+	// 不能先collect，有可能产生添加递归的潜在问题
+	for (auto& child : m_collection)
+	{
+		child->OnKeyPressingEnd(key);
+	}
+	Collect();
 }
