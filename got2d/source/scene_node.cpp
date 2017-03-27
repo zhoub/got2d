@@ -191,33 +191,34 @@ void SceneNode::Release()
 void SceneNode::MoveToFront()
 {
 	m_parentContainer.Move(m_childIndex, m_parentContainer.GetCount() - 1);
-	//m_scene.SetRenderingOrderDirty(&m_bparent);
+	m_scene.SetRenderingOrderDirty(m_parentContainer.At(m_childIndex));
 }
 
 void SceneNode::MoveToBack()
 {
 	m_parentContainer.Move(m_childIndex, 0);
-	//m_scene.SetRenderingOrderDirty(&m_bparent);
+	m_scene.SetRenderingOrderDirty(this);
 }
 
 void SceneNode::MovePrev()
 {
 	m_parentContainer.Move(m_childIndex, m_childIndex - 1);
-	//m_scene.SetRenderingOrderDirty(&m_bparent);
+	m_scene.SetRenderingOrderDirty(m_parentContainer.At(m_childIndex - 1));
 }
 
 void SceneNode::MoveNext()
 {
 	m_parentContainer.Move(m_childIndex, m_childIndex + 1);
-	//m_scene.SetRenderingOrderDirty(&m_bparent);
+	m_scene.SetRenderingOrderDirty(m_parentContainer.At(m_childIndex));
 }
 
 bool SceneNode::AddComponent(g2d::Component * component, bool autoRelease)
 {
-	auto finished = m_components.Add(this, component, autoRelease);
-	if (finished)
+	auto successed = m_components.Add(this, component, autoRelease);
+	if (successed)
 	{
 		m_scene.GetSpatialGraph()->Add(*component);
+		m_scene.SetRenderingOrderDirty(this);
 		return true;
 	}
 	else
