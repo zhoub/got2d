@@ -77,10 +77,6 @@ Quad::Quad()
 	}
 }
 
-void Quad::OnInitial()
-{
-}
-
 void Quad::OnRender()
 {
 	g2d::GetEngine()->GetRenderSystem()->RenderMesh(
@@ -150,7 +146,7 @@ bool Camera::TestVisible(const gml::aabb2d& bounding) const
 
 bool Camera::TestVisible(g2d::Component& component) const
 {
-	if (IsSameType(&component) ||
+	if (component.GetClassID() == ::Camera::GetStaticClassID() ||
 		component.GetLocalAABB().is_point() ||
 		(GetVisibleMask() & component.GetVisibleMask()) == 0)
 	{

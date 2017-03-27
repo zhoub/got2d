@@ -175,6 +175,9 @@ SpatialGraph::SpatialGraph(float boundSize)
 
 void SpatialGraph::Add(g2d::Component& component)
 {
+	if (component.GetClassID() == ::Camera::GetStaticClassID())
+		return;
+
 	Remove(component);
 
 	QuadTreeNode* node = nullptr;
@@ -193,6 +196,9 @@ void SpatialGraph::Add(g2d::Component& component)
 
 void SpatialGraph::Remove(g2d::Component& component)
 {
+	if (component.GetClassID() == ::Camera::GetStaticClassID())
+		return;
+
 	if (m_linkRef.count(&component))
 	{
 		auto& node = m_linkRef[&component];

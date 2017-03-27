@@ -19,8 +19,6 @@ public:	//g2d::Entity
 
 	virtual const gml::aabb2d& GetLocalAABB() const override { return m_aabb; }
 
-	virtual void OnInitial() override;
-
 	virtual void OnRender() override;
 
 public:	//g2d::Quad
