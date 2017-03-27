@@ -301,7 +301,7 @@ public:	//g2d::SceneNode
 
 	virtual bool AddComponent(g2d::Component* component, bool autoRelease) override;
 
-	virtual bool RemoveComponent(g2d::Component* component) override { return m_components.Remove(component, false); }
+	virtual bool RemoveComponent(g2d::Component* component) override;
 
 	virtual bool RemoveComponentWithoutRelease(g2d::Component* component) override { return m_components.Remove(component, true); }
 
@@ -394,7 +394,7 @@ public:
 
 	void OnResize();
 
-	SpatialGraph* GetSpatialGraph() { return &m_spatial; }
+	SpatialGraph& GetSpatialGraph() { return m_spatial; }
 
 	void AdjustRenderingOrder();
 

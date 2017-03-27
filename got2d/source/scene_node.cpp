@@ -21,7 +21,7 @@ SceneNode::~SceneNode()
 {
 	m_components.Traversal([&](g2d::Component* component)
 	{
-		m_scene.GetSpatialGraph()->Remove(*component);
+		m_scene.GetSpatialGraph().Remove(*component);
 	});
 }
 
@@ -116,7 +116,7 @@ void SceneNode::AdjustSpatial()
 {
 	m_components.Traversal([&](g2d::Component* component)
 	{
-		m_scene.GetSpatialGraph()->Add(*component);
+		m_scene.GetSpatialGraph().Add(*component);
 	});
 }
 
@@ -212,8 +212,22 @@ bool SceneNode::AddComponent(g2d::Component* component, bool autoRelease)
 	auto successed = m_components.Add(this, component, autoRelease);
 	if (successed)
 	{
-		m_scene.GetSpatialGraph()->Add(*component);
+		m_scene.GetSpatialGraph().Add(*component);
 		m_scene.SetRenderingOrderDirty(this);
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
+bool SceneNode::RemoveComponent(g2d::Component * component) 
+{ 
+	ENSURE(component != nullptr);
+	if (m_components.Remove(component, false))
+	{
+		m_scene.GetSpatialGraph().Remove(*component);
 		return true;
 	}
 	else
