@@ -130,7 +130,6 @@ bool ComponentContainer::IsAutoRelease(g2d::Component* component) const
 
 g2d::Component* ComponentContainer::At(uint32_t index) const
 {
-	ENSURE(index < GetCount());
 	return m_components.at(index).ComponentPtr;
 }
 

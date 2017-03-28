@@ -305,7 +305,7 @@ public:	//g2d::SceneNode
 
 	virtual bool RemoveComponentWithoutRelease(g2d::Component* component) override;
 
-	virtual bool IsComponentAutoRelease(g2d::Component* component) const override { return m_components.IsAutoRelease(component); }
+	virtual bool IsComponentAutoRelease(g2d::Component* component) const override;
 
 	virtual g2d::Component* GetComponentByIndex(uint32_t index) const override { return m_components.At(index); }
 

@@ -249,6 +249,13 @@ bool SceneNode::IsComponentAutoRelease(g2d::Component * component) const
 	return m_components.IsAutoRelease(component);
 }
 
+inline g2d::Component * SceneNode::GetComponentByIndex(uint32_t index) const
+{
+
+	ENSURE(index < m_components.GetCount());
+	return m_components.At(index);
+}
+
 void SceneNode::SetStatic(bool s)
 {
 	if (m_isStatic != s)
