@@ -26,7 +26,6 @@ void ComponentContainer::Collect()
 
 bool ComponentContainer::Add(g2d::SceneNode* parent, g2d::Component* component, bool autoRelease)
 {
-	ENSURE(component != nullptr);
 	if (m_components.empty())
 	{
 		m_components.push_back({ component , autoRelease });

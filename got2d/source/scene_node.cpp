@@ -209,6 +209,7 @@ void SceneNode::MoveNext()
 
 bool SceneNode::AddComponent(g2d::Component* component, bool autoRelease)
 {
+	ENSURE(component != nullptr);
 	auto successed = m_components.Add(this, component, autoRelease);
 	if (successed)
 	{
@@ -222,8 +223,8 @@ bool SceneNode::AddComponent(g2d::Component* component, bool autoRelease)
 	}
 }
 
-bool SceneNode::RemoveComponent(g2d::Component * component) 
-{ 
+bool SceneNode::RemoveComponent(g2d::Component * component)
+{
 	ENSURE(component != nullptr);
 	if (m_components.Remove(component, false))
 	{
@@ -234,6 +235,18 @@ bool SceneNode::RemoveComponent(g2d::Component * component)
 	{
 		return false;
 	}
+}
+
+bool SceneNode::RemoveComponentWithoutRelease(g2d::Component * component)
+{
+	ENSURE(component != nullptr);
+	return m_components.Remove(component, true);
+}
+
+bool SceneNode::IsComponentAutoRelease(g2d::Component * component) const
+{
+	ENSURE(component != nullptr);
+	return m_components.IsAutoRelease(component);
 }
 
 void SceneNode::SetStatic(bool s)
