@@ -82,6 +82,12 @@ void Mesh::ResizeIndexArray(uint32_t indexCount)
 	m_indices.resize(indexCount);
 }
 
+bool Mesh::Merge(g2d::Mesh* other, const gml::mat32& transform)
+{
+	ENSURE(other != nullptr);
+	return Merge(*other, transform);
+}
+
 void Mesh::Release()
 {
 	delete this;
