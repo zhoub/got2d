@@ -146,7 +146,7 @@ bool Camera::TestVisible(const gml::aabb2d& bounding) const
 
 bool Camera::TestVisible(g2d::Component& component) const
 {
-	if (component.GetClassID() == ::Camera::GetStaticClassID() ||
+	if (Is<::Camera>(component) ||
 		component.GetLocalAABB().is_point() ||
 		(GetVisibleMask() & component.GetVisibleMask()) == 0)
 	{

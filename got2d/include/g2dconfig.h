@@ -37,3 +37,5 @@ public:\
 private:
 
 template<typename T> bool Is(GObject* gobj) { return gobj->GetClassID() == T::GetStaticClassID(); }
+
+template<typename T> bool Is(const GObject& gobj) { return gobj.GetClassID() == T::GetStaticClassID(); }

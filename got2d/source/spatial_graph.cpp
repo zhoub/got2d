@@ -175,8 +175,7 @@ SpatialGraph::SpatialGraph(float boundSize)
 
 void SpatialGraph::Add(g2d::Component& component)
 {
-	if (component.GetClassID() == ::Camera::GetStaticClassID())
-		return;
+	if (Is<::Camera>(component)) return;
 
 	Remove(component);
 
@@ -196,8 +195,7 @@ void SpatialGraph::Add(g2d::Component& component)
 
 void SpatialGraph::Remove(g2d::Component& component)
 {
-	if (component.GetClassID() == ::Camera::GetStaticClassID())
-		return;
+	if (Is<::Camera>(component)) return;
 
 	if (m_linkRef.count(&component))
 	{

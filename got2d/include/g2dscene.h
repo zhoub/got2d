@@ -414,8 +414,7 @@ namespace g2d
 		for (uint32_t i = 0; i < count; i++)
 		{
 			auto component = node->GetComponentByIndex(i);
-			if (T::GetStaticClassID() == component->GetClassID())
-				return reinterpret_cast<T*>(component);
+			if (Is<T>(component)) return reinterpret_cast<T*>(component);
 		}
 		return nullptr;
 	}
