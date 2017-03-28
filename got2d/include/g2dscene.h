@@ -143,7 +143,7 @@ namespace g2d
 		void SetSceneNode(g2d::SceneNode* node);
 
 		// 当节点顺序变更的时候，引擎会调用此接口修正渲染顺序
-		void SetRenderingOrder(uint32_t order);
+		void SetRenderingOrder(uint32_t& order);
 
 		// 渲染的时候根据顺序排列组件
 		uint32_t GetRenderingOrder() { return m_renderingOrder; }

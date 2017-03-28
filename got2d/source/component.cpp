@@ -22,7 +22,7 @@ void g2d::Component::SetSceneNode(g2d::SceneNode* node)
 	m_sceneNode = node;
 }
 
-void g2d::Component::SetRenderingOrder(uint32_t order)
+void g2d::Component::SetRenderingOrder(uint32_t& order)
 {
 	m_renderingOrder = order++;
 }
