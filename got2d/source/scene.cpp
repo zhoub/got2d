@@ -147,7 +147,7 @@ void Scene::Release()
 	::GetEngineImpl()->RemoveScene(*this);
 	// 需要先清空节点，以保证SceneNode可以访问到Scene
 	// SceneNode析构的时候需要从Scene中获取SpatialGraph
-	EmptyChildren();
+	m_children.ClearChildren();
 	delete this;
 }
 
@@ -177,63 +177,71 @@ void Scene::Update(uint32_t elapsedTime, uint32_t deltaTime)
 		m_canTickHovering = false;
 	}
 
-	OnUpdateChildren(deltaTime);
+	m_children.OnUpdate(deltaTime);
 
+	// 我们要在这里测试m_Hovering是否已经被删除
 	m_canTickHovering = true;
 }
 
 void Scene::OnMessage(const g2d::Message& message, uint32_t currentTimeStamp)
 {
-	OnMessageComponentsAndChildren(message);
+	m_children.OnMessage(message);
 }
 
-void Scene::SetRenderingOrderDirty(BaseNode* parent)
+void Scene::SetRenderingOrderDirty(::SceneNode* parent)
 {
-
 	if (m_renderingOrderDirtyNode == nullptr)
 	{
 		m_renderingOrderDirtyNode = parent;
 	}
-	else if (m_renderingOrderDirtyNode->_GetRenderingOrder() > parent->_GetRenderingOrder())
+	else if (m_renderingOrderDirtyNode->GetRenderingOrder() > parent->GetRenderingOrder())
 	{
 		m_renderingOrderDirtyNode = parent;
+	}
+}
+
+void Scene::OnResize()
+{
+	for (auto& camera : m_cameras)
+	{
+		camera->OnUpdateMatrixChanged();
 	}
 }
 
 void Scene::AdjustRenderingOrder()
 {
 	m_renderingOrderEnd = 1;
-	TraversalChildren([&](::SceneNode* child)
+	m_children.Traversal([&](::SceneNode* child)
 	{
 		child->SetRenderingOrder(m_renderingOrderEnd);
 	});
 }
 
-g2d::SceneNode * Scene::CreateSceneNodeChild(g2d::Entity * entity, bool autoRelease)
+g2d::SceneNode * Scene::CreateChild()
 {
-	auto child = _CreateSceneNodeChild(*this, *entity, autoRelease);
+	auto child = m_children.CreateChild(*this, m_children);
 	child->SetRenderingOrder(m_renderingOrderEnd);
 	return child;
 }
 
 void Scene::OnKeyPress(g2d::KeyCode key)
 {
-	OnKeyPressComponentsAndChildren(key);
+	m_children.OnKeyPress(key);
 }
 
 void Scene::OnKeyPressingBegin(g2d::KeyCode key)
 {
-	OnKeyPressingBeginComponentsAndChildren(key);
+	m_children.OnKeyPressingBegin(key);
 }
 
 void Scene::OnKeyPressing(g2d::KeyCode key)
 {
-	OnKeyPressingComponentsAndChildren(key);
+	m_children.OnKeyPressing(key);
 }
 
 void Scene::OnKeyPressingEnd(g2d::KeyCode key)
 {
-	OnKeyPressingEndComponentsAndChildren(key);
+	m_children.OnKeyPressingEnd(key);
 }
 
 void Scene::OnMousePress(g2d::MouseButton button)
@@ -361,21 +369,27 @@ void Scene::OnMouseMoving()
 {
 	auto cur = std::rbegin(m_cameraOrder);
 	auto end = std::rend(m_cameraOrder);
-	g2d::Entity* frontEntity = nullptr;
+
 	for (; cur != end; cur++)
 	{
 		auto& camera = *cur;
 		gml::vec2 worldCoord = camera->ScreenToWorld(cursorPos);
-		auto entity = camera->FindIntersectionObject(worldCoord);
-		if (entity != nullptr)
+		auto component = camera->FindNearestComponent(worldCoord);
+		if (component != nullptr)
 		{
-			return reinterpret_cast<::SceneNode*>(entity->GetSceneNode());
+			return reinterpret_cast<::SceneNode*>(component->GetSceneNode());
 		}
 	}
 	return nullptr;
 }
 
 #include "render_system.h"
+
+bool RenderingOrderSorter(g2d::Component* a, g2d::Component* b)
+{
+	return a->GetRenderingOrder() < b->GetRenderingOrder();
+}
+
 void Scene::Render()
 {
 	GetRenderSystem()->FlushRequests();
@@ -383,34 +397,36 @@ void Scene::Render()
 	ResetRenderingOrder();
 	for (auto camera : m_cameraOrder)
 	{
-		if (camera->IsActivity())
+		if (!camera->IsActivity())
+			continue;
+
+		GetRenderSystem()->SetViewMatrix(camera->GetViewMatrix());
+
+		camera->visibleComponents.clear();
+		m_spatial.FindVisible(*camera);
+
+		//sort visibleEntities by render order
+		std::sort(
+			std::begin(camera->visibleComponents),
+			std::end(camera->visibleComponents),
+			RenderingOrderSorter);
+
+		for (auto& component : camera->visibleComponents)
 		{
-			camera->visibleEntities.clear();
-			GetRenderSystem()->SetViewMatrix(camera->GetViewMatrix());
-			m_spatial.FindVisible(*camera);
-
-			//sort visibleEntities by render order
-			std::sort(std::begin(camera->visibleEntities), std::end(camera->visibleEntities),
-				[](g2d::Entity* a, g2d::Entity* b) {
-				return a->GetSceneNode()->GetRenderingOrder() < b->GetSceneNode()->GetRenderingOrder();
-			});
-
-			for (auto& entity : camera->visibleEntities)
-			{
-				entity->OnRender();
-			}
-			GetRenderSystem()->FlushRequests();
+			component->OnRender();
 		}
+		GetRenderSystem()->FlushRequests();
 	}
 }
 
 g2d::Camera* Scene::CreateCameraNode()
 {
-	Camera* camera = new ::Camera();
-	CreateSceneNodeChild(camera, true);
-	m_cameraOrderDirty = true;
+	Camera* camera = new ::Camera(*this);
 	camera->SetID(static_cast<uint32_t>(m_cameras.size()));
 	m_cameras.push_back(camera);
+	m_cameraOrderDirty = true;
+
+	CreateChild()->AddComponent(camera, true);
 	return camera;
 }
 
@@ -418,4 +434,9 @@ g2d::Camera* Scene::GetCameraByIndex(uint32_t index) const
 {
 	ENSURE(index < m_cameras.size());
 	return m_cameras[index];
+}
+
+uint32_t Scene::GetCameraCount() const
+{
+	return static_cast<uint32_t>(m_cameras.size());
 }

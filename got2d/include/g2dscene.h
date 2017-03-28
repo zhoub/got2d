@@ -11,15 +11,40 @@ namespace g2d
 	constexpr int DEF_COMPONENT_ORDER = 0x5000;
 
 	class Component;
-	class Entity;
 	class Camera;
 	class SceneNode;
 	class Scene;
 
-	// 以下为消息响应接口
-	// 用户自定义实体重载这些虚函数以获得事件响应
-	class G2DAPI EventReceiver
+
+	// 组件基类，挂在场景节点上，一个SceneNode可以挂多个Component
+	// 重载接口已获得自定义事件响应
+	class G2DAPI Component : public GObject
 	{
+	public:
+		// 用户自定义实体需要组件的内存释放的接口
+		// 引擎内部会调用这个接口释放Component资源
+		// 只会在析构时候被调用
+		virtual void Release() = 0;
+
+		// 局部坐标系下组件的包围盒大小
+		virtual const gml::aabb2d& GetLocalAABB() const { static gml::aabb2d b; return b; }
+
+		// 节点在世界空间中包围盒的大小
+		// 默认实现用世界矩阵变换局部坐标系下的包围盒
+		virtual gml::aabb2d GetWorldAABB() const;
+
+		// 用户重载这个函数以修正组件执行顺序
+		// 这个值越大执行顺序约靠后
+		virtual int GetExecuteOrder() const { return DEF_COMPONENT_ORDER; }
+
+		// 组件挂载的的场景节点
+		// 这个接口一般提供给用户自定义的component内部获取node相关属性
+		SceneNode* GetSceneNode() const { return m_sceneNode; }
+
+		// 获取所在场景节点的摄像机可见Flag
+		// 这个是一个转发消息的快捷函数。
+		uint32_t GetVisibleMask() const;
+
 	public:
 		// 节点被成功构造的事件
 		// 一般初始化代码写这个事件里
@@ -111,74 +136,25 @@ namespace g2d
 
 		// 键位被持续按下的最后一下
 		virtual void OnKeyPressingEnd(KeyCode key, const g2d::Mouse&, const g2d::Keyboard& keyboard) { }
-	};
-
-	// 组件基类，挂在场景节点上，一个SceneNode可以悬挂多个Component
-	// 因为实体和节点是一一对应的， 当用户使用引擎内置的实体的时候，无法定制消息
-	// 组件的设置，是为了给用户提供使用系统内置的实体，又需要处理自定义消息的能力。
-	// 重载 EventReceiver 的接口已获得自定义事件响应
-	class G2DAPI Component : public GObject, public EventReceiver
-	{
-		SceneNode* m_sceneNode = nullptr;
-	public:
-		// 用户自定义实体需要组件的内存释放的接口
-		// 引擎内部会调用这个接口释放entity资源
-		// 只会在析构时候被调用
-		virtual void Release() = 0;
-
-		// 用户重载这个函数以修正组件执行顺序
-		// 这个值越大执行顺序约靠后
-		virtual int GetExecuteOrder() const { return DEF_COMPONENT_ORDER; }
-
-		// 组件挂载的的场景节点
-		// 这个接口一般提供给用户自定义的component内部获取node相关属性
-		SceneNode* GetSceneNode() const { return m_sceneNode; }
-
-		// 组件挂载场景节点上的实体对象
-		// 这个接口一般提供给用户自定义的component内部获取entity相关属性
-		Entity* GetEntity() const;
 
 	public://内部使用
-		   // 初始化场景节点的时候
-		   // 设置关联
-		void SetSceneNode(g2d::SceneNode* node);
-	};
 
-	// 实体基类，节点逻辑的实现全在entity内
-	// 挂在场景节点上，一个SceneNode只能挂一个Entity
-	// 重载 EventReceiver的接口已获得自定义事件响应
-	class G2DAPI Entity : public GObject, public EventReceiver
-	{
+		// 初始化场景节点的时候设置关联
+		void SetSceneNode(g2d::SceneNode* node);
+
+		// 当节点顺序变更的时候，引擎会调用此接口修正渲染顺序
+		void SetRenderingOrder(uint32_t& order);
+
+		// 渲染的时候根据顺序排列组件
+		uint32_t GetRenderingOrder() { return m_renderingOrder; }
+
+	private:
 		SceneNode* m_sceneNode = nullptr;
-	public:
-		// 用户自定义实体需要实现内存释放的接口
-		// 引擎内部会调用这个接口释放entity资源
-		// 只会在析构时候被调用
-		virtual void Release() = 0;
-
-		// 局部坐标系下节点的包围盒大小
-		virtual const gml::aabb2d& GetLocalAABB() const = 0;
-
-		// 节点在世界空间中包围盒的大小
-		// 默认实现用世界矩阵变换局部坐标系下的包围盒
-		virtual gml::aabb2d GetWorldAABB() const;
-
-		// entity附着关联的场景节点
-		// 这个接口一般提供给用户自定义entity内部获取node相关属性
-		SceneNode* GetSceneNode() const { return m_sceneNode; }
-
-		// 获取所在场景节点的摄像机可见Flag
-		// 这个是一个转发消息的快捷函数。
-		uint32_t GetVisibleMask() const;
-
-	public://内部使用
-		// 初始化场景节点的时候
-		// 设置关联
-		void SetSceneNode(g2d::SceneNode* node);
+		uint32_t m_renderingOrder = 0xFFFFFFFF;
 	};
 
 	// 一张图片
-	class G2DAPI Quad : public Entity
+	class G2DAPI Quad : public Component
 	{
 	public:
 		static Quad* Create();
@@ -191,7 +167,7 @@ namespace g2d
 	};
 
 	//用于场景查找可见物体，进行渲染的摄像机
-	class G2DAPI Camera : public Entity
+	class G2DAPI Camera : public Component
 	{
 	public:
 		// 摄像机在场景中的编号
@@ -226,9 +202,9 @@ namespace g2d
 		// 判断一个aabb是否会被摄像机看见
 		virtual bool TestVisible(const gml::aabb2d& bounding) const = 0;
 
-		// 判断一个entity是否会被摄像机看见
+		// 判断一个Component是否会被摄像机看见
 		// aabb为一个点，mask不匹配视为不可见
-		virtual bool TestVisible(g2d::Entity& entity) const = 0;
+		virtual bool TestVisible(Component& component) const = 0;
 
 		// 查找可见物体Flag
 		virtual uint32_t GetVisibleMask() const = 0;
@@ -248,6 +224,10 @@ namespace g2d
 	class G2DAPI SceneNode : public GObject
 	{
 	public:
+		// 析构节点，把当前节点从树种删除。
+		// 会同时把组件对象全部删除。
+		virtual void Release() = 0;
+
 		// 节点所在场景
 		// Scene作为根节点会返回自身
 		virtual Scene* GetScene() const = 0;
@@ -278,19 +258,15 @@ namespace g2d
 		// 获取子节点的数目
 		virtual uint32_t GetChildCount() const = 0;
 
-		// 创建子节点，必须传入Entity对象
-		virtual SceneNode* CreateSceneNodeChild(Entity*, bool autoRelease) = 0;
-
-		// 析构节点，把当前节点从树种删除。
-		// 会同时把实体、组件对象全部删除。
-		virtual void Remove() = 0;
+		// 创建子节点
+		virtual SceneNode* CreateChild() = 0;
 
 		// 把当前节点移动到同级最后一个
 		// 以保证第一个渲染！
 		virtual void MoveToFront() = 0;
 
 		// 把当前节点移动到同级第一个
-		// 以保证第一个渲染！
+		// 以保证是最后一个渲染！
 		virtual void MoveToBack() = 0;
 
 		// 跟同级前一个节点交换位置，以保证渲染顺序
@@ -308,7 +284,7 @@ namespace g2d
 		virtual bool RemoveComponent(Component*) = 0;
 
 		// 移除确定组件，并且强制不调用Release接口
-		virtual bool RemoveComponentWithoutReleased(Component*) = 0;
+		virtual bool RemoveComponentWithoutRelease(Component*) = 0;
 
 		// 获取某个组件的释放条件，如果组件不存在，返回假。
 		virtual bool IsComponentAutoRelease(Component*) const = 0;
@@ -368,9 +344,6 @@ namespace g2d
 		// 获得节点世界坐标的位置
 		virtual gml::vec2 GetWorldPosition() = 0;
 
-		// 获取节点绑定的Entity对象
-		virtual Entity* GetEntity() const = 0;
-
 		// 获取当前节点是父亲的第几个节点
 		virtual uint32_t GetChildIndex() const = 0;
 
@@ -388,20 +361,34 @@ namespace g2d
 
 		// 把坐标转换节点同级的局部空间
 		virtual gml::vec2 WorldToParent(const gml::vec2& pos) = 0;
-
-		// 供内部使用，获得当前的渲染顺序，用于排序
-		virtual uint32_t GetRenderingOrder() const = 0;
 	};
 
 	// 根据类型获取
-	template<typename T> T* GetComponent(SceneNode* node);
+	template<typename T> T* FindComponent(SceneNode* node);
 
-	class G2DAPI Scene : public SceneNode
+	class G2DAPI Scene : public GObject
 	{
 	public:
 		// 创建的场景需要用户手动释放资源
 		// 只能调用一次
 		virtual void Release() = 0;
+
+		// 获取第一个孩子
+		// 如果没有孩子则返回nullptr
+		virtual g2d::SceneNode* FirstChild() const = 0;
+
+		// 获取最后一个孩子
+		// 如果没有孩子则返回nullptr
+		virtual g2d::SceneNode* LastChild() const = 0;
+
+		// 使用索引获得子节点
+		virtual g2d::SceneNode* GetChildByIndex(uint32_t index) const = 0;
+
+		// 获取子节点的数目
+		virtual uint32_t GetChildCount() const = 0;
+
+		// 创建子节点
+		virtual SceneNode* CreateChild() = 0;
 
 		// 为场景创建一个摄像机
 		virtual Camera* CreateCameraNode() = 0;
@@ -413,24 +400,21 @@ namespace g2d
 		// 默认摄像机编号为0
 		virtual Camera* GetCameraByIndex(uint32_t index) const = 0;
 
+		// 获取摄像机的数目
+		virtual uint32_t GetCameraCount() const = 0;
+
 		// 把场景中的物体加入渲染队列
 		// 需要用户主动调用
 		virtual void Render() = 0;
 	};
 
-	inline Entity* Component::GetEntity() const
-	{
-		return GetSceneNode()->GetEntity();
-	}
-
-	template<typename T> T* GetComponent(SceneNode* node)
+	template<typename T> T* FindComponent(SceneNode* node)
 	{
 		auto count = node->GetComponentCount();
 		for (uint32_t i = 0; i < count; i++)
 		{
 			auto component = node->GetComponentByIndex(i);
-			if (T::GetStaticClassID() == component->GetClassID())
-				return reinterpret_cast<T*>(component);
+			if (Is<T>(component)) return reinterpret_cast<T*>(component);
 		}
 		return nullptr;
 	}

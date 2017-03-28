@@ -7,7 +7,7 @@ g2d::Quad* g2d::Quad::Create()
 	return new ::Quad();
 }
 
-gml::aabb2d g2d::Entity::GetWorldAABB() const
+gml::aabb2d g2d::Component::GetWorldAABB() const
 {
 	if (GetLocalAABB().is_point())
 		return GetLocalAABB();
@@ -16,21 +16,20 @@ gml::aabb2d g2d::Entity::GetWorldAABB() const
 	return gml::transform(matrixWorld, GetLocalAABB());
 }
 
-void g2d::Entity::SetSceneNode(g2d::SceneNode* node)
-{
-	ENSURE(node != nullptr);
-	m_sceneNode = node;
-}
-
-uint32_t g2d::Entity::GetVisibleMask() const
-{
-	return GetSceneNode()->GetVisibleMask();
-}
-
 void g2d::Component::SetSceneNode(g2d::SceneNode* node)
 {
 	ENSURE(node != nullptr);
 	m_sceneNode = node;
+}
+
+void g2d::Component::SetRenderingOrder(uint32_t& order)
+{
+	m_renderingOrder = order++;
+}
+
+uint32_t g2d::Component::GetVisibleMask() const
+{
+	return GetSceneNode()->GetVisibleMask();
 }
 
 Quad::Quad()
@@ -76,10 +75,6 @@ Quad::Quad()
 		m_material->GetPassByIndex(0)->SetTexture(0, g2d::Texture::LoadFromFile((rand() % 2) ? "test_alpha.bmp" : "test_alpha.png"), true);
 		break;
 	}
-}
-
-void Quad::OnInitial()
-{
 }
 
 void Quad::OnRender()
@@ -141,8 +136,7 @@ void Camera::OnUpdateMatrixChanged()
 void Camera::SetRenderingOrder(int renderingOrder)
 {
 	m_renderingOrder = renderingOrder;
-	::Scene* scene = reinterpret_cast<::Scene*>(GetSceneNode()->GetScene());
-	scene->SetCameraOrderDirty();
+	m_scene.SetCameraOrderDirty();
 }
 
 bool Camera::TestVisible(const gml::aabb2d& bounding) const
@@ -150,29 +144,29 @@ bool Camera::TestVisible(const gml::aabb2d& bounding) const
 	return (m_aabb.is_intersect(bounding) != gml::it_mode::none);
 }
 
-bool Camera::TestVisible(g2d::Entity& entity) const
+bool Camera::TestVisible(g2d::Component& component) const
 {
-	if (IsSameType(&entity) ||
-		entity.GetLocalAABB().is_point() ||
-		(GetVisibleMask() & entity.GetVisibleMask()) == 0)
+	if (Is<::Camera>(component) ||
+		component.GetLocalAABB().is_point() ||
+		!TestVisibleMask(component.GetVisibleMask()) )
 	{
 		return false;
 	}
 
-	return TestVisible(entity.GetWorldAABB());
+	return TestVisible(component.GetWorldAABB());
 }
 
-g2d::Entity* Camera::FindIntersectionObject(const gml::vec2& worldPosition)
+g2d::Component* Camera::FindNearestComponent(const gml::vec2& worldPosition)
 {
-	auto itCur = std::rbegin(visibleEntities);
-	auto itEnd = std::rend(visibleEntities);
+	auto itCur = std::rbegin(visibleComponents);
+	auto itEnd = std::rend(visibleComponents);
 	for (; itCur != itEnd; itCur++)
 	{
-		Entity* entity = *itCur;
-		auto localPos = entity->GetSceneNode()->WorldToLocal(worldPosition);
-		if (entity->GetLocalAABB().contains(localPos))
+		Component* component = *itCur;
+		auto localPos = component->GetSceneNode()->WorldToLocal(worldPosition);
+		if (component->GetLocalAABB().contains(localPos))
 		{
-			return entity;
+			return component;
 		}
 	}
 	return nullptr;
@@ -190,4 +184,9 @@ gml::coord Camera::WorldToScreen(const gml::vec2& pos) const
 	auto renderSystem = g2d::GetEngine()->GetRenderSystem();
 	auto viewPos = gml::transform_point(m_matView, pos);
 	return renderSystem->ViewToScreen(viewPos);
+}
+
+bool Camera::TestVisibleMask(uint32_t mask) const
+{
+	return (m_visibleMask & mask) != 0;
 }

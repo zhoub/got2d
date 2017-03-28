@@ -311,9 +311,8 @@ public:
 
 	ID3D11DeviceContext* GetContext() { return m_d3dContext; }
 
+	bool OnResize(uint32_t width, uint32_t height);
 public:
-	virtual bool OnResize(uint32_t width, uint32_t height) override;
-
 	virtual void BeginRender() override;
 
 	virtual void EndRender() override;

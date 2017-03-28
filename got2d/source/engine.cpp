@@ -99,6 +99,22 @@ void Engine::OnMessage(const g2d::Message& message)
 	}
 }
 
+bool Engine::OnResize(uint32_t width, uint32_t height)
+{
+	if (m_renderSystem.OnResize(width, height))
+	{
+		for (auto& scene : m_scenes)
+		{
+			scene->OnResize();
+		}
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
 bool Engine::CreateRenderSystem(void* nativeWindow)
 {
 	nativeWindow = nativeWindow;

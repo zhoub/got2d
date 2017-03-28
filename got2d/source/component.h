@@ -6,6 +6,7 @@
 #include <g2drender.h>
 #include <vector>
 
+class Scene;
 
 class Quad : public g2d::Quad
 {
@@ -17,8 +18,6 @@ public:	//g2d::Entity
 	virtual void Release() override { delete this; }
 
 	virtual const gml::aabb2d& GetLocalAABB() const override { return m_aabb; }
-
-	virtual void OnInitial() override;
 
 	virtual void OnRender() override;
 
@@ -37,13 +36,15 @@ class Camera : public g2d::Camera
 {
 	RTTI_IMPL;
 public:
+	Camera(::Scene& scene) : m_scene(scene) { }
+
 	void SetID(uint32_t index) { m_id = index; }
 
-	g2d::Entity* FindIntersectionObject(const gml::vec2& worldPosition);
+	g2d::Component* FindNearestComponent(const gml::vec2& worldPosition);
 
-	std::vector<Entity*> visibleEntities;
+	std::vector<Component*> visibleComponents;
 
-public:	//g2d::entity
+public:	//g2d::Component
 	virtual void Release() override { delete this; }
 
 	virtual const gml::aabb2d& GetLocalAABB() const override { return m_aabb; }
@@ -69,7 +70,7 @@ public:	//g2d::camera
 
 	virtual bool TestVisible(const gml::aabb2d& bounding) const override;
 
-	virtual bool TestVisible(g2d::Entity& entity) const override;
+	virtual bool TestVisible(g2d::Component& component) const override;
 
 	virtual uint32_t GetVisibleMask() const override { return m_visibleMask; }
 
@@ -82,6 +83,9 @@ public:	//g2d::camera
 	virtual gml::coord WorldToScreen(const gml::vec2 & pos) const override;
 
 private:
+	bool TestVisibleMask(uint32_t mask) const;
+
+	::Scene& m_scene;
 	uint32_t m_id;
 	uint32_t m_visibleMask = g2d::DEF_VISIBLE_MASK;
 	int m_renderingOrder = 0;

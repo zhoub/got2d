@@ -58,6 +58,7 @@ bool RenderSystem::OnResize(uint32_t width, uint32_t height)
 	ENSURE(m_bbView != nullptr);
 
 	m_matrixProjDirty = true;
+	m_matrixConstBufferDirty = true;
 	m_windowWidth = width;
 	m_windowHeight = height;
 	return true;
@@ -308,7 +309,6 @@ const gml::mat44& RenderSystem::GetProjectionMatrix()
 		float znear = -1.0f;
 		m_matProj = gml::mat44::center_ortho_lh(static_cast<float>(m_windowWidth), static_cast<float>(m_windowHeight), znear, 1000.0f);
 		//m_matProj = gml::mat44::ortho2d_lh(static_cast<float>(m_windowWidth), static_cast<float>(m_windowHeight), znear, 1000.0f);
-		m_matrixConstBufferDirty = true;
 	}
 	return m_matProj;
 }

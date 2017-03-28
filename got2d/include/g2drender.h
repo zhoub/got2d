@@ -200,11 +200,6 @@ namespace g2d
 	class G2DAPI RenderSystem : public GObject
 	{
 	public:
-		// 当nativeWindow发生改变的时候，需要显示调用这个接口
-		// 更新渲染 系统相关的状态以修正投影矩阵
-		// 过后会改成 引擎初始化的时候，提供一个接口，在引擎内部自己注册listener消息
-		virtual bool OnResize(uint32_t width, uint32_t height) = 0;
-
 		// 渲染开始的初始化工作
 		// 所有的Render接口都需要在这个接口被调用之后使用
 		virtual void BeginRender() = 0;
