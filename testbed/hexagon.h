@@ -5,9 +5,9 @@
 #include <vector>
 
 
-g2d::Mesh* CreateHexgonMesh(gml::color4 color, gml::aabb2d* aabb);
+g2d::Mesh* CreateHexagonMesh(float size, gml::color4 color, gml::aabb2d* aabb);
 
-class Hexgon : public g2d::Component
+class Hexagon : public g2d::Component
 {
 	RTTI_IMPL;
 public://implement
@@ -15,56 +15,18 @@ public://implement
 
 	virtual const gml::aabb2d& GetLocalAABB() const override { return m_aabb; };
 
-	virtual void OnRender() override
-	{
-		g2d::GetEngine()->GetRenderSystem()->RenderMesh(
-			g2d::RenderLayer::Default,
-			m_mesh, m_material,
-			GetSceneNode()->GetWorldMatrix());
-	}
+	virtual void OnRender() override;
 
 public:
-	Hexgon()
-	{
-		m_mesh = CreateHexgonMesh(gml::color4::random(), &m_aabb);
-		m_material = g2d::Material::CreateSimpleColor();
-	}
+	Hexagon();
 
-	~Hexgon()
-	{
-		m_mesh->Release();
-		m_material->Release();
-	}
+	~Hexagon();
 
-	void GetColors(std::vector<gml::color4>& outColors)
-	{
-		if (outColors.size() < 7) outColors.resize(7);
+	void GetColors(std::vector<gml::color4>& outColors);
 
-		g2d::GeometryVertex* vertices = m_mesh->GetRawVertices();
-		for (int i = 0; i < 7; i++)
-		{
-			outColors[i] = vertices[i].vtxcolor;
-		}
-	}
+	void SetColors(const std::vector<gml::color4>& colors);
 
-	void SetColors(const std::vector<gml::color4>& colors)
-	{
-		int count = __min((int)colors.size(), 7);
-		g2d::GeometryVertex* vertices = m_mesh->GetRawVertices();
-		for (int i = 0; i < count; i++)
-		{
-			vertices[i].vtxcolor = colors[i];
-		}
-	}
-
-	void SetColors(const gml::color4& color)
-	{
-		g2d::GeometryVertex* vertices = m_mesh->GetRawVertices();
-		for (int i = 0; i < 7; i++)
-		{
-			vertices[i].vtxcolor = color;
-		}
-	}
+	void SetColors(const gml::color4& color);
 
 private:
 	gml::aabb2d m_aabb;
@@ -72,7 +34,7 @@ private:
 	g2d::Material* m_material;
 };
 
-class HexgonBoard : public g2d::Component
+class HexagonBoard : public g2d::Component
 {
 	RTTI_IMPL;
 public:
@@ -80,13 +42,24 @@ public:
 
 	virtual const gml::aabb2d& GetLocalAABB() const override { return m_aabb; };
 
+	virtual void OnInitial() override;
+
 	virtual void OnRender() override;
 
-	HexgonBoard();
+	virtual void OnCursorHovering(const g2d::Mouse& mouse, const g2d::Keyboard& keyboard) override;
 
-	~HexgonBoard();
+public:
+	HexagonBoard();
+
+	~HexagonBoard();
+
+	void SetHexagonColor(gml::color4 color, int q, int r);
 
 private:
+	void PositionToHex(gml::vec2, int& outQ, int& outR);
+
+	int HexToIndex(int q, int r);
+
 	gml::aabb2d m_aabb;
 	g2d::Mesh* m_mesh;
 	g2d::Material* m_material;
@@ -114,7 +87,7 @@ public: //implement
 	gml::vec2 m_dragOffset;
 };
 
-class HexgonColorChanger : public g2d::Component
+class HexagonColorChanger : public g2d::Component
 {
 	RTTI_IMPL;
 public: //implement
@@ -132,8 +105,8 @@ public: //events
 	virtual void OnInitial() override
 	{
 		colors.resize(7);
-		hexgonEntity = g2d::FindComponent<Hexgon>(GetSceneNode());
-		hexgonEntity->GetColors(colors);
+		HexagonEntity = g2d::FindComponent<Hexagon>(GetSceneNode());
+		HexagonEntity->GetColors(colors);
 	}
 
 	virtual void OnLClick(const g2d::Mouse& mouse, const g2d::Keyboard& keyboard) override
@@ -146,16 +119,16 @@ public: //events
 
 	virtual void OnCursorEnterFrom(g2d::SceneNode* adjacency, const g2d::Mouse& mouse, const g2d::Keyboard& keyboard) override
 	{
-		hexgonEntity->GetColors(colors);
+		HexagonEntity->GetColors(colors);
 	}
 	virtual void OnCursorHovering(const g2d::Mouse& mouse, const g2d::Keyboard& keyboard) override
 	{
-		hexgonEntity->SetColors(gml::color4::red());
+		HexagonEntity->SetColors(gml::color4::red());
 	}
 
 	virtual void OnCursorLeaveTo(g2d::SceneNode* adjacency, const g2d::Mouse& mouse, const g2d::Keyboard& keyboard) override
 	{
-		hexgonEntity->SetColors(colors);
+		HexagonEntity->SetColors(colors);
 	}
 
 	virtual void OnLDoubleClick(const g2d::Mouse& mouse, const g2d::Keyboard& keyboard) override
@@ -187,12 +160,12 @@ public: //events
 
 	virtual void OnLDragBegin(const g2d::Mouse& mouse, const g2d::Keyboard& keyboard) override
 	{
-		hexgonEntity->SetColors(gml::color4::yellow());
+		HexagonEntity->SetColors(gml::color4::yellow());
 	}
 
 	virtual void OnLDragEnd(const g2d::Mouse& mouse, const g2d::Keyboard& keyboard) override
 	{
-		hexgonEntity->SetColors(colors);
+		HexagonEntity->SetColors(colors);
 	}
 
 	virtual void OnKeyPress(g2d::KeyCode key, const g2d::Mouse& mouse, const g2d::Keyboard& keyboard) override
@@ -203,11 +176,11 @@ public: //events
 			{
 				colors[i] = gml::color4::random();
 			}
-			hexgonEntity->SetColors(colors);
+			HexagonEntity->SetColors(colors);
 		}
 	}
 
-	Hexgon* hexgonEntity;
+	Hexagon* HexagonEntity;
 	std::vector<gml::color4> colors;
 	EntityDragging*  dragComponent = nullptr;
 	bool autoReleased = false;
