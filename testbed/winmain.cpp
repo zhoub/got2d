@@ -113,6 +113,10 @@ void Testbed::Start()
 {
 	mainScene = g2d::GetEngine()->CreateNewScene(2 << 10);
 
+	// board
+	auto boardNode =  mainScene->CreateChild();
+	boardNode->AddComponent(new HexgonBoard(), true);
+
 	Hexgon* hexgonEntity = new Hexgon();
 	hexgonNode = mainScene->CreateChild();
 	hexgonNode->SetPosition({ 0,0 });
