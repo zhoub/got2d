@@ -39,10 +39,11 @@ class Mesh : public g2d::Mesh
 public:
 	Mesh(uint32_t vertexCount, uint32_t indexCount);
 
-	bool Merge(const g2d::Mesh& other, const gml::mat32& transform);
-
 	void Clear();
 
+	bool Merge(const g2d::Mesh& other, const gml::mat32& transform);
+
+public:
 	virtual const g2d::GeometryVertex* GetRawVertices() const override;
 
 	virtual g2d::GeometryVertex* GetRawVertices() override;
@@ -59,6 +60,8 @@ public:
 
 	virtual void ResizeIndexArray(uint32_t indexCount) override;
 
+	virtual bool Merge(g2d::Mesh* other, const gml::mat32& transform) override;
+
 	virtual void Release() override;
 
 private:
@@ -74,7 +77,7 @@ public:
 
 	Texture(std::string resPath);
 
-	const std::string& GetResourceName() const{ return m_resPath; }
+	const std::string& GetResourceName() const { return m_resPath; }
 
 public: // g2d::Texture
 	virtual void Release() override;
@@ -350,7 +353,7 @@ private:
 	//render request
 	struct RenderRequest {
 		RenderRequest(g2d::Mesh& inMesh, g2d::Material& inMaterial, const gml::mat32& inWorldMatrix)
-			: mesh(inMesh) , material(inMaterial) , worldMatrix(inWorldMatrix)
+			: mesh(inMesh), material(inMaterial), worldMatrix(inWorldMatrix)
 		{	}
 		g2d::Mesh& mesh;
 		g2d::Material& material;

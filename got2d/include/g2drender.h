@@ -67,6 +67,9 @@ namespace g2d
 
 		// 重设索引数据大小，原有数据会被自动迁移到新数组上
 		virtual void ResizeIndexArray(uint32_t indexCount) = 0;
+
+		// 将另一个模型合并到自身上
+		virtual bool Merge(Mesh* other, const gml::mat32& transform) = 0;
 	};
 
 	// 纹理对象，用来作为渲染资源，是一个共享资源
