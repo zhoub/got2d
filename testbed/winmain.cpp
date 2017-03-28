@@ -122,7 +122,6 @@ void Testbed::Start()
 	HexagonNode = mainScene->CreateChild();
 	HexagonNode->SetPosition({ 0,0 });
 	HexagonNode->AddComponent(new Hexagon(), true);
-	HexagonNode->AddComponent(new HexagonColorChanger(), true);
 	HexagonNode->AddComponent(new EntityDragging(), true);
 
 	auto quad = g2d::Quad::Create()->SetSize(gml::vec2(100, 120));
