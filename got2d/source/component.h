@@ -83,6 +83,8 @@ public:	//g2d::camera
 	virtual gml::coord WorldToScreen(const gml::vec2 & pos) const override;
 
 private:
+	bool TestVisibleMask(uint32_t mask) const;
+
 	::Scene& m_scene;
 	uint32_t m_id;
 	uint32_t m_visibleMask = g2d::DEF_VISIBLE_MASK;

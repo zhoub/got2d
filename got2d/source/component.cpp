@@ -148,7 +148,7 @@ bool Camera::TestVisible(g2d::Component& component) const
 {
 	if (Is<::Camera>(component) ||
 		component.GetLocalAABB().is_point() ||
-		(GetVisibleMask() & component.GetVisibleMask()) == 0)
+		!TestVisibleMask(component.GetVisibleMask()) )
 	{
 		return false;
 	}
@@ -184,4 +184,9 @@ gml::coord Camera::WorldToScreen(const gml::vec2& pos) const
 	auto renderSystem = g2d::GetEngine()->GetRenderSystem();
 	auto viewPos = gml::transform_point(m_matView, pos);
 	return renderSystem->ViewToScreen(viewPos);
+}
+
+bool Camera::TestVisibleMask(uint32_t mask) const
+{
+	return (m_visibleMask & mask) != 0;
 }
