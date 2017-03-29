@@ -62,6 +62,16 @@ g2d::SceneNode * SceneNode::SetWorldPosition(const gml::vec2 & position)
 	return this;
 }
 
+g2d::SceneNode * SceneNode::SetRight(const gml::vec2 & right)
+{
+	return this;
+}
+
+g2d::SceneNode * SceneNode::SetUp(const gml::vec2 & up)
+{
+	return this;
+}
+
 g2d::SceneNode* SceneNode::SetRotation(gml::radian r)
 {
 	m_components.OnRotate(r);
@@ -276,6 +286,16 @@ void SceneNode::SetVisibleMask(uint32_t mask, bool recursive)
 gml::vec2 SceneNode::GetWorldPosition()
 {
 	return m_worldTransform.GetPosition();
+}
+
+const gml::vec2 & SceneNode::GetRight()
+{
+	return m_worldTransform.GetRight();
+}
+
+const gml::vec2 & SceneNode::GetUp()
+{
+	return m_worldTransform.GetUp();
 }
 
 gml::vec2 SceneNode::WorldToLocal(const gml::vec2& pos)

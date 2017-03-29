@@ -57,6 +57,8 @@ WorldTransform::WorldTransform(::SceneNode& node, LocalTransform& local)
 	, m_matrix(gml::mat32::identity())
 	, m_matrixDirty(true)
 	, m_positionDirty(true)
+	, m_rightDirty(true)
+	, m_upDirty(true)
 {
 }
 
@@ -73,10 +75,29 @@ const gml::vec2 & WorldTransform::GetPosition()
 			m_position = gml::transform_point(m_sceneNode.GetParent()->GetWorldMatrix(), m_localTransform.GetPosition());
 		}
 
-
 		m_positionDirty = false;
 	}
 	return m_position;
+}
+
+const gml::vec2 & WorldTransform::GetUp()
+{
+	if (m_upDirty)
+	{
+		m_up = gml::transform_vector(GetMatrix(), gml::vec2::up());
+		m_upDirty = false;
+	}
+	return m_up;
+}
+
+const gml::vec2 & WorldTransform::GetRight()
+{
+	if (m_rightDirty)
+	{
+		m_right = gml::transform_vector(GetMatrix(), gml::vec2::right());
+		m_rightDirty = false;
+	}
+	return m_right;
 }
 
 const gml::mat32& WorldTransform::GetMatrix()

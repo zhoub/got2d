@@ -220,9 +220,15 @@ public:
 
 	const gml::vec2& GetPosition();
 
+	const gml::vec2& GetUp();
+
+	const gml::vec2& GetRight();
+
 	const gml::mat32& GetMatrix();
 
 	void SetMatrixDirty() { m_matrixDirty = true; }
+
+	void SetRightDirty() { m_rightDirty = true; }
 
 	void SetPositionDirty() { m_positionDirty = true; }
 
@@ -230,9 +236,13 @@ private:
 	::SceneNode& m_sceneNode;
 	LocalTransform& m_localTransform;
 	gml::vec2 m_position;
+	gml::vec2 m_right;
+	gml::vec2 m_up;
 	gml::mat32 m_matrix;
 	bool m_matrixDirty = true;
 	bool m_positionDirty = true;
+	bool m_rightDirty = true;
+	bool m_upDirty = true;
 };
 class SceneNode : public g2d::SceneNode
 {
@@ -340,6 +350,10 @@ public:	//g2d::SceneNode
 
 	virtual g2d::SceneNode* SetWorldPosition(const gml::vec2& position) override;
 
+	virtual g2d::SceneNode* SetRight(const gml::vec2& right) override;
+
+	virtual g2d::SceneNode* SetUp(const gml::vec2& up) override;
+
 	virtual g2d::SceneNode* SetPivot(const gml::vec2& pivot) override;
 
 	virtual g2d::SceneNode* SetScale(const gml::vec2& scale) override;
@@ -361,6 +375,10 @@ public:	//g2d::SceneNode
 	virtual gml::radian GetRotation() const override { return m_localTransform.GetRotation(); }
 
 	virtual gml::vec2 GetWorldPosition() override;
+
+	virtual const gml::vec2& GetRight() override;
+
+	virtual const gml::vec2& GetUp() override;
 
 	virtual uint32_t GetChildIndex() const override { return m_childIndex; }
 
