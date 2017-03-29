@@ -95,8 +95,7 @@ public: //implement
 	virtual void OnLDragging(const g2d::Mouse& mouse, const g2d::Keyboard& keyboard) override
 	{
 		auto worldP = GetSceneNode()->GetScene()->GetMainCamera()->ScreenToWorld(mouse.GetCursorPosition());
-		auto parentP = GetSceneNode()->WorldToParent(worldP);
-		GetSceneNode()->SetPosition(parentP - m_dragOffset);
+		GetSceneNode()->SetWorldPosition(worldP - m_dragOffset);
 	}
 	gml::vec2 m_dragOffset;
 };
