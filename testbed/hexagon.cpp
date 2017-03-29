@@ -15,12 +15,12 @@ g2d::Mesh * CreateHexagonMesh(float size, gml::color4 color, gml::aabb2d* aabb)
 	//indices;
 	{
 		uint32_t indices[] = {
-			0, 1, 2,
-			0, 2, 3,
-			0, 3, 4,
-			0, 4, 5,
-			0, 5, 6,
-			0, 6, 1 };
+			0, 2, 1,
+			0, 3, 2,
+			0, 4, 3,
+			0, 5, 4,
+			0, 6, 5,
+			0, 1, 6 };
 
 		auto indexPtr = mesh->GetRawIndices();
 		memcpy(indexPtr, indices, sizeof(uint32_t) * mesh->GetIndexCount());
@@ -128,32 +128,27 @@ void Hexagon::OnLClick(const g2d::Mouse & mouse, const g2d::Keyboard & keyboard)
 	SetColor(gml::color4::random());
 }
 
-inline void Hexagon::OnCursorEnterFrom(g2d::SceneNode * adjacency, const g2d::Mouse & mouse, const g2d::Keyboard & keyboard)
+void Hexagon::OnCursorEnterFrom(g2d::SceneNode * adjacency, const g2d::Mouse & mouse, const g2d::Keyboard & keyboard)
 {
 	m_lastColor = m_color;
 }
 
-inline void Hexagon::OnCursorHovering(const g2d::Mouse & mouse, const g2d::Keyboard & keyboard)
-{
-	SetColor(gml::color4::red());
-}
-
-inline void Hexagon::OnCursorLeaveTo(g2d::SceneNode * adjacency, const g2d::Mouse & mouse, const g2d::Keyboard & keyboard)
+void Hexagon::OnCursorLeaveTo(g2d::SceneNode * adjacency, const g2d::Mouse & mouse, const g2d::Keyboard & keyboard)
 {
 	SetColor(m_lastColor);
 }
 
-inline void Hexagon::OnLDragBegin(const g2d::Mouse & mouse, const g2d::Keyboard & keyboard)
+void Hexagon::OnLDragBegin(const g2d::Mouse & mouse, const g2d::Keyboard & keyboard)
 {
 	SetColor(gml::color4::yellow());
 }
 
-inline void Hexagon::OnLDragEnd(const g2d::Mouse & mouse, const g2d::Keyboard & keyboard)
+void Hexagon::OnLDragEnd(const g2d::Mouse & mouse, const g2d::Keyboard & keyboard)
 {
 	SetColor(m_lastColor);
 }
 
-inline void Hexagon::OnKeyPress(g2d::KeyCode key, const g2d::Mouse & mouse, const g2d::Keyboard & keyboard)
+void Hexagon::OnKeyPress(g2d::KeyCode key, const g2d::Mouse & mouse, const g2d::Keyboard & keyboard)
 {
 	if ((int)key == 'C')
 	{
@@ -170,6 +165,11 @@ void HexagonBoard::OnCursorHovering(const g2d::Mouse & mouse, const g2d::Keyboar
 	int x, y;
 	PositionToHex(pos, x, y);
 	SetHexagonColor(gml::color4::random(), x, y);
+}
+
+inline void HexagonBoard::OnCursorLeaveTo(g2d::SceneNode* adjacency, const g2d::Mouse & mouse, const g2d::Keyboard & keyboard)
+{
+	m_lastIndex = -1;
 }
 
 HexagonBoard::HexagonBoard()
@@ -225,13 +225,18 @@ HexagonBoard::~HexagonBoard()
 void HexagonBoard::SetHexagonColor(gml::color4 color, int q, int r)
 {
 	int index = HexToIndex(q, r);
-	g2d::GeometryVertex* vertices = m_mesh->GetRawVertices();
-	auto beg = index * 7;
-	auto end = (index + 1) * 7;
-	for (int i = beg; i < end; i++)
+	if (index != m_lastIndex)
 	{
-		vertices[i].vtxcolor = color;
+		m_lastIndex = index;
+		g2d::GeometryVertex* vertices = m_mesh->GetRawVertices();
+		auto beg = index * 7;
+		auto end = (index + 1) * 7;
+		for (int i = beg; i < end; i++)
+		{
+			vertices[i].vtxcolor = color;
+		}
 	}
+	
 }
 
 void HexagonBoard::PositionToHex(gml::vec2 pos, int & outQ, int & outR)

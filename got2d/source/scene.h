@@ -213,6 +213,39 @@ private:
 	bool m_matrixDirty = true;
 };
 
+class WorldTransform
+{
+public:
+	WorldTransform(::SceneNode& node, LocalTransform& local);
+
+	const gml::vec2& GetPosition();
+
+	const gml::vec2& GetUp();
+
+	const gml::vec2& GetRight();
+
+	const gml::mat32& GetMatrix();
+
+	void SetMatrixDirty();
+
+	void SetRightDirty() { m_rightDirty = true; }
+
+	void SetUpDirty() { m_upDirty = true; }
+
+	void SetPositionDirty() { m_positionDirty = true; }
+
+private:
+	::SceneNode& m_sceneNode;
+	LocalTransform& m_localTransform;
+	gml::vec2 m_position;
+	gml::vec2 m_right;
+	gml::vec2 m_up;
+	gml::mat32 m_matrix;
+	bool m_matrixDirty = true;
+	bool m_positionDirty = true;
+	bool m_rightDirty = true;
+	bool m_upDirty = true;
+};
 class SceneNode : public g2d::SceneNode
 {
 	RTTI_IMPL;
@@ -317,6 +350,12 @@ public:	//g2d::SceneNode
 
 	virtual g2d::SceneNode* SetPosition(const gml::vec2& position) override;
 
+	virtual g2d::SceneNode* SetWorldPosition(const gml::vec2& position) override;
+
+	virtual g2d::SceneNode* SetRight(const gml::vec2& right) override;
+
+	virtual g2d::SceneNode* SetUp(const gml::vec2& up) override;
+
 	virtual g2d::SceneNode* SetPivot(const gml::vec2& pivot) override;
 
 	virtual g2d::SceneNode* SetScale(const gml::vec2& scale) override;
@@ -338,6 +377,10 @@ public:	//g2d::SceneNode
 	virtual gml::radian GetRotation() const override { return m_localTransform.GetRotation(); }
 
 	virtual gml::vec2 GetWorldPosition() override;
+
+	virtual const gml::vec2& GetRight() override;
+
+	virtual const gml::vec2& GetUp() override;
 
 	virtual uint32_t GetChildIndex() const override { return m_childIndex; }
 
@@ -367,11 +410,10 @@ private:
 	SceneNodeContainer m_children;
 	ComponentContainer m_components;
 	LocalTransform m_localTransform;
-	gml::mat32 m_matrixWorld;
+	WorldTransform m_worldTransform;
 	bool m_isVisible = true;
 	bool m_isStatic = false;
-	bool m_matrixDirtyEntityUpdate = true;
-	bool m_matrixWorldDirty = true;
+	bool m_matrixDirtyUpdate = true;
 	uint32_t m_childIndex = 0;
 	uint32_t m_renderingOrder = 0xFFFFFFFF;//保证一开始是错误的
 	uint32_t m_visibleMask = g2d::DEF_VISIBLE_MASK;

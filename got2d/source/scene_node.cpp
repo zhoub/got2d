@@ -6,6 +6,7 @@ SceneNode::SceneNode(::Scene& scene, ::SceneNode* parent, uint32_t childID)
 	, m_parent(parent)
 	, m_parentContainer(parent->m_children)
 	, m_childIndex(childID)
+	, m_worldTransform(*this, m_localTransform)
 {
 }
 
@@ -14,6 +15,7 @@ SceneNode::SceneNode(::Scene& scene, SceneNodeContainer& parentContainer, uint32
 	, m_parent(nullptr)
 	, m_parentContainer(parentContainer)
 	, m_childIndex(childID)
+	, m_worldTransform(*this, m_localTransform)
 {
 }
 
@@ -27,20 +29,7 @@ SceneNode::~SceneNode()
 
 const gml::mat32& SceneNode::GetWorldMatrix()
 {
-	if (m_matrixWorldDirty)
-	{
-		if (ParentIsScene())
-		{
-			m_matrixWorld = GetLocalMatrix();
-		}
-		else
-		{
-			auto& matParent = m_parent->GetWorldMatrix();
-			m_matrixWorld = matParent * GetLocalMatrix();
-		}
-		m_matrixWorldDirty = false;
-	}
-	return m_matrixWorld;
+	return m_worldTransform.GetMatrix();
 }
 
 g2d::SceneNode* SceneNode::SetPivot(const gml::vec2& pivot)
@@ -63,6 +52,53 @@ g2d::SceneNode* SceneNode::SetPosition(const gml::vec2& position)
 	m_components.OnMove(position);
 	m_localTransform.SetPosition(position);
 	SetWorldMatrixDirty();
+	return this;
+}
+
+g2d::SceneNode * SceneNode::SetWorldPosition(const gml::vec2 & position)
+{
+	auto localPos = WorldToParent(position);
+	SetPosition(localPos);
+	return this;
+}
+
+g2d::SceneNode * SceneNode::SetRight(const gml::vec2 & right)
+{
+	auto& oldRight = m_worldTransform.GetRight();
+	auto cos = dot(right, oldRight);
+	bool ccw = cross(right, oldRight) < 0;
+	if (gml::fequal(cos, -1.0f))
+	{
+		gml::radian r = m_localTransform.GetRotation() + gml::radian(gml::PI);
+		SetRotation(gml::limited_rotation(r));
+	}
+	else if (!gml::fequal(cos, 1.0f))
+	{
+		float acosr = acos(cos);
+		gml::radian rdiff = gml::radian(ccw ? acosr : -acosr);
+		gml::radian r = m_localTransform.GetRotation() + rdiff;
+		SetRotation(gml::limited_rotation(r));
+	}
+	return this;
+}
+
+g2d::SceneNode * SceneNode::SetUp(const gml::vec2 & up)
+{
+	auto& oldUp = m_worldTransform.GetUp();
+	auto cos = dot(up, oldUp);
+	bool ccw = cross(up, oldUp) < 0;
+	if (gml::fequal(cos, -1.0f))
+	{
+		gml::radian r = m_localTransform.GetRotation() + gml::radian(gml::PI);
+		SetRotation(gml::limited_rotation(r));
+	}
+	else if (!gml::fequal(cos, 1.0f))
+	{
+		float acosr = acos(cos);
+		gml::radian rdiff = gml::radian(ccw ? acosr : -acosr);
+		gml::radian r = m_localTransform.GetRotation() + rdiff;
+		SetRotation(gml::limited_rotation(r));
+	}
 	return this;
 }
 
@@ -104,12 +140,12 @@ void SceneNode::AdjustRenderingOrder()
 
 void SceneNode::SetWorldMatrixDirty()
 {
-	m_matrixWorldDirty = true;
+	m_worldTransform.SetMatrixDirty();
 	m_children.Traversal([](::SceneNode* child)
 	{
 		child->SetWorldMatrixDirty();
 	});
-	m_matrixDirtyEntityUpdate = true;
+	m_matrixDirtyUpdate = true;
 }
 
 void SceneNode::AdjustSpatial()
@@ -123,7 +159,7 @@ void SceneNode::AdjustSpatial()
 void SceneNode::OnUpdate(uint32_t deltaTime)
 {
 	m_components.OnUpdate(deltaTime);
-	if (m_matrixDirtyEntityUpdate)
+	if (m_matrixDirtyUpdate)
 	{
 		// 如果是静态对象，需要重新修正其在四叉树的位置
 		// 现在阶段只需要在test visible之前处理好就行.
@@ -133,7 +169,7 @@ void SceneNode::OnUpdate(uint32_t deltaTime)
 			AdjustSpatial();
 		}
 		m_components.OnUpdateMatrixChanged();
-		m_matrixDirtyEntityUpdate = false;
+		m_matrixDirtyUpdate = false;
 	}
 
 	m_children.OnUpdate(deltaTime);
@@ -279,8 +315,17 @@ void SceneNode::SetVisibleMask(uint32_t mask, bool recursive)
 
 gml::vec2 SceneNode::GetWorldPosition()
 {
-	auto localPos = m_localTransform.GetPosition();
-	return gml::transform_point(GetWorldMatrix(), localPos);
+	return m_worldTransform.GetPosition();
+}
+
+const gml::vec2 & SceneNode::GetRight()
+{
+	return m_worldTransform.GetRight();
+}
+
+const gml::vec2 & SceneNode::GetUp()
+{
+	return m_worldTransform.GetUp();
 }
 
 gml::vec2 SceneNode::WorldToLocal(const gml::vec2& pos)
@@ -479,5 +524,3 @@ void SceneNode::OnKeyPressingEnd(g2d::KeyCode key)
 	m_components.OnKeyPressingEnd(key);
 	m_children.OnKeyPressingEnd(key);
 }
-
-

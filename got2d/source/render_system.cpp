@@ -18,6 +18,11 @@ bool RenderSystem::OnResize(uint32_t width, uint32_t height)
 	SR(m_rtView);
 	SR(m_bbView);
 
+	if (S_OK != m_swapChain->ResizeBuffers(0, width, height, DXGI_FORMAT_UNKNOWN, 0))
+	{
+		return false;
+	}
+
 	//CreateRenderTarget and Views.
 	D3D11_TEXTURE2D_DESC colorTexDesc;
 	colorTexDesc.Width = width;
@@ -45,6 +50,7 @@ bool RenderSystem::OnResize(uint32_t width, uint32_t height)
 	ENSURE(m_rtView != nullptr);
 
 	ID3D11Texture2D* backBuffer = nullptr;
+	auto bbRelease = create_fallback([&] {SR(backBuffer); });
 	if (S_OK != m_swapChain->GetBuffer(0, _uuidof(ID3D11Texture2D), reinterpret_cast<void**>(&backBuffer)))
 	{
 		return false;
@@ -61,6 +67,19 @@ bool RenderSystem::OnResize(uint32_t width, uint32_t height)
 	m_matrixConstBufferDirty = true;
 	m_windowWidth = width;
 	m_windowHeight = height;
+	m_viewport =
+	{
+		0.0f,//FLOAT TopLeftX;
+		0.0f,//FLOAT TopLeftY;
+		(FLOAT)m_windowWidth,//FLOAT Width;
+		(FLOAT)m_windowHeight,//FLOAT Height;
+		0.0f,//FLOAT MinDepth;
+		1.0f,//FLOAT MaxDepth;
+	};
+
+	m_d3dContext->OMSetRenderTargets(1, &m_bbView, NULL);
+	m_d3dContext->RSSetViewports(1, &m_viewport);
+
 	return true;
 }
 
@@ -233,18 +252,7 @@ bool RenderSystem::Create(void* nativeWindow)
 		return false;
 	}
 
-	m_viewport =
-	{
-		0.0f,//FLOAT TopLeftX;
-		0.0f,//FLOAT TopLeftY;
-		(FLOAT)m_windowWidth,//FLOAT Width;
-		(FLOAT)m_windowHeight,//FLOAT Height;
-		0.0f,//FLOAT MinDepth;
-		1.0f,//FLOAT MaxDepth;
-	};
 
-	m_d3dContext->OMSetRenderTargets(1, &m_bbView, nullptr);
-	m_d3dContext->RSSetViewports(1, &m_viewport);
 	SetBlendMode(g2d::BlendMode::None);
 	Instance = this;
 
@@ -307,8 +315,7 @@ const gml::mat44& RenderSystem::GetProjectionMatrix()
 	{
 		m_matrixProjDirty = false;
 		float znear = -1.0f;
-		m_matProj = gml::mat44::center_ortho_lh(static_cast<float>(m_windowWidth), static_cast<float>(m_windowHeight), znear, 1000.0f);
-		//m_matProj = gml::mat44::ortho2d_lh(static_cast<float>(m_windowWidth), static_cast<float>(m_windowHeight), znear, 1000.0f);
+		m_matProj = gml::mat44::ortho2d_lh(static_cast<float>(m_windowWidth), static_cast<float>(m_windowHeight), znear, 1000.0f);
 	}
 	return m_matProj;
 }
@@ -506,7 +513,7 @@ gml::vec2 RenderSystem::ScreenToView(const gml::coord& screen) const
 	int wWidth = static_cast<int>(GetWindowWidth());
 	int wHeight = static_cast<int>(GetWindowHeight());
 	float x = screen.x - wWidth * 0.5f;
-	float y = screen.y - wHeight* 0.5f;
+	float y = wHeight* 0.5f - screen.y;
 	return { x, y };
 }
 gml::coord RenderSystem::ViewToScreen(const gml::vec2 & view) const
@@ -514,7 +521,7 @@ gml::coord RenderSystem::ViewToScreen(const gml::vec2 & view) const
 	int wWidth = static_cast<int>(GetWindowWidth());
 	int wHeight = static_cast<int>(GetWindowHeight());
 	int x = static_cast<int>(round(view.x + wWidth * 0.5f));
-	int y = static_cast<int>(round(view.y + wHeight* 0.5f));
+	int y = static_cast<int>(round(wHeight* 0.5f - view.y));
 	return { x, y };
 }
 
