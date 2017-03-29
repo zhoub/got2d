@@ -95,6 +95,7 @@ const gml::vec2 & WorldTransform::GetRight()
 	if (m_rightDirty)
 	{
 		m_right = gml::transform_vector(GetMatrix(), gml::vec2::right());
+		m_right.normalize();
 		m_rightDirty = false;
 	}
 	return m_right;
@@ -107,15 +108,21 @@ const gml::mat32& WorldTransform::GetMatrix()
 		if (m_sceneNode.ParentIsScene())
 		{
 			m_matrix = m_localTransform.GetMatrix();
-			SetPositionDirty();
 		}
 		else
 		{
 			auto& matParent = m_sceneNode.GetParent()->GetWorldMatrix();
 			m_matrix = matParent * m_localTransform.GetMatrix();
-			SetPositionDirty();
 		}
 		m_matrixDirty = false;
 	}
 	return m_matrix;
+}
+
+void WorldTransform::SetMatrixDirty()
+{
+	SetPositionDirty();
+	SetRightDirty();
+	SetUpDirty();
+	m_matrixDirty = true;
 }

@@ -64,11 +64,41 @@ g2d::SceneNode * SceneNode::SetWorldPosition(const gml::vec2 & position)
 
 g2d::SceneNode * SceneNode::SetRight(const gml::vec2 & right)
 {
+	auto& oldRight = m_worldTransform.GetRight();
+	auto cos = dot(right, oldRight);
+	bool ccw = cross(right, oldRight) < 0;
+	if (gml::fequal(cos, -1.0f))
+	{
+		gml::radian r = m_localTransform.GetRotation() + gml::radian(gml::PI);
+		SetRotation(gml::limited_rotation(r));
+	}
+	else if (!gml::fequal(cos, 1.0f))
+	{
+		float acosr = acos(cos);
+		gml::radian rdiff = gml::radian(ccw ? acosr : -acosr);
+		gml::radian r = m_localTransform.GetRotation() + rdiff;
+		SetRotation(gml::limited_rotation(r));
+	}
 	return this;
 }
 
 g2d::SceneNode * SceneNode::SetUp(const gml::vec2 & up)
 {
+	auto& oldUp = m_worldTransform.GetUp();
+	auto cos = dot(up, oldUp);
+	bool ccw = cross(up, oldUp) < 0;
+	if (gml::fequal(cos, -1.0f))
+	{
+		gml::radian r = m_localTransform.GetRotation() + gml::radian(gml::PI);
+		SetRotation(gml::limited_rotation(r));
+	}
+	else if (!gml::fequal(cos, 1.0f))
+	{
+		float acosr = acos(cos);
+		gml::radian rdiff = gml::radian(ccw ? acosr : -acosr);
+		gml::radian r = m_localTransform.GetRotation() + rdiff;
+		SetRotation(gml::limited_rotation(r));
+	}
 	return this;
 }
 
@@ -494,5 +524,3 @@ void SceneNode::OnKeyPressingEnd(g2d::KeyCode key)
 	m_components.OnKeyPressingEnd(key);
 	m_children.OnKeyPressingEnd(key);
 }
-
-

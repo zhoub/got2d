@@ -316,7 +316,6 @@ const gml::mat44& RenderSystem::GetProjectionMatrix()
 		m_matrixProjDirty = false;
 		float znear = -1.0f;
 		m_matProj = gml::mat44::ortho2d_lh(static_cast<float>(m_windowWidth), static_cast<float>(m_windowHeight), znear, 1000.0f);
-		//m_matProj = gml::mat44::ortho2d_lh(static_cast<float>(m_windowWidth), static_cast<float>(m_windowHeight), znear, 1000.0f);
 	}
 	return m_matProj;
 }

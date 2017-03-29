@@ -55,6 +55,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 #include <g2dengine.h>
 #include <g2drender.h>
 #include <g2dscene.h>
+#include <gmlmatrix.h>
 
 g2d::SceneNode* CreateQuadNode(g2d::SceneNode* parent);
 
@@ -73,6 +74,14 @@ public: //implement
 		else if (key == g2d::KeyCode::Delete && GetSceneNode()->GetChildIndex() == 3)
 		{
 			GetSceneNode()->Release();
+		}
+		else if (key == g2d::KeyCode::KeyR)
+		{
+			GetSceneNode()->SetRight(gml::mat22::rotate(gml::degree(45)) * gml::vec2::right());
+		}
+		else if (key == g2d::KeyCode::KeyQ)
+		{
+			GetSceneNode()->SetUp(gml::mat22::rotate(gml::degree(-45)) * gml::vec2::up());
 		}
 	}
 
@@ -93,6 +102,14 @@ public: //implement
 		else if (key == g2d::KeyCode::ArrowDown)
 		{
 			GetSceneNode()->SetPosition(GetSceneNode()->GetPosition() + gml::vec2::down());
+		}
+		else if (key == g2d::KeyCode::KeyE)
+		{
+			GetSceneNode()->SetRight(gml::mat22::rotate(gml::degree(1)) * GetSceneNode()->GetRight());
+		}
+		else if (key == g2d::KeyCode::KeyW)
+		{
+			GetSceneNode()->SetUp(gml::mat22::rotate(gml::degree(-1)) * GetSceneNode()->GetUp());
 		}
 	}
 };

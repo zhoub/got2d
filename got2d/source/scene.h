@@ -226,9 +226,11 @@ public:
 
 	const gml::mat32& GetMatrix();
 
-	void SetMatrixDirty() { m_matrixDirty = true; }
+	void SetMatrixDirty();
 
 	void SetRightDirty() { m_rightDirty = true; }
+
+	void SetUpDirty() { m_upDirty = true; }
 
 	void SetPositionDirty() { m_positionDirty = true; }
 
