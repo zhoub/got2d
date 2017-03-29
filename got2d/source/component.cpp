@@ -34,7 +34,7 @@ uint32_t g2d::Component::GetVisibleMask() const
 
 Quad::Quad()
 {
-	uint32_t indices[] = { 0, 1, 2, 0, 2, 3 };
+	uint32_t indices[] = { 0, 2, 1, 0, 3, 2 };
 	m_mesh = g2d::Mesh::Create(4, 6);
 	auto idx = m_mesh->GetRawIndices();
 
@@ -51,10 +51,10 @@ Quad::Quad()
 	m_aabb.expand(gml::vec2(-0.5f, -0.5f));
 	m_aabb.expand(gml::vec2(+0.5f, +0.5f));
 
-	vertices[0].texcoord.set(0, 1);
-	vertices[3].texcoord.set(0, 0);
-	vertices[2].texcoord.set(1, 0);
-	vertices[1].texcoord.set(1, 1);
+	vertices[0].texcoord.set(0, 0);
+	vertices[3].texcoord.set(0, 1);
+	vertices[2].texcoord.set(1, 1);
+	vertices[1].texcoord.set(1, 0);
 
 	vertices[0].vtxcolor = gml::color4::random();
 	vertices[1].vtxcolor = gml::color4::random();

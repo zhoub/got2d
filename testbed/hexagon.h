@@ -29,9 +29,7 @@ public:
 	virtual void OnLClick(const g2d::Mouse& mouse, const g2d::Keyboard& keyboard) override;
 
 	virtual void OnCursorEnterFrom(g2d::SceneNode* adjacency, const g2d::Mouse& mouse, const g2d::Keyboard& keyboard) override;
-
-	virtual void OnCursorHovering(const g2d::Mouse& mouse, const g2d::Keyboard& keyboard) override;
-
+	
 	virtual void OnCursorLeaveTo(g2d::SceneNode* adjacency, const g2d::Mouse& mouse, const g2d::Keyboard& keyboard) override;
 
 	virtual void OnLDragBegin(const g2d::Mouse& mouse, const g2d::Keyboard& keyboard) override;
@@ -62,6 +60,8 @@ public:
 
 	virtual void OnCursorHovering(const g2d::Mouse& mouse, const g2d::Keyboard& keyboard) override;
 
+	virtual void OnCursorLeaveTo(g2d::SceneNode* adjacency, const g2d::Mouse& mouse, const g2d::Keyboard& keyboard) override;
+
 public:
 	HexagonBoard();
 
@@ -74,6 +74,7 @@ private:
 
 	int HexToIndex(int q, int r);
 
+	int m_lastIndex = -1;
 	gml::aabb2d m_aabb;
 	g2d::Mesh* m_mesh;
 	g2d::Material* m_material;

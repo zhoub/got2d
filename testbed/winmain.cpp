@@ -58,7 +58,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 g2d::SceneNode* CreateQuadNode(g2d::SceneNode* parent);
 
-class Moveing : public g2d::Component
+class KeyboardMoving : public g2d::Component
 {
 	RTTI_IMPL;
 public: //implement
@@ -80,19 +80,19 @@ public: //implement
 	{
 		if (key == g2d::KeyCode::ArrowLeft)
 		{
-			GetSceneNode()->SetPosition(GetSceneNode()->GetPosition() + gml::vec2(-1.0f, 0));
+			GetSceneNode()->SetPosition(GetSceneNode()->GetPosition() + gml::vec2::left());
 		}
 		else if (key == g2d::KeyCode::ArrowRight)
 		{
-			GetSceneNode()->SetPosition(GetSceneNode()->GetPosition() + gml::vec2(1.0f, 0));
+			GetSceneNode()->SetPosition(GetSceneNode()->GetPosition() + gml::vec2::right());
 		}
 		else if (key == g2d::KeyCode::ArrowUp)
 		{
-			GetSceneNode()->SetPosition(GetSceneNode()->GetPosition() + gml::vec2(0, -1.0f));
+			GetSceneNode()->SetPosition(GetSceneNode()->GetPosition() + gml::vec2::up());
 		}
 		else if (key == g2d::KeyCode::ArrowDown)
 		{
-			GetSceneNode()->SetPosition(GetSceneNode()->GetPosition() + gml::vec2(0, 1.0f));
+			GetSceneNode()->SetPosition(GetSceneNode()->GetPosition() + gml::vec2::down());
 		}
 	}
 };
@@ -103,7 +103,7 @@ g2d::SceneNode* CreateQuadNode(g2d::SceneNode* parent)
 	auto quad = g2d::Quad::Create()->SetSize(gml::vec2(100, 120));
 	auto child = parent->CreateChild()->SetPosition(gml::vec2(50, 20));
 	child->AddComponent(quad, true);
-	child->AddComponent(new Moveing(), true);
+	child->AddComponent(new KeyboardMoving(), true);
 	child->SetStatic(false);
 	return child;
 }
@@ -134,7 +134,7 @@ void Testbed::Start()
 		auto quad = g2d::Quad::Create()->SetSize(gml::vec2(100, 120));
 		auto child = node->CreateChild()->SetPosition(gml::vec2(50, 60));
 		child->AddComponent(quad, true);
-		child->AddComponent(new Moveing(), true);
+		child->AddComponent(new KeyboardMoving(), true);
 		child->SetStatic(true);
 		node = child;
 	}

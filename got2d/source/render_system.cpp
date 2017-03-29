@@ -307,7 +307,7 @@ const gml::mat44& RenderSystem::GetProjectionMatrix()
 	{
 		m_matrixProjDirty = false;
 		float znear = -1.0f;
-		m_matProj = gml::mat44::center_ortho_lh(static_cast<float>(m_windowWidth), static_cast<float>(m_windowHeight), znear, 1000.0f);
+		m_matProj = gml::mat44::ortho2d_lh(static_cast<float>(m_windowWidth), static_cast<float>(m_windowHeight), znear, 1000.0f);
 		//m_matProj = gml::mat44::ortho2d_lh(static_cast<float>(m_windowWidth), static_cast<float>(m_windowHeight), znear, 1000.0f);
 	}
 	return m_matProj;
@@ -506,7 +506,7 @@ gml::vec2 RenderSystem::ScreenToView(const gml::coord& screen) const
 	int wWidth = static_cast<int>(GetWindowWidth());
 	int wHeight = static_cast<int>(GetWindowHeight());
 	float x = screen.x - wWidth * 0.5f;
-	float y = screen.y - wHeight* 0.5f;
+	float y = wHeight* 0.5f - screen.y;
 	return { x, y };
 }
 gml::coord RenderSystem::ViewToScreen(const gml::vec2 & view) const
@@ -514,7 +514,7 @@ gml::coord RenderSystem::ViewToScreen(const gml::vec2 & view) const
 	int wWidth = static_cast<int>(GetWindowWidth());
 	int wHeight = static_cast<int>(GetWindowHeight());
 	int x = static_cast<int>(round(view.x + wWidth * 0.5f));
-	int y = static_cast<int>(round(view.y + wHeight* 0.5f));
+	int y = static_cast<int>(round(wHeight* 0.5f - view.y));
 	return { x, y };
 }
 
