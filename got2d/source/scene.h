@@ -213,6 +213,27 @@ private:
 	bool m_matrixDirty = true;
 };
 
+class WorldTransform
+{
+public:
+	WorldTransform(::SceneNode& node, LocalTransform& local);
+
+	const gml::vec2& GetPosition();
+
+	const gml::mat32& GetMatrix();
+
+	void SetMatrixDirty() { m_matrixDirty = true; }
+
+	void SetPositionDirty() { m_positionDirty = true; }
+
+private:
+	::SceneNode& m_sceneNode;
+	LocalTransform& m_localTransform;
+	gml::vec2 m_position;
+	gml::mat32 m_matrix;
+	bool m_matrixDirty = true;
+	bool m_positionDirty = true;
+};
 class SceneNode : public g2d::SceneNode
 {
 	RTTI_IMPL;
@@ -367,11 +388,10 @@ private:
 	SceneNodeContainer m_children;
 	ComponentContainer m_components;
 	LocalTransform m_localTransform;
-	gml::mat32 m_matrixWorld;
+	WorldTransform m_worldTransform;
 	bool m_isVisible = true;
 	bool m_isStatic = false;
-	bool m_matrixDirtyEntityUpdate = true;
-	bool m_matrixWorldDirty = true;
+	bool m_matrixDirtyUpdate = true;
 	uint32_t m_childIndex = 0;
 	uint32_t m_renderingOrder = 0xFFFFFFFF;//保证一开始是错误的
 	uint32_t m_visibleMask = g2d::DEF_VISIBLE_MASK;

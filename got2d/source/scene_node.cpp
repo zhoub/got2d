@@ -6,6 +6,7 @@ SceneNode::SceneNode(::Scene& scene, ::SceneNode* parent, uint32_t childID)
 	, m_parent(parent)
 	, m_parentContainer(parent->m_children)
 	, m_childIndex(childID)
+	, m_worldTransform(*this, m_localTransform)
 {
 }
 
@@ -14,6 +15,7 @@ SceneNode::SceneNode(::Scene& scene, SceneNodeContainer& parentContainer, uint32
 	, m_parent(nullptr)
 	, m_parentContainer(parentContainer)
 	, m_childIndex(childID)
+	, m_worldTransform(*this, m_localTransform)
 {
 }
 
@@ -27,20 +29,7 @@ SceneNode::~SceneNode()
 
 const gml::mat32& SceneNode::GetWorldMatrix()
 {
-	if (m_matrixWorldDirty)
-	{
-		if (ParentIsScene())
-		{
-			m_matrixWorld = GetLocalMatrix();
-		}
-		else
-		{
-			auto& matParent = m_parent->GetWorldMatrix();
-			m_matrixWorld = matParent * GetLocalMatrix();
-		}
-		m_matrixWorldDirty = false;
-	}
-	return m_matrixWorld;
+	return m_worldTransform.GetMatrix();
 }
 
 g2d::SceneNode* SceneNode::SetPivot(const gml::vec2& pivot)
@@ -62,6 +51,7 @@ g2d::SceneNode* SceneNode::SetPosition(const gml::vec2& position)
 {
 	m_components.OnMove(position);
 	m_localTransform.SetPosition(position);
+	m_worldTransform.SetPositionDirty();
 	SetWorldMatrixDirty();
 	return this;
 }
@@ -104,12 +94,12 @@ void SceneNode::AdjustRenderingOrder()
 
 void SceneNode::SetWorldMatrixDirty()
 {
-	m_matrixWorldDirty = true;
+	m_worldTransform.SetMatrixDirty();
 	m_children.Traversal([](::SceneNode* child)
 	{
 		child->SetWorldMatrixDirty();
 	});
-	m_matrixDirtyEntityUpdate = true;
+	m_matrixDirtyUpdate = true;
 }
 
 void SceneNode::AdjustSpatial()
@@ -123,7 +113,7 @@ void SceneNode::AdjustSpatial()
 void SceneNode::OnUpdate(uint32_t deltaTime)
 {
 	m_components.OnUpdate(deltaTime);
-	if (m_matrixDirtyEntityUpdate)
+	if (m_matrixDirtyUpdate)
 	{
 		// 如果是静态对象，需要重新修正其在四叉树的位置
 		// 现在阶段只需要在test visible之前处理好就行.
@@ -133,7 +123,7 @@ void SceneNode::OnUpdate(uint32_t deltaTime)
 			AdjustSpatial();
 		}
 		m_components.OnUpdateMatrixChanged();
-		m_matrixDirtyEntityUpdate = false;
+		m_matrixDirtyUpdate = false;
 	}
 
 	m_children.OnUpdate(deltaTime);

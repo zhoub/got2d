@@ -48,3 +48,41 @@ void LocalTransform::SetMatrixDirty()
 {
 	m_matrixDirty = true;
 }
+
+
+WorldTransform::WorldTransform(::SceneNode& node, LocalTransform& local)
+	: m_sceneNode(node)
+	, m_localTransform(local)
+	, m_position(0, 0)
+	, m_matrix(gml::mat32::identity())
+	, m_matrixDirty(true)
+	, m_positionDirty(true)
+{
+}
+
+const gml::vec2 & WorldTransform::GetPosition()
+{
+	if (m_positionDirty)
+	{
+		m_positionDirty = false;
+	}
+	return m_position;
+}
+
+const gml::mat32& WorldTransform::GetMatrix()
+{
+	if (m_matrixDirty)
+	{
+		if (m_sceneNode.ParentIsScene())
+		{
+			m_matrix = m_localTransform.GetMatrix();
+		}
+		else
+		{
+			auto& matParent = m_sceneNode.GetParent()->GetWorldMatrix();
+			m_matrix = matParent * m_localTransform.GetMatrix();
+		}
+		m_matrixDirty = false;
+	}
+	return m_matrix;
+}
