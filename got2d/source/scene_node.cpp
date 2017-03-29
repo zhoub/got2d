@@ -51,8 +51,14 @@ g2d::SceneNode* SceneNode::SetPosition(const gml::vec2& position)
 {
 	m_components.OnMove(position);
 	m_localTransform.SetPosition(position);
-	m_worldTransform.SetPositionDirty();
 	SetWorldMatrixDirty();
+	return this;
+}
+
+g2d::SceneNode * SceneNode::SetWorldPosition(const gml::vec2 & position)
+{
+	auto localPos = WorldToParent(position);
+	SetPosition(localPos);
 	return this;
 }
 
@@ -269,8 +275,7 @@ void SceneNode::SetVisibleMask(uint32_t mask, bool recursive)
 
 gml::vec2 SceneNode::GetWorldPosition()
 {
-	auto localPos = m_localTransform.GetPosition();
-	return gml::transform_point(GetWorldMatrix(), localPos);
+	return m_worldTransform.GetPosition();
 }
 
 gml::vec2 SceneNode::WorldToLocal(const gml::vec2& pos)

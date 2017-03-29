@@ -306,6 +306,10 @@ namespace g2d
 		// 返回自身，可以使用链式设置
 		virtual SceneNode* SetPosition(const gml::vec2& position) = 0;
 
+		// 设置节点的世界位置，这个API会改变局部坐标
+		// 返回自身，可以使用链式设置
+		virtual g2d::SceneNode* SetWorldPosition(const gml::vec2& position) = 0;
+
 		// 设置节点的中心偏移，会影响缩放
 		// 返回自身，可以使用链式设置
 		virtual SceneNode* SetPivot(const gml::vec2& pivot) = 0;
@@ -332,6 +336,9 @@ namespace g2d
 		// 获得节点位置
 		virtual const gml::vec2& GetPosition() const = 0;
 
+		// 获得节点世界坐标的位置
+		virtual gml::vec2 GetWorldPosition() = 0;
+
 		// 获得节点中心偏移
 		virtual const gml::vec2& GetPivot() const = 0;
 
@@ -340,9 +347,6 @@ namespace g2d
 
 		// 获得节点Roll旋转
 		virtual gml::radian GetRotation() const = 0;
-
-		// 获得节点世界坐标的位置
-		virtual gml::vec2 GetWorldPosition() = 0;
 
 		// 获取当前节点是父亲的第几个节点
 		virtual uint32_t GetChildIndex() const = 0;

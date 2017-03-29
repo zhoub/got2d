@@ -338,6 +338,8 @@ public:	//g2d::SceneNode
 
 	virtual g2d::SceneNode* SetPosition(const gml::vec2& position) override;
 
+	virtual g2d::SceneNode* SetWorldPosition(const gml::vec2& position) override;
+
 	virtual g2d::SceneNode* SetPivot(const gml::vec2& pivot) override;
 
 	virtual g2d::SceneNode* SetScale(const gml::vec2& scale) override;

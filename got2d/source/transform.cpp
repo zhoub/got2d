@@ -64,6 +64,8 @@ const gml::vec2 & WorldTransform::GetPosition()
 {
 	if (m_positionDirty)
 	{
+		auto localPos = m_localTransform.GetPosition();
+		m_position = gml::transform_point(GetMatrix(), localPos);
 		m_positionDirty = false;
 	}
 	return m_position;
@@ -76,11 +78,13 @@ const gml::mat32& WorldTransform::GetMatrix()
 		if (m_sceneNode.ParentIsScene())
 		{
 			m_matrix = m_localTransform.GetMatrix();
+			SetPositionDirty();
 		}
 		else
 		{
 			auto& matParent = m_sceneNode.GetParent()->GetWorldMatrix();
 			m_matrix = matParent * m_localTransform.GetMatrix();
+			SetPositionDirty();
 		}
 		m_matrixDirty = false;
 	}
