@@ -5,7 +5,7 @@
 template <typename FUNC>
 class scope_fallback
 {
-	bool disable = false;
+	bool canceled = false;
 	FUNC callback;
 public:
 	scope_fallback(FUNC&& f) : callback(std::move(f)) { }
@@ -19,13 +19,10 @@ public:
 
 	~scope_fallback()
 	{
-		if (!disable)
-		{
-			callback();
-		}
+		if (!canceled) callback();
 	}
 
-	void cancel() { disable = true; }
+	void cancel() { canceled = true; }
 private:
 	scope_fallback& operator=(const scope_fallback&) = delete;
 	scope_fallback& operator=(const scope_fallback&&) = delete;
