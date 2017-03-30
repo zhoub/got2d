@@ -5,8 +5,8 @@
 template <typename FUNC>
 class scope_fallback
 {
-	bool canceled = false;
 	FUNC callback;
+	bool canceled = false;
 public:
 	scope_fallback(FUNC&& f) : callback(std::move(f)) { }
 
