@@ -150,8 +150,8 @@ public:
 
 	template<typename FUNC> void InverseTraversal(FUNC func)
 	{
-		auto it = std::rbegin(m_children);
-		auto end = std::rend(m_children);
+		auto it = m_children.rbegin();
+		auto end = m_children.rend();
 		for (; it != end; it++) func(*it);
 	}
 

@@ -158,8 +158,8 @@ bool Camera::TestVisible(g2d::Component& component) const
 
 g2d::Component* Camera::FindNearestComponent(const gml::vec2& worldPosition)
 {
-	auto itCur = std::rbegin(visibleComponents);
-	auto itEnd = std::rend(visibleComponents);
+	auto itCur = visibleComponents.rbegin();
+	auto itEnd = visibleComponents.rend();
 	for (; itCur != itEnd; itCur++)
 	{
 		Component* component = *itCur;

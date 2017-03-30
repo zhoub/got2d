@@ -365,8 +365,8 @@ void Scene::OnMouseMoving()
 
 ::SceneNode* Scene::FindInteractiveObject(const gml::coord& cursorPos)
 {
-	auto cur = std::rbegin(m_cameraOrder);
-	auto end = std::rend(m_cameraOrder);
+	auto cur = m_cameraOrder.rbegin();
+	auto end = m_cameraOrder.rend();
 
 	for (; cur != end; cur++)
 	{
