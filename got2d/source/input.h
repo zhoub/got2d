@@ -28,15 +28,15 @@ template<typename RECEIVER> class EventDelegate
 public:
 	void operator+=(const RECEIVER& receiver)
 	{
-		auto itEnd = std::end(receivers);
-		if (itEnd == std::find(std::begin(receivers), itEnd, receiver))
+		auto itEnd = receivers.end();
+		if (itEnd == std::find(receivers.begin(), itEnd, receiver))
 			receivers.push_back(receiver);
 	}
 
 	void operator-=(const RECEIVER& receiver)
 	{
-		auto itEnd = std::end(receivers);
-		auto itFound = std::find(std::begin(receivers), itEnd, receiver);
+		auto itEnd = receivers.end();
+		auto itFound = std::find(receivers.begin(), itEnd, receiver);
 		if (itEnd != itFound) receivers.erase(itFound);
 	}
 

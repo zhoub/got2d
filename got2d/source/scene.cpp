@@ -405,8 +405,8 @@ void Scene::Render()
 
 		//sort visibleEntities by render order
 		std::sort(
-			std::begin(camera->visibleComponents),
-			std::end(camera->visibleComponents),
+			camera->visibleComponents.begin(),
+			camera->visibleComponents.end(),
 			RenderingOrderSorter);
 
 		for (auto& component : camera->visibleComponents)

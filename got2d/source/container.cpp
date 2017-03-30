@@ -36,8 +36,8 @@ bool ComponentContainer::Add(g2d::SceneNode* parent, g2d::Component* component, 
 	}
 	else
 	{
-		auto itEndReleased = std::end(m_released);
-		auto itFoundReleased = std::find_if(std::begin(m_released), itEndReleased,
+		auto itEndReleased = m_released.end();
+		auto itFoundReleased = std::find_if(m_released.begin(), itEndReleased,
 			[component](const NodeComponent& c) { return component == c.ComponentPtr; });
 		if (itFoundReleased != itEndReleased)
 		{
@@ -45,8 +45,8 @@ bool ComponentContainer::Add(g2d::SceneNode* parent, g2d::Component* component, 
 			return true;
 		}
 
-		auto itEnd = std::end(m_components);
-		auto itFound = std::find_if(std::begin(m_components), itEnd,
+		auto itEnd = m_components.end();
+		auto itFound = std::find_if(m_components.begin(), itEnd,
 			[component](const NodeComponent& c) { return component == c.ComponentPtr; });
 		if (itFound != itEnd)
 		{
@@ -61,7 +61,7 @@ bool ComponentContainer::Add(g2d::SceneNode* parent, g2d::Component* component, 
 		}
 		else //try insert
 		{
-			auto itCur = std::begin(m_components);
+			auto itCur = m_components.begin();
 			for (; itCur != itEnd; itCur++)
 			{
 				if (itCur->ComponentPtr->GetExecuteOrder() > cOrder)
@@ -78,15 +78,15 @@ bool ComponentContainer::Add(g2d::SceneNode* parent, g2d::Component* component, 
 
 bool ComponentContainer::Remove(g2d::Component* component, bool forceNotReleased)
 {
-	auto itEndReleased = std::end(m_released);
-	if (itEndReleased != std::find_if(std::begin(m_released), itEndReleased,
+	auto itEndReleased = m_released.end();
+	if (itEndReleased != std::find_if(m_released.begin(), itEndReleased,
 		[component](const NodeComponent& c) { return component == c.ComponentPtr; }))
 	{
 		return false;
 	}
 
-	auto itEnd = std::end(m_components);
-	auto itFound = std::find_if(std::begin(m_components), itEnd,
+	auto itEnd = m_components.end();
+	auto itFound = std::find_if(m_components.begin(), itEnd,
 		[component](NodeComponent& c) {return c.ComponentPtr == component; });
 
 	if (itFound != itEnd)
@@ -105,16 +105,16 @@ bool ComponentContainer::Remove(g2d::Component* component, bool forceNotReleased
 bool ComponentContainer::IsAutoRelease(g2d::Component* component) const
 {
 	bool forcedNotReleased = false;
-	auto itEndReleased = std::end(m_released);
-	auto itFoundReleased = std::find_if(std::begin(m_released), itEndReleased,
+	auto itEndReleased = m_released.end();
+	auto itFoundReleased = std::find_if(m_released.begin(), itEndReleased,
 		[component](const NodeComponent& c) { return component == c.ComponentPtr; });
 	if (itFoundReleased != itEndReleased)
 	{
 		forcedNotReleased = itFoundReleased->AutoRelease;
 	}
 
-	auto itEnd = std::end(m_components);
-	auto itFound = std::find_if(std::begin(m_components), itEnd,
+	auto itEnd = m_components.end();
+	auto itFound = std::find_if(m_components.begin(), itEnd,
 		[component](const NodeComponent& c) { return component == c.ComponentPtr; });
 
 	if (itFound == itEnd)
@@ -221,17 +221,17 @@ void SceneNodeContainer::Remove(::SceneNode& child)
 {
 	::SceneNode* releasedChild = &child;
 
-	auto itEndReleased = std::end(m_released);
-	if (itEndReleased == std::find(std::begin(m_released), itEndReleased, releasedChild))
+	auto itEndReleased = m_released.end();
+	if (itEndReleased == std::find(m_released.begin(), itEndReleased, releasedChild))
 	{
-		auto itEnd = std::end(m_children);
-		auto itFound = std::find(std::begin(m_children), itEnd, releasedChild);
+		auto itEnd = m_children.end();
+		auto itFound = std::find(m_children.begin(), itEnd, releasedChild);
 		if (itFound != itEnd)
 		{
 			uint32_t index = releasedChild->GetChildIndex();
 			m_released.push_back(releasedChild);
 			itFound = m_children.erase(itFound);
-			itEnd = std::end(m_children);
+			itEnd = m_children.end();
 			for (; itFound != itEnd; itFound++)
 			{
 				(*itFound)->SetChildIndex(index++);

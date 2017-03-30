@@ -60,8 +60,8 @@ Engine::~Engine()
 
 void Engine::RemoveScene(::Scene& scene)
 {
-	auto oldEnd = std::end(m_scenes);
-	auto newEnd = std::remove(std::begin(m_scenes), oldEnd, &scene);
+	auto oldEnd = m_scenes.end();
+	auto newEnd = std::remove(m_scenes.begin(), oldEnd, &scene);
 	m_scenes.erase(newEnd, oldEnd);
 }
 
@@ -127,7 +127,7 @@ void Engine::SetResourceRoot(const std::string& resPath)
 	if (!resPath.empty())
 	{
 		m_resourceRoot = resPath;
-		std::replace(std::begin(m_resourceRoot), std::end(m_resourceRoot), '/', '\\');
+		std::replace(m_resourceRoot.begin(), m_resourceRoot.end(), '/', '\\');
 		if (m_resourceRoot.back() != '\\')
 		{
 			m_resourceRoot.push_back('\\');
