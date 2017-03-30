@@ -431,20 +431,20 @@ void RenderSystem::FlushBatch(Mesh& mesh, g2d::Material& material)
 			{
 				std::vector<ID3D11ShaderResourceView*> views(pass->GetTextureCount());
 				std::vector<ID3D11SamplerState*> samplerstates(pass->GetTextureCount());
-				for (uint32_t i = 0; i < pass->GetTextureCount(); i++)
+				for (uint32_t t = 0; t < pass->GetTextureCount(); t++)
 				{
-					::Texture* timpl = reinterpret_cast<::Texture*>(pass->GetTextureByIndex(i));
+					::Texture* timpl = reinterpret_cast<::Texture*>(pass->GetTextureByIndex(t));
 					std::string textureName = (timpl == nullptr) ? "" : timpl->GetResourceName();
 					auto texture = m_texPool.GetTexture(textureName);
 					if (texture)
 					{
-						views[i] = texture->m_shaderView;
+						views[t] = texture->m_shaderView;
 					}
 					else
 					{
-						views[i] = nullptr;
+						views[t] = nullptr;
 					}
-					samplerstates[i] = nullptr;
+					samplerstates[t] = nullptr;
 				}
 				UINT numView = static_cast<UINT>(views.size());
 				m_d3dContext->PSSetShaderResources(0, numView, &(views[0]));
