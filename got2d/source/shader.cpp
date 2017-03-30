@@ -1,7 +1,5 @@
-#include "render_system.h"
-#include "inner_utility.h"
-#include "scope_utility.h"
 #include <d3dcompiler.h>
+#include "render_system.h"
 
 #pragma comment(lib,"d3dcompiler.lib")
 

@@ -1,16 +1,14 @@
 #pragma once
+#include <Windows.h>
+#include <map>
+#include <vector>
+#include <d3d11.h>
+#include <gml/gmlcolor.h>
 #include "../include/g2drender.h"
 #include "inner_utility.h"
 #include "scope_utility.h"
-#include <map>
-#include <vector>
-#include <windows.h>
-#include <d3d11.h>
-#include <gmlcolor.h>
-#include <vector>
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "dxgi.lib")
-
 
 class Geometry
 {

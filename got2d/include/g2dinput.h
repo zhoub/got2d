@@ -1,7 +1,7 @@
 #pragma once
-#include <g2dconfig.h>
-#include <g2dmessage.h>
-#include <gmlrect.h>
+#include <gml/gmlrect.h>
+#include "g2dconfig.h"
+#include "g2dmessage.h"
 
 namespace g2d
 {

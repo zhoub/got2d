@@ -1,5 +1,4 @@
 #include "scene.h"
-#include "input.h"
 
 SceneNode::SceneNode(::Scene& scene, ::SceneNode* parent, uint32_t childID)
 	: m_scene(scene)

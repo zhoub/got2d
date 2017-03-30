@@ -1,10 +1,10 @@
 #pragma once
-#include <gmlrect.h>
-#include <g2dmessage.h>
+#include <Windows.h>
+#include <cinttypes>
 #include <functional>
 #include <string>
-#include <cinttypes>
-#include <windows.h>
+#include <gml/gmlrect.h>
+#include <got2d/include/g2dmessage.h>
 
 namespace g2d
 {

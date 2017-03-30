@@ -1,8 +1,5 @@
-#include "engine.h"
-#include "inner_utility.h"
-#include "scope_utility.h"
-#include "input.h"
 #include <algorithm>
+#include "engine.h"
 
 uint32_t G2DAPI NextClassID()
 {

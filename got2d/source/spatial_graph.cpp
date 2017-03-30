@@ -1,7 +1,7 @@
-#include "spatial_graph.h"
-#include "../include/g2dscene.h"
-#include "component.h"
 #include <algorithm>
+#include "../include/g2dscene.h"
+#include "spatial_graph.h"
+#include "component.h"
 
 QuadTreeNode::QuadTreeNode(QuadTreeNode* parent, const gml::vec2& center, float gridSize)
 	: m_bounding(

@@ -1,5 +1,5 @@
-#include "scene.h"
 #include <algorithm>
+#include "scene.h"
 
 ComponentContainer::~ComponentContainer()
 {
@@ -62,7 +62,6 @@ bool ComponentContainer::Add(g2d::SceneNode* parent, g2d::Component* component, 
 		else //try insert
 		{
 			auto itCur = std::begin(m_components);
-			auto itEnd = std::end(m_components);
 			for (; itCur != itEnd; itCur++)
 			{
 				if (itCur->ComponentPtr->GetExecuteOrder() > cOrder)

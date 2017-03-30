@@ -1,8 +1,8 @@
 #pragma once
-#include <g2dengine.h>
-#include <g2dscene.h>
-#include <g2drender.h>
 #include <vector>
+#include <got2d/include/g2dengine.h>
+#include <got2d/include/g2dscene.h>
+#include <got2d/include/g2drender.h>
 
 
 g2d::Mesh* CreateHexagonMesh(float size, gml::color4 color, gml::aabb2d* aabb);

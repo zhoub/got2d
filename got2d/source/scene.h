@@ -1,10 +1,10 @@
 #pragma once
+#include <vector>
+#include <gml/gmlmatrix.h>
 #include "../include/g2dscene.h"
 #include "component.h"
 #include "spatial_graph.h"
 #include "input.h"
-#include <gmlmatrix.h>
-#include <vector>
 
 class SceneNode;
 class Scene;
@@ -152,7 +152,7 @@ public:
 	{
 		auto it = std::rbegin(m_children);
 		auto end = std::rend(m_children);
-		for (; it != end; it++) func(*child);
+		for (; it != end; it++) func(*it);
 	}
 
 public:

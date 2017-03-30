@@ -1,8 +1,6 @@
-#include "spatial_graph.h"
+#include <algorithm>
 #include "scene.h"
 #include "engine.h"
-#include "input.h"
-#include <algorithm>
 
 Scene::Scene(float boundSize)
 	: m_spatial(boundSize)

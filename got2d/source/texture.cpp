@@ -1,6 +1,5 @@
-#include "render_system.h"
 #include "engine.h"
-#include "inner_utility.h"
+#include "render_system.h"
 
 g2d::Texture* g2d::Texture::LoadFromFile(const char* path)
 {

@@ -1,6 +1,6 @@
-#include "input.h"
+#include <Windows.h>
 #include <algorithm>
-#include <windows.h>
+#include "input.h"
 
 Keyboard Keyboard::Instance;
 

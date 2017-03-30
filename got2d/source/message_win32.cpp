@@ -1,7 +1,7 @@
-#include "../include/g2dmessage.h"
-#include <map>
 #include <Windows.h>
 #include <Windowsx.h>
+#include <map>
+#include "../include/g2dmessage.h"
 
 struct Mapping
 {

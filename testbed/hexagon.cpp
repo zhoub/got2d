@@ -1,6 +1,6 @@
 #include "stdafx.h"
+#include <gml/gmlconversion.h>
 #include "hexagon.h"
-#include <gmlconversion.h>
 
 constexpr float kHexagonMargin = 2.0f;
 constexpr float kHexagonSize = 30.0f;

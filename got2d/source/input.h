@@ -1,9 +1,9 @@
 #pragma once
-#include <gmlrect.h>
-#include <g2dinput.h>
 #include <functional>
-#include <map>
 #include <vector>
+#include <map>
+#include <gml/gmlrect.h>
+#include "../include/g2dinput.h"
 
 constexpr uint32_t PRESSING_INTERVAL = 500u;
 

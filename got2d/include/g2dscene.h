@@ -1,10 +1,10 @@
 #pragma once
-#include <g2dconfig.h>
-#include <g2dinput.h>
-#include <gmlvector.h>
-#include <gmlmatrix.h>
-#include <gmlaabb.h>
-#include <gmlrect.h>
+#include <gml/gmlvector.h>
+#include <gml/gmlmatrix.h>
+#include <gml/gmlaabb.h>
+#include <gml/gmlrect.h>
+#include "g2dconfig.h"
+#include "g2dinput.h"
 namespace g2d
 {
 	constexpr uint32_t DEF_VISIBLE_MASK = 0xFFFFFFFF;

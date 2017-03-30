@@ -1,10 +1,9 @@
 #pragma once
-
-#include <g2dconfig.h>
-#include <gmlvector.h>
-#include <gmlmatrix.h>
-#include <gmlcolor.h>
-#include <gmlrect.h>
+#include <gml/gmlvector.h>
+#include <gml/gmlmatrix.h>
+#include <gml/gmlcolor.h>
+#include <gml/gmlrect.h>
+#include "g2dconfig.h"
 
 namespace g2d
 {

@@ -1,6 +1,4 @@
 #include "render_system.h"
-#include "inner_utility.h"
-#include "scope_utility.h"
 
 g2d::Mesh* g2d::Mesh::Create(uint32_t vertexCount, uint32_t indexCount)
 {
