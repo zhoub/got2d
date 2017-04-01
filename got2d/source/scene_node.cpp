@@ -4,17 +4,18 @@ SceneNode::SceneNode(::Scene& scene, ::SceneNode* parent, uint32_t childID)
 	: m_scene(scene)
 	, m_parent(parent)
 	, m_parentContainer(parent->m_children)
-	, m_childIndex(childID)
 	, m_worldTransform(*this, m_localTransform)
+	, m_childIndex(childID)
 {
+
 }
 
 SceneNode::SceneNode(::Scene& scene, SceneNodeContainer& parentContainer, uint32_t childID)
 	: m_scene(scene)
 	, m_parent(nullptr)
 	, m_parentContainer(parentContainer)
-	, m_childIndex(childID)
 	, m_worldTransform(*this, m_localTransform)
+	, m_childIndex(childID)
 {
 }
 

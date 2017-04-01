@@ -205,11 +205,11 @@ public:
 private:
 	void SetMatrixDirty();
 
-	gml::vec2 m_position;
-	gml::vec2 m_pivot;
-	gml::vec2 m_scale;
-	gml::radian m_rotation;
-	gml::mat32 m_matrix;
+	gml::vec2 m_position = gml::vec2::zero();
+	gml::vec2 m_pivot = gml::vec2::zero();
+	gml::vec2 m_scale = gml::vec2::one();
+	gml::radian m_rotation = gml::radian(0.0f);
+	gml::mat32 m_matrix = gml::mat32::identity();
 	bool m_matrixDirty = true;
 };
 
@@ -237,10 +237,10 @@ public:
 private:
 	::SceneNode& m_sceneNode;
 	LocalTransform& m_localTransform;
-	gml::vec2 m_position;
-	gml::vec2 m_right;
-	gml::vec2 m_up;
-	gml::mat32 m_matrix;
+	gml::vec2 m_position = gml::vec2::zero();
+	gml::vec2 m_right = gml::vec2::right();
+	gml::vec2 m_up = gml::vec2::up();
+	gml::mat32 m_matrix = gml::mat32::identity();
 	bool m_matrixDirty = true;
 	bool m_positionDirty = true;
 	bool m_rightDirty = true;

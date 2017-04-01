@@ -3,11 +3,6 @@
 
 RenderSystem* RenderSystem::Instance = nullptr;
 
-RenderSystem::RenderSystem() :m_bkColor(gml::color4::blue())
-{
-	m_matView.identity();
-}
-
 bool RenderSystem::OnResize(uint32_t width, uint32_t height)
 {
 	//though we create an individual render target

@@ -246,12 +246,12 @@ public:
 	virtual g2d::BlendMode GetBlendMode() const override { return m_blendMode; }
 
 private:
-	std::string m_vsName;
-	std::string m_psName;
+	std::string m_vsName = "";
+	std::string m_psName = "";
 	std::vector<g2d::Texture*> m_textures;
 	std::vector<gml::vec4> m_vsConstants;
 	std::vector<gml::vec4> m_psConstants;
-	g2d::BlendMode m_blendMode;
+	g2d::BlendMode m_blendMode = g2d::BlendMode::None;
 };
 
 class Material : public g2d::Material
@@ -288,8 +288,6 @@ class RenderSystem : public g2d::RenderSystem
 public:
 	static RenderSystem* Instance;
 
-	RenderSystem();
-
 	bool Create(void* nativeWindow);
 
 	void Destroy();
@@ -313,6 +311,7 @@ public:
 	ID3D11DeviceContext* GetContext() { return m_d3dContext; }
 
 	bool OnResize(uint32_t width, uint32_t height);
+
 public:
 	virtual void BeginRender() override;
 
@@ -355,7 +354,7 @@ private:
 		{	}
 		g2d::Mesh& mesh;
 		g2d::Material& material;
-		gml::mat32 worldMatrix;
+		gml::mat32 worldMatrix = gml::mat32::identity();
 	};
 
 	typedef std::vector<RenderRequest> ReqList;
@@ -365,8 +364,8 @@ private:
 	TexturePool m_texPool;
 	autod<ShaderLib> m_shaderlib = nullptr;
 	ID3D11Buffer* m_sceneConstBuffer = nullptr;
-	gml::mat32 m_matView;
-	gml::mat44 m_matProj;
+	gml::mat32 m_matView = gml::mat32::identity();
+	gml::mat44 m_matProj = gml::mat44::identity();
 	bool m_matrixConstBufferDirty = true;
 	bool m_matrixProjDirty = true;
 	uint32_t m_windowWidth = 0;
