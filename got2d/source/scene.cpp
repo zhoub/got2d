@@ -419,8 +419,7 @@ void Scene::Render()
 
 g2d::Camera* Scene::CreateCameraNode()
 {
-	Camera* camera = new ::Camera(*this);
-	camera->SetID(static_cast<uint32_t>(m_cameras.size()));
+	Camera* camera = new ::Camera(*this, static_cast<uint32_t>(m_cameras.size()));
 	m_cameras.push_back(camera);
 	m_cameraOrderDirty = true;
 

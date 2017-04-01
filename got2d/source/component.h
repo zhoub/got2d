@@ -36,7 +36,7 @@ class Camera : public g2d::Camera
 {
 	RTTI_IMPL;
 public:
-	Camera(::Scene& scene) : m_scene(scene) { }
+	Camera(::Scene& scene, uint32_t index);
 
 	void SetID(uint32_t index) { m_id = index; }
 

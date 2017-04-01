@@ -156,6 +156,11 @@ bool Camera::TestVisible(g2d::Component& component) const
 	return TestVisible(component.GetWorldAABB());
 }
 
+Camera::Camera(::Scene & scene, uint32_t index)
+	: m_scene(scene)
+	, m_id(index)
+{ }
+
 g2d::Component* Camera::FindNearestComponent(const gml::vec2& worldPosition)
 {
 	auto itCur = visibleComponents.rbegin();
