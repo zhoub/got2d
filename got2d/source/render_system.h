@@ -171,11 +171,11 @@ public:
 	uint32_t GetPixelConstBufferLength() { return m_pixelConstBufferLength; }
 
 private:
-	ID3D11InputLayout* m_shaderLayout = nullptr;
-	ID3D11VertexShader*  m_vertexShader = nullptr;
-	ID3D11PixelShader* m_pixelShader = nullptr;
-	ID3D11Buffer* m_vertexConstBuffer = nullptr;
-	ID3D11Buffer* m_pixelConstBuffer = nullptr;
+	autor<ID3D11InputLayout> m_shaderLayout = nullptr;
+	autor<ID3D11VertexShader>  m_vertexShader = nullptr;
+	autor<ID3D11PixelShader> m_pixelShader = nullptr;
+	autor<ID3D11Buffer> m_vertexConstBuffer = nullptr;
+	autor<ID3D11Buffer> m_pixelConstBuffer = nullptr;
 	uint32_t m_vertexConstBufferLength = 0;
 	uint32_t m_pixelConstBufferLength = 0;
 };
