@@ -67,6 +67,19 @@ struct auto_kill_ptr
 		pointer = ptr;
 		return *this;
 	}
+	auto_kill_ptr& operator=(auto_kill_ptr&& other)
+	{
+		if (this != &other)
+		{
+			if (pointer != other.pointer)
+			{
+				release();
+			}
+			pointer = other.pointer;
+			other.pointer = nullptr;
+		}
+		return *this;
+	}
 
 	bool is_null() const { return pointer == nullptr; }
 

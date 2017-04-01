@@ -43,6 +43,9 @@ bool Texture2D::Create(uint32_t width, uint32_t height)
 	if (width == 0 || height == 0)
 		return false;
 
+	autor<ID3D11Texture2D> texturePtr = nullptr;
+	autor<ID3D11ShaderResourceView> shaderResourceViewPtr = nullptr;
+	
 	D3D11_TEXTURE2D_DESC texDesc;
 
 	texDesc.Width = width;
@@ -57,7 +60,7 @@ bool Texture2D::Create(uint32_t width, uint32_t height)
 	texDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 	texDesc.MiscFlags = 0;
 
-	if (S_OK != GetRenderSystem()->GetDevice()->CreateTexture2D(&texDesc, nullptr, &m_texture))
+	if (S_OK != GetRenderSystem()->GetDevice()->CreateTexture2D(&texDesc, nullptr, &(texturePtr.pointer)))
 	{
 		return false;
 	}
@@ -68,13 +71,14 @@ bool Texture2D::Create(uint32_t width, uint32_t height)
 	viewDesc.ViewDimension = D3D_SRV_DIMENSION_TEXTURE2D;
 	viewDesc.Texture2D.MipLevels = -1;
 	viewDesc.Texture2D.MostDetailedMip = 0;
-	
-	if (S_OK != GetRenderSystem()->GetDevice()->CreateShaderResourceView(m_texture, &viewDesc, &m_shaderView))
+
+	if (S_OK != GetRenderSystem()->GetDevice()->CreateShaderResourceView(texturePtr.pointer, &viewDesc, &(shaderResourceViewPtr.pointer)))
 	{
-		Destroy();
 		return false;
 	}
 
+	m_texture = std::move(texturePtr);
+	m_shaderView = std::move(shaderResourceViewPtr);
 	m_width = width;
 	m_height = height;
 	return true;
@@ -118,8 +122,8 @@ void Texture2D::UploadImage(uint8_t* data, bool hasAlpha)
 
 void Texture2D::Destroy()
 {
-	SR(m_texture);
-	SR(m_shaderView);
+	m_texture.release();
+	m_shaderView.release();
 	m_width = 0;
 	m_height = 0;
 }

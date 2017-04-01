@@ -100,8 +100,8 @@ public:
 
 	void Destroy();
 
-	ID3D11Texture2D* m_texture = nullptr;
-	ID3D11ShaderResourceView* m_shaderView = nullptr;
+	autor<ID3D11Texture2D> m_texture = nullptr;
+	autor<ID3D11ShaderResourceView> m_shaderView = nullptr;
 	uint32_t m_width = 0;
 	uint32_t m_height = 0;
 };
