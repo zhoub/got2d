@@ -199,8 +199,8 @@ void Geometry::UploadIndices(uint32_t offset, uint32_t* indices, uint32_t count)
 
 void Geometry::Destroy()
 {
-	m_vertexBuffer = nullptr;
-	m_indexBuffer = nullptr;
+	m_vertexBuffer.release();
+	m_indexBuffer.release();
 	m_numVertices = 0;
 	m_numIndices = 0;
 }
