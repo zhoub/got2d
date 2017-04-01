@@ -336,12 +336,13 @@ private:
 
 	void UpdateSceneConstBuffer();
 
-	IDXGISwapChain* m_swapChain = nullptr;
-	ID3D11Device* m_d3dDevice = nullptr;
-	ID3D11DeviceContext* m_d3dContext = nullptr;
-	ID3D11Texture2D* m_colorTexture = nullptr;
-	ID3D11RenderTargetView* m_rtView = nullptr;
-	ID3D11RenderTargetView* m_bbView = nullptr;
+	autor<IDXGISwapChain> m_swapChain = nullptr;
+	autor<ID3D11Device> m_d3dDevice = nullptr;
+	autor<ID3D11DeviceContext> m_d3dContext = nullptr;
+	autor<ID3D11Texture2D> m_colorTexture = nullptr;
+	autor<ID3D11RenderTargetView> m_rtView = nullptr;
+	autor<ID3D11RenderTargetView> m_bbView = nullptr;
+	autor<ID3D11Buffer> m_sceneConstBuffer = nullptr;
 	D3D11_VIEWPORT m_viewport;
 	std::map<g2d::BlendMode, ID3D11BlendState*> m_blendModes;
 
@@ -363,7 +364,6 @@ private:
 	Geometry m_geometry;
 	TexturePool m_texPool;
 	autod<ShaderLib> m_shaderlib = nullptr;
-	ID3D11Buffer* m_sceneConstBuffer = nullptr;
 	gml::mat32 m_matView = gml::mat32::identity();
 	gml::mat44 m_matProj = gml::mat44::identity();
 	bool m_matrixConstBufferDirty = true;
