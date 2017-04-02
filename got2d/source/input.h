@@ -104,7 +104,6 @@ private:
 	};
 	KeyState& GetState(g2d::KeyCode key) const;
 	void CreateKeyState(g2d::KeyCode key);
-	bool VirtualKeyDown(uint32_t virtualKey);
 	std::map<g2d::KeyCode, KeyState*> m_states;
 };
 
@@ -181,3 +180,5 @@ inline ::Mouse& GetMouse()
 {
 	return ::Mouse::Instance;
 }
+
+bool AltDownWin32();

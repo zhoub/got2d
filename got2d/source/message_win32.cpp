@@ -222,3 +222,10 @@ namespace g2d
 		}
 	}
 }
+
+bool KeyboardButtonDownWin32(uint32_t vkey)
+{
+	return (HIBYTE(GetKeyState(vkey)) & 0x80) != 0;
+}
+
+bool AltDownWin32() { return KeyboardButtonDownWin32(VK_MENU); }

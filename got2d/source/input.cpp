@@ -1,4 +1,3 @@
-#include <Windows.h>
 #include <algorithm>
 #include "input.h"
 
@@ -109,7 +108,7 @@ void Keyboard::OnMessage(const g2d::Message& message, uint32_t currentTimeStamp)
 void Keyboard::Update(uint32_t currentTimeStamp)
 {
 	auto ALTKey = g2d::KeyCode::Alt;
-	auto ALTDown = VirtualKeyDown(VK_MENU);
+	auto ALTDown = AltDownWin32();
 	auto& ALTState = GetState(ALTKey);
 	bool ALTPressing = ALTState.State() != g2d::SwitchState::Releasing;
 	if (ALTDown && !ALTPressing)
@@ -185,11 +184,6 @@ inline void Keyboard::KeyState::ForceRelease()
 		repeatCount = 0;
 	}
 	state = g2d::SwitchState::Releasing;
-}
-
-bool Keyboard::VirtualKeyDown(uint32_t virtualKey)
-{
-	return (HIBYTE(GetKeyState(virtualKey)) & 0x80) != 0;
 }
 
 Mouse::Mouse()
