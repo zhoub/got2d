@@ -129,9 +129,9 @@ void Keyboard::KeyState::OnMessage(const g2d::Message& message, uint32_t current
 {
 	if (message.Event == g2d::MessageEvent::KeyDown)
 	{
-		// keydown消息会持续发送
-		// 我们在Update中模拟持续点击消息
-		// 以保证不会再消息循环中卡死
+		// keydown will send each frame
+		// we will simulate pressing event in update
+		// so that mainloop wont stuck
 		if (state == g2d::SwitchState::Releasing)
 		{
 			state = g2d::SwitchState::JustPressed;
@@ -151,7 +151,7 @@ void Keyboard::KeyState::OnMessage(const g2d::Message& message, uint32_t current
 		}
 		else
 		{
-			//异常状态
+			// unexpected state
 		}
 		state = g2d::SwitchState::Releasing;
 	}
@@ -318,11 +318,11 @@ void Mouse::ButtonState::OnMessage(const g2d::Message& message, uint32_t current
 	{
 		if (state != g2d::SwitchState::JustPressed)
 		{
-			//异常状态
+			// unexpected state
 		}
 		else if (state != g2d::SwitchState::Pressing)
 		{
-			//异常状态
+			// unexpected state
 			OnPressingEnd(*this);
 			repeated = true;
 			repeatCount = 0;
@@ -345,7 +345,7 @@ void Mouse::ButtonState::OnMessage(const g2d::Message& message, uint32_t current
 		}
 		else
 		{
-			//异常状态
+			// unexpected state
 		}
 		state = g2d::SwitchState::Releasing;
 	}

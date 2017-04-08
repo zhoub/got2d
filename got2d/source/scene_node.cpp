@@ -161,9 +161,10 @@ void SceneNode::OnUpdate(uint32_t deltaTime)
 	m_components.OnUpdate(deltaTime);
 	if (m_matrixDirtyUpdate)
 	{
-		// 如果是静态对象，需要重新修正其在四叉树的位置
-		// 现在阶段只需要在test visible之前处理好就行.
-		// 也就是 Scene::Render之前
+		// static object need to adjust location in
+		// quad tree, at this time, we may adjust it
+		// before visibility testing process, aka 
+		// rendering process
 		if (IsStatic())
 		{
 			AdjustSpatial();
@@ -204,8 +205,9 @@ g2d::SceneNode * SceneNode::CreateChild()
 
 void SceneNode::Release()
 {
-	// 删除节点虽然会影响RenderingOder的连续性
-	// 但是不会影响RenderingOrder的顺序，所以不做更新
+	// deleteing node will affect continuity of
+	// rendering order, but wont change the order,
+	// so we do nothing when deleting nodes
 	m_parentContainer.Remove(*this);
 }
 

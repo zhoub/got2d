@@ -268,7 +268,8 @@ public:
 
 	void SetRenderingOrder(uint32_t& order);
 
-	//提供给Move函数临时交换用
+	// provided to Move function for 
+	// temporary setting rendering order
 	void SetRenderingOrderOnly(uint32_t order);
 
 	bool ParentIsScene() const { return m_parent == nullptr; }
@@ -415,7 +416,7 @@ private:
 	bool m_isStatic = false;
 	bool m_matrixDirtyUpdate = true;
 	uint32_t m_childIndex = 0;
-	uint32_t m_renderingOrder = 0xFFFFFFFF;//保证一开始是错误的
+	uint32_t m_renderingOrder = 0xFFFFFFFF;	// make sure the order maxinum(error) at the beginning
 	uint32_t m_visibleMask = g2d::DEF_VISIBLE_MASK;
 
 };

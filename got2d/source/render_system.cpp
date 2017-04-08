@@ -70,12 +70,12 @@ bool RenderSystem::OnResize(uint32_t width, uint32_t height)
 	m_windowHeight = height;
 	m_viewport =
 	{
-		0.0f,//FLOAT TopLeftX;
-		0.0f,//FLOAT TopLeftY;
-		(FLOAT)m_windowWidth,//FLOAT Width;
-		(FLOAT)m_windowHeight,//FLOAT Height;
-		0.0f,//FLOAT MinDepth;
-		1.0f,//FLOAT MaxDepth;
+		0.0f,					//FLOAT TopLeftX;
+		0.0f,					//FLOAT TopLeftY;
+		(FLOAT)m_windowWidth,	//FLOAT Width;
+		(FLOAT)m_windowHeight,	//FLOAT Height;
+		0.0f,					//FLOAT MinDepth;
+		1.0f,					//FLOAT MaxDepth;
 	};
 
 	m_d3dContext->OMSetRenderTargets(1, &(m_bbView.pointer), NULL);
@@ -139,11 +139,6 @@ bool RenderSystem::CreateBlendModes()
 		blendDesc.RenderTarget[i].BlendOpAlpha = D3D11_BLEND_OP_ADD;
 		blendDesc.RenderTarget[i].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
 	}
-
-	hr = m_d3dDevice->CreateBlendState(&blendDesc, &blendState);
-	if (hr != S_OK)
-		return false;
-	m_blendModes[g2d::BlendMode::Screen] = blendState;
 
 	return true;
 }

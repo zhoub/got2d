@@ -143,8 +143,9 @@ void Scene::Release()
 	UnRegisterKeyEventReceiver();
 	UnRegisterMouseEventReceiver();
 	::GetEngineImpl()->RemoveScene(*this);
-	// 需要先清空节点，以保证SceneNode可以访问到Scene
-	// SceneNode析构的时候需要从Scene中获取SpatialGraph
+	// clean the children first, so that
+	// child nodes can access SpatialGraph
+	// in the scene
 	m_children.ClearChildren();
 	delete this;
 }
@@ -177,7 +178,7 @@ void Scene::Update(uint32_t elapsedTime, uint32_t deltaTime)
 
 	m_children.OnUpdate(deltaTime);
 
-	// 我们要在这里测试m_Hovering是否已经被删除
+	//TODO: checking whether m_Hovering is deleted
 	m_canTickHovering = true;
 }
 

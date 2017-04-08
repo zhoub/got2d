@@ -252,7 +252,7 @@ bool SceneNodeContainer::Move(uint32_t from, uint32_t to)
 	auto formOrder = siblings[from]->GetRenderingOrder();
 	auto toOrder = siblings[to]->GetRenderingOrder();
 
-	// 为了能够正确置脏 RenderingOrderDirtyNode
+	// for actual dirty flag: RenderingOrderDirtyNode
 	fromNode->SetRenderingOrderOnly(toOrder);
 	siblings[to]->SetRenderingOrderOnly(formOrder);
 
@@ -301,8 +301,7 @@ void SceneNodeContainer::Recollect()
 
 
 
-// 以下是消息派发函数
-
+// Event Dispatcher 
 void ComponentContainer::OnRotate(gml::radian r)
 {
 	for (auto& c : m_components)
@@ -640,7 +639,9 @@ void ComponentContainer::OnKeyPressingEnd(g2d::KeyCode key)
 
 void SceneNodeContainer::OnMessage(const g2d::Message & message)
 {
-	// 不能先collect，有可能产生添加递归的潜在问题
+	// Collecting  must not be process before
+	// dispatching, or will cause potential 
+	// recursive dispatching
 	for (auto& child : m_collection)
 	{
 		child->OnMessage(message);
@@ -650,7 +651,9 @@ void SceneNodeContainer::OnMessage(const g2d::Message & message)
 
 void SceneNodeContainer::OnUpdate(uint32_t deltaTime)
 {
-	// 不能先collect，有可能产生添加递归的潜在问题
+	// Collecting  must not be process before
+	// dispatching, or will cause potential 
+	// recursive dispatching
 	for (auto& child : m_collection)
 	{
 		child->OnUpdate(deltaTime);
@@ -660,7 +663,9 @@ void SceneNodeContainer::OnUpdate(uint32_t deltaTime)
 
 void SceneNodeContainer::OnKeyPress(g2d::KeyCode key)
 {
-	// 不能先collect，有可能产生添加递归的潜在问题
+	// Collecting  must not be process before
+	// dispatching, or will cause potential 
+	// recursive dispatching
 	for (auto& child : m_collection)
 	{
 		child->OnKeyPress(key);
@@ -670,7 +675,9 @@ void SceneNodeContainer::OnKeyPress(g2d::KeyCode key)
 
 void SceneNodeContainer::OnKeyPressingBegin(g2d::KeyCode key)
 {
-	// 不能先collect，有可能产生添加递归的潜在问题
+	// Collecting  must not be process before
+	// dispatching, or will cause potential 
+	// recursive dispatching
 	for (auto& child : m_collection)
 	{
 		child->OnKeyPressingBegin(key);
@@ -680,7 +687,9 @@ void SceneNodeContainer::OnKeyPressingBegin(g2d::KeyCode key)
 
 void SceneNodeContainer::OnKeyPressing(g2d::KeyCode key)
 {
-	// 不能先collect，有可能产生添加递归的潜在问题
+	// Collecting  must not be process before
+	// dispatching, or will cause potential 
+	// recursive dispatching
 	for (auto& child : m_collection)
 	{
 		child->OnKeyPressing(key);
@@ -690,7 +699,9 @@ void SceneNodeContainer::OnKeyPressing(g2d::KeyCode key)
 
 void SceneNodeContainer::OnKeyPressingEnd(g2d::KeyCode key)
 {
-	// 不能先collect，有可能产生添加递归的潜在问题
+	// Collecting  must not be process before
+	// dispatching, or will cause potential 
+	// recursive dispatching
 	for (auto& child : m_collection)
 	{
 		child->OnKeyPressingEnd(key);

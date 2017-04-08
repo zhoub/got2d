@@ -7,7 +7,7 @@
 
 constexpr uint32_t PRESSING_INTERVAL = 500u;
 
-//用户填充这个收听键盘消息
+// fill this structure, to listen keyboard event
 struct KeyEventReceiver
 {
 	void* UserData = nullptr;
@@ -15,6 +15,7 @@ struct KeyEventReceiver
 	bool operator==(const KeyEventReceiver& other) const;
 };
 
+// fill this structure, to listen mouse event
 struct MouseEventReceiver
 {
 	void* UserData = nullptr;
