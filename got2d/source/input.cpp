@@ -1,6 +1,5 @@
-#include "input.h"
 #include <algorithm>
-#include <windows.h>
+#include "input.h"
 
 Keyboard Keyboard::Instance;
 
@@ -109,7 +108,7 @@ void Keyboard::OnMessage(const g2d::Message& message, uint32_t currentTimeStamp)
 void Keyboard::Update(uint32_t currentTimeStamp)
 {
 	auto ALTKey = g2d::KeyCode::Alt;
-	auto ALTDown = VirtualKeyDown(VK_MENU);
+	auto ALTDown = AltDownWin32();
 	auto& ALTState = GetState(ALTKey);
 	bool ALTPressing = ALTState.State() != g2d::SwitchState::Releasing;
 	if (ALTDown && !ALTPressing)
@@ -130,9 +129,9 @@ void Keyboard::KeyState::OnMessage(const g2d::Message& message, uint32_t current
 {
 	if (message.Event == g2d::MessageEvent::KeyDown)
 	{
-		// keydown消息会持续发送
-		// 我们在Update中模拟持续点击消息
-		// 以保证不会再消息循环中卡死
+		// keydown will send each frame
+		// we will simulate pressing event in update
+		// so that mainloop wont stuck
 		if (state == g2d::SwitchState::Releasing)
 		{
 			state = g2d::SwitchState::JustPressed;
@@ -152,7 +151,7 @@ void Keyboard::KeyState::OnMessage(const g2d::Message& message, uint32_t current
 		}
 		else
 		{
-			//异常状态
+			// unexpected state
 		}
 		state = g2d::SwitchState::Releasing;
 	}
@@ -185,11 +184,6 @@ inline void Keyboard::KeyState::ForceRelease()
 		repeatCount = 0;
 	}
 	state = g2d::SwitchState::Releasing;
-}
-
-bool Keyboard::VirtualKeyDown(uint32_t virtualKey)
-{
-	return (HIBYTE(GetKeyState(virtualKey)) & 0x80) != 0;
 }
 
 Mouse::Mouse()
@@ -324,11 +318,11 @@ void Mouse::ButtonState::OnMessage(const g2d::Message& message, uint32_t current
 	{
 		if (state != g2d::SwitchState::JustPressed)
 		{
-			//异常状态
+			// unexpected state
 		}
 		else if (state != g2d::SwitchState::Pressing)
 		{
-			//异常状态
+			// unexpected state
 			OnPressingEnd(*this);
 			repeated = true;
 			repeatCount = 0;
@@ -351,7 +345,7 @@ void Mouse::ButtonState::OnMessage(const g2d::Message& message, uint32_t current
 		}
 		else
 		{
-			//异常状态
+			// unexpected state
 		}
 		state = g2d::SwitchState::Releasing;
 	}

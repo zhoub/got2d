@@ -53,12 +53,6 @@ void LocalTransform::SetMatrixDirty()
 WorldTransform::WorldTransform(::SceneNode& node, LocalTransform& local)
 	: m_sceneNode(node)
 	, m_localTransform(local)
-	, m_position(0, 0)
-	, m_matrix(gml::mat32::identity())
-	, m_matrixDirty(true)
-	, m_positionDirty(true)
-	, m_rightDirty(true)
-	, m_upDirty(true)
 {
 }
 

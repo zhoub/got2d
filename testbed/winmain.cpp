@@ -1,6 +1,6 @@
 #include "stdafx.h"
-#include "framework.h"
 #include <cinttypes>
+#include "framework.h"
 
 namespace g2d
 {
@@ -52,10 +52,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 }
 
 #include "hexagon.h"
-#include <g2dengine.h>
-#include <g2drender.h>
-#include <g2dscene.h>
-#include <gmlmatrix.h>
+#include <got2d/include/g2dengine.h>
+#include <got2d/include/g2drender.h>
+#include <got2d/include/g2dscene.h>
+#include <gml/gmlmatrix.h>
 
 g2d::SceneNode* CreateQuadNode(g2d::SceneNode* parent);
 

@@ -1,10 +1,10 @@
 #include "stdafx.h"
-#include "framework.h"
 #include <timeapi.h>
 #include <time.h>
-#include <g2dengine.h>
-#include <g2drender.h>
-#include <g2dmessage.h>
+#include <got2d/include/g2dengine.h>
+#include <got2d/include/g2drender.h>
+#include <got2d/include/g2dmessage.h>
+#include "framework.h"
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
@@ -249,7 +249,8 @@ int Framework::MainLoop()
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
 		}
-		else if (!needExit)
+
+		if (!needExit)
 		{
 			if (!Tick())
 			{

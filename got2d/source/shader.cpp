@@ -1,7 +1,5 @@
-#include "render_system.h"
-#include "inner_utility.h"
-#include "scope_utility.h"
 #include <d3dcompiler.h>
+#include "render_system.h"
 
 #pragma comment(lib,"d3dcompiler.lib")
 
@@ -33,12 +31,15 @@ bool Shader::Create(const std::string& vsCode, uint32_t vcbLength, const std::st
 	auto vsCodeLength = vsCode.size();
 	auto psCodeLength = psCode.size();
 
-	auto fb = create_fallback([&] { Destroy(); });
-
-
 	autor<ID3DBlob> vsBlob = nullptr;
 	autor<ID3DBlob> psBlob = nullptr;
 	autor<ID3DBlob> errorBlob = nullptr;
+
+	autor<ID3D11InputLayout> shaderLayout = nullptr;
+	autor<ID3D11VertexShader>  vertexShader = nullptr;
+	autor<ID3D11PixelShader> pixelShader = nullptr;
+	autor<ID3D11Buffer> vertexConstBuffer = nullptr;
+	autor<ID3D11Buffer> pixelConstBuffer = nullptr;
 
 	//compile shader
 	auto ret = ::D3DCompile(
@@ -72,7 +73,7 @@ bool Shader::Create(const std::string& vsCode, uint32_t vcbLength, const std::st
 		vsBlob->GetBufferPointer(),
 		vsBlob->GetBufferSize(),
 		NULL,
-		&m_vertexShader);
+		&(vertexShader.pointer));
 
 	if (S_OK != ret)
 		return false;
@@ -81,7 +82,7 @@ bool Shader::Create(const std::string& vsCode, uint32_t vcbLength, const std::st
 		psBlob->GetBufferPointer(),
 		psBlob->GetBufferSize(),
 		NULL,
-		&m_pixelShader);
+		&(pixelShader.pointer));
 
 	if (S_OK != ret)
 		return false;
@@ -107,7 +108,7 @@ bool Shader::Create(const std::string& vsCode, uint32_t vcbLength, const std::st
 	ret = GetRenderSystem()->GetDevice()->CreateInputLayout(
 		layoutDesc, sizeof(layoutDesc) / sizeof(layoutDesc[0]),
 		vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(),
-		&m_shaderLayout);
+		&(shaderLayout.pointer));
 
 	if (S_OK != ret)
 		return false;
@@ -121,31 +122,37 @@ bool Shader::Create(const std::string& vsCode, uint32_t vcbLength, const std::st
 		0,							//UINT MiscFlags;
 		0							//UINT StructureByteStride;
 	};
+	
 	if (vcbLength > 0)
 	{
 		cbDesc.ByteWidth = m_vertexConstBufferLength = vcbLength;
-		if (S_OK != GetRenderSystem()->GetDevice()->CreateBuffer(&cbDesc, NULL, &m_vertexConstBuffer))
+		if (S_OK != GetRenderSystem()->GetDevice()->CreateBuffer(&cbDesc, NULL, &(vertexConstBuffer.pointer)))
 			return false;
 	}
 
 	if (pcbLength > 0)
 	{
 		cbDesc.ByteWidth = m_pixelConstBufferLength = pcbLength;
-		if (S_OK != GetRenderSystem()->GetDevice()->CreateBuffer(&cbDesc, NULL, &m_pixelConstBuffer))
+		if (S_OK != GetRenderSystem()->GetDevice()->CreateBuffer(&cbDesc, NULL, &(pixelConstBuffer.pointer)))
 			return false;
 	}
 
-	fb.cancel();
+	m_pixelShader = std::move(pixelShader);
+	m_vertexShader = std::move(vertexShader);
+	m_shaderLayout = std::move(shaderLayout);
+	m_vertexConstBuffer = std::move(vertexConstBuffer);
+	m_pixelConstBuffer = std::move(pixelConstBuffer);
+
 	return true;
 }
 
 void Shader::Destroy()
 {
-	SR(m_pixelShader);
-	SR(m_vertexShader);
-	SR(m_shaderLayout);
-	SR(m_vertexConstBuffer);
-	SR(m_pixelConstBuffer);
+	m_pixelShader.release();
+	m_vertexShader.release();
+	m_shaderLayout.release();
+	m_vertexConstBuffer.release();
+	m_pixelConstBuffer.release();
 	m_vertexConstBufferLength = 0;
 	m_pixelConstBufferLength = 0;
 }

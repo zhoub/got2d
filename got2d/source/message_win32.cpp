@@ -1,7 +1,7 @@
-#include "../include/g2dmessage.h"
-#include <map>
 #include <Windows.h>
 #include <Windowsx.h>
+#include <map>
+#include "../include/g2dmessage.h"
 
 struct Mapping
 {
@@ -222,3 +222,10 @@ namespace g2d
 		}
 	}
 }
+
+bool KeyboardButtonDownWin32(uint32_t vkey)
+{
+	return (HIBYTE(GetKeyState(vkey)) & 0x80) != 0;
+}
+
+bool AltDownWin32() { return KeyboardButtonDownWin32(VK_MENU); }

@@ -1,5 +1,7 @@
 #pragma once
-#include <g2dengine.h>
+#include <vector>
+#include <string>
+#include "../include/g2dengine.h"
 #include "render_system.h"
 #include "scene.h"
 

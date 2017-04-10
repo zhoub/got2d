@@ -1,11 +1,12 @@
 #pragma once
+#include <vector>
+#include <gml/gmlmatrix.h>
 #include "../include/g2dscene.h"
+#include "../include/g2drender.h"
 #include "inner_utility.h"
 #include "scope_utility.h"
-#include <gmlmatrix.h>
-#include <g2drender.h>
-#include <vector>
 
+class SceneNode;
 class Scene;
 
 class Quad : public g2d::Quad
@@ -36,11 +37,13 @@ class Camera : public g2d::Camera
 {
 	RTTI_IMPL;
 public:
-	Camera(::Scene& scene) : m_scene(scene) { }
+	Camera(::Scene& scene, uint32_t index);
 
 	void SetID(uint32_t index) { m_id = index; }
 
 	g2d::Component* FindNearestComponent(const gml::vec2& worldPosition);
+
+	void OnRemoveSceneNode(::SceneNode& node);
 
 	std::vector<Component*> visibleComponents;
 

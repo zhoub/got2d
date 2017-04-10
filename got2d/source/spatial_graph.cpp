@@ -1,7 +1,7 @@
-#include "spatial_graph.h"
-#include "../include/g2dscene.h"
-#include "component.h"
 #include <algorithm>
+#include "../include/g2dscene.h"
+#include "spatial_graph.h"
+#include "component.h"
 
 QuadTreeNode::QuadTreeNode(QuadTreeNode* parent, const gml::vec2& center, float gridSize)
 	: m_bounding(
@@ -139,8 +139,8 @@ void QuadTreeNode::TryMarkEmpty()
 }
 void QuadTreeNode::Remove(g2d::Component& component)
 {
-	auto oldEnd = std::end(m_components);
-	auto newEnd = std::remove(std::begin(m_components), oldEnd, &component);
+	auto oldEnd = m_components.end();
+	auto newEnd = std::remove(m_components.begin(), oldEnd, &component);
 	m_components.erase(newEnd, oldEnd);
 
 	TryMarkEmpty();

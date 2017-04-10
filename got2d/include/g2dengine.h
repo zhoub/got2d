@@ -1,6 +1,6 @@
 #pragma once
-#include <g2dconfig.h>
-#include <g2dmessage.h>
+#include "g2dconfig.h"
+#include "g2dmessage.h"
 
 namespace g2d
 {
@@ -8,53 +8,65 @@ namespace g2d
 	class Scene;
 	class Texture;
 
-	// 引擎接口，功能的总入口
+	// Got2D starts from here, this is the main entrance of the entire engine.
 	class G2DAPI Engine : public GObject
 	{
 	public:
-		//引擎初始化参数
+		// Fill this sturct to initialize the engine.
 		struct Config
 		{
-			// 本地窗体句柄
+			// Native rendering window handle: HWND, EGLWindowType, etc.
 			void* nativeWindow;
 
-			// 资源文件夹路径
-			// 所有的资源加载都是相对于这个路径加载的
+			// Engine will prefix this path to all relative resource-loading paths
+			// using in the engine, turning them to absolute paths.
 			const char* resourceFolderPath;
 		};
 
-		// 初始化引擎接口，系统启动的时候只能调用一次
+		// CAUSTION, this must be the first Engine function
+		// called by user, it initialize the engine, user can 
+		// only issues any other engine functions after 
+		// successfully calling this function.
+		// It can be called when Engine has not be initialized,
+		// otherwise engine will raise an exception.
 		static bool Initialize(const Config& config);
 
-		// 程序结束的时候，需要显示调用接口释放引擎资源
+		// CAUSTION, this must be the last Engine function
+		// called by user, it release all resources and
+		// destroy the engine. call it before exit.
+		// It can be called only engine have been initialized,
+		// otherwise engine will raise an exception.
 		static void Uninitialize();
 
-		// 判断引擎是否已经被初始化
+		// Determin whether the engine is initialized.
 		static bool IsInitialized();
 
-		// 引擎全局的只能有一个实例，所以会在内部记录引擎指针。
-		// 初始化之后才能使用
+		// The unique instance maintained by the engine,
+		// using it after initialized the engine.
 		static Engine* Instance();
 
-		// 渲染系统接口
 		virtual RenderSystem* GetRenderSystem() = 0;
 
-		// 创建新的场景对象
-		// 需要设置场景的最大边界，增加可视化裁剪效率
-		// 在场景边界之外的对象，每次渲染之前都会进行可见性判断
+		// Create a Scene instance.
+		// Engine require a maxinum bounding size to enable quadtree
+		// culling technique, dynamic entities or those whom ouside
+		// the boundry will be checked each frame when processing 
+		// visibility tesing before rendering.
 		virtual Scene* CreateNewScene(float boundSize) = 0;
 
-		// 引擎更新，场景，特效等物体
-		// 需要用户主动调用
+		// Call it each frame manually, to update engine staffs, including 
+		// updating entire scene tree, adjusting special graph, 
+		// updating spectial effects, and so on.
+		// deltaTime is elapsed time between 2 frames.
 		virtual void Update(uint32_t deltaTime) = 0;
 
-		// 当用户输入的时候，往所有场景节点派发消息
-		// 需要用户主动调用
+		// Call it manually when message arrived, to dispatching events 
+		// to entire scene tree.
+		// Translate system message by using function set TranslateMessage* .
 		virtual void OnMessage(const Message& message) = 0;
 
-		// 当nativeWindow发生改变的时候，需要显示调用这个接口
-		// 更新渲染 系统相关的状态以修正投影矩阵
-		// 过后会改成 引擎初始化的时候，提供一个接口，在引擎内部自己注册listener消息
+		// Call it manually when size of native window changes, to 
+		// update projection matrix and rendering states in render system.
 		virtual bool OnResize(uint32_t width, uint32_t height) = 0;
 	};
 

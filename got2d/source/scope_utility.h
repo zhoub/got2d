@@ -5,8 +5,8 @@
 template <typename FUNC>
 class scope_fallback
 {
-	bool disable = false;
 	FUNC callback;
+	bool canceled = false;
 public:
 	scope_fallback(FUNC&& f) : callback(std::move(f)) { }
 
@@ -19,13 +19,10 @@ public:
 
 	~scope_fallback()
 	{
-		if (!disable)
-		{
-			callback();
-		}
+		if (!canceled) callback();
 	}
 
-	void cancel() { disable = true; }
+	void cancel() { canceled = true; }
 private:
 	scope_fallback& operator=(const scope_fallback&) = delete;
 	scope_fallback& operator=(const scope_fallback&&) = delete;
@@ -41,7 +38,7 @@ scope_fallback<FUNC> create_fallback(FUNC&& f)
 template<typename T> struct PointerReleaser { void operator()(T* pointer) { pointer->Release(); } };
 template<typename T> struct PointerDeleter { void operator()(T* pointer) { delete pointer; } };
 template<typename T> struct ArrayDeleter { void operator()(T* pointer) { delete[] pointer; } };
-template<typename T> using uptr_d = std::unique_ptr<T>;
+template<typename T> using uptr_d = std::unique_ptr<T, PointerDeleter<T>>;
 template<typename T> using uptr_r = std::unique_ptr<T, PointerReleaser<T>>;
 template<typename T> using uptr_a = std::unique_ptr<T, ArrayDeleter<T>>;
 
@@ -54,7 +51,14 @@ struct auto_kill_ptr
 
 	auto_kill_ptr(Pointer* ptr) : pointer(ptr) {}
 
+	auto_kill_ptr(std::nullptr_t) : pointer(nullptr) {}
+
 	auto_kill_ptr(const auto_kill_ptr&) = delete;
+
+	auto_kill_ptr(auto_kill_ptr&& other) : pointer(other.pointer)
+	{
+		other.pointer = nullptr;
+	}
 
 	auto_kill_ptr& operator=(Pointer* ptr)
 	{
@@ -63,6 +67,23 @@ struct auto_kill_ptr
 		pointer = ptr;
 		return *this;
 	}
+	auto_kill_ptr& operator=(auto_kill_ptr&& other)
+	{
+		if (this != &other)
+		{
+			if (pointer != other.pointer)
+			{
+				release();
+			}
+			pointer = other.pointer;
+			other.pointer = nullptr;
+		}
+		return *this;
+	}
+
+	bool is_null() const { return pointer == nullptr; }
+
+	bool is_not_null() const { return pointer != nullptr; }
 
 	~auto_kill_ptr() { release(); }
 

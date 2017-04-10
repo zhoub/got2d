@@ -1,6 +1,4 @@
 #include "render_system.h"
-#include "inner_utility.h"
-#include "scope_utility.h"
 
 g2d::Mesh* g2d::Mesh::Create(uint32_t vertexCount, uint32_t indexCount)
 {
@@ -125,7 +123,7 @@ bool Geometry::MakeEnoughVertexArray(uint32_t numVertices)
 
 	D3D11_BUFFER_DESC bufferDesc =
 	{
-		sizeof(g2d::GeometryVertex) * numVertices,//UINT ByteWidth;
+		sizeof(g2d::GeometryVertex) * numVertices,	//UINT ByteWidth;
 		D3D11_USAGE_DYNAMIC,						//D3D11_USAGE Usage;
 		D3D11_BIND_VERTEX_BUFFER,					//UINT BindFlags;
 		D3D11_CPU_ACCESS_WRITE,						//UINT CPUAccessFlags;
@@ -153,12 +151,12 @@ bool Geometry::MakeEnoughIndexArray(uint32_t numIndices)
 
 	D3D11_BUFFER_DESC bufferDesc =
 	{
-		sizeof(uint32_t) * numIndices,//UINT ByteWidth;
-		D3D11_USAGE_DYNAMIC,						//D3D11_USAGE Usage;
-		D3D11_BIND_INDEX_BUFFER,					//UINT BindFlags;
-		D3D11_CPU_ACCESS_WRITE,						//UINT CPUAccessFlags;
-		0,											//UINT MiscFlags;
-		0											//UINT StructureByteStride;
+		sizeof(uint32_t) * numIndices,	//UINT ByteWidth;
+		D3D11_USAGE_DYNAMIC,			//D3D11_USAGE Usage;
+		D3D11_BIND_INDEX_BUFFER,		//UINT BindFlags;
+		D3D11_CPU_ACCESS_WRITE,			//UINT CPUAccessFlags;
+		0,								//UINT MiscFlags;
+		0								//UINT StructureByteStride;
 	};
 
 	ID3D11Buffer* indexBuffer;
@@ -201,8 +199,8 @@ void Geometry::UploadIndices(uint32_t offset, uint32_t* indices, uint32_t count)
 
 void Geometry::Destroy()
 {
-	m_vertexBuffer = nullptr;
-	m_indexBuffer = nullptr;
+	m_vertexBuffer.release();
+	m_indexBuffer.release();
 	m_numVertices = 0;
 	m_numIndices = 0;
 }

@@ -1,8 +1,6 @@
-#include "spatial_graph.h"
+#include <algorithm>
 #include "scene.h"
 #include "engine.h"
-#include "input.h"
-#include <algorithm>
 
 Scene::Scene(float boundSize)
 	: m_spatial(boundSize)
@@ -145,8 +143,9 @@ void Scene::Release()
 	UnRegisterKeyEventReceiver();
 	UnRegisterMouseEventReceiver();
 	::GetEngineImpl()->RemoveScene(*this);
-	// 需要先清空节点，以保证SceneNode可以访问到Scene
-	// SceneNode析构的时候需要从Scene中获取SpatialGraph
+	// clean the children first, so that
+	// child nodes can access SpatialGraph
+	// in the scene
 	m_children.ClearChildren();
 	delete this;
 }
@@ -179,7 +178,7 @@ void Scene::Update(uint32_t elapsedTime, uint32_t deltaTime)
 
 	m_children.OnUpdate(deltaTime);
 
-	// 我们要在这里测试m_Hovering是否已经被删除
+	//TODO: checking whether m_Hovering is deleted
 	m_canTickHovering = true;
 }
 
@@ -215,6 +214,24 @@ void Scene::AdjustRenderingOrder()
 	{
 		child->SetRenderingOrder(m_renderingOrderEnd);
 	});
+}
+
+void Scene::OnRemoveSceneNode(::SceneNode& node)
+{
+	if (&node == m_hoverNode)
+	{
+		m_hoverNode = nullptr;
+	}
+
+	for (auto& button : m_mouseButtonState)
+	{
+		button.OnRemoveSceneNode(node);
+	}
+
+	for (auto& camera : m_cameras)
+	{
+		camera->OnRemoveSceneNode(node);
+	}
 }
 
 g2d::SceneNode * Scene::CreateChild()
@@ -256,8 +273,8 @@ void Scene::MouseButtonState::OnPressingBegin(::SceneNode* hitNode)
 {
 	if (hitNode != nullptr)
 	{
-		dragNode = hitNode;
-		dragNode->OnDragBegin(Button);
+		m_draggingNode = hitNode;
+		m_draggingNode->OnDragBegin(Button);
 	}
 }
 
@@ -269,15 +286,15 @@ void Scene::OnMousePressingBegin(g2d::MouseButton button)
 void Scene::MouseButtonState::OnPressing(::SceneNode* hitNode)
 {
 	//*  heart-beaten?
-	if (dragNode != nullptr)
+	if (m_draggingNode != nullptr)
 	{
-		if (hitNode != nullptr && hitNode != dragNode)
+		if (hitNode != nullptr && hitNode != m_draggingNode)
 		{
-			dragNode->OnDropping(hitNode, Button);
+			m_draggingNode->OnDropping(hitNode, Button);
 		}
 		else
 		{
-			dragNode->OnDragging(Button);
+			m_draggingNode->OnDragging(Button);
 		}
 	}
 }
@@ -289,19 +306,27 @@ void Scene::OnMousePressing(g2d::MouseButton button)
 
 void Scene::MouseButtonState::OnPressingEnd(::SceneNode* hitNode)
 {
-	if (dragNode != nullptr)
+	if (m_draggingNode != nullptr)
 	{
-		if (hitNode == nullptr && hitNode != dragNode)
+		if (hitNode == nullptr && hitNode != m_draggingNode)
 		{
-			dragNode->OnDropTo(hitNode, Button);
-			hitNode->OnCursorEnterFrom(dragNode);
+			m_draggingNode->OnDropTo(hitNode, Button);
+			hitNode->OnCursorEnterFrom(m_draggingNode);
 		}
 		else
 		{
-			dragNode->OnDragEnd(Button);
-			dragNode->OnCursorEnterFrom(nullptr);
+			m_draggingNode->OnDragEnd(Button);
+			m_draggingNode->OnCursorEnterFrom(nullptr);
 		}
-		dragNode = nullptr;
+		m_draggingNode = nullptr;
+	}
+}
+
+void Scene::MouseButtonState::OnRemoveSceneNode(::SceneNode & node)
+{
+	if (&node == m_draggingNode)
+	{
+		m_draggingNode = nullptr;
 	}
 }
 
@@ -320,15 +345,15 @@ void Scene::OnMouseDoubleClick(g2d::MouseButton button)
 
 void Scene::MouseButtonState::OnMoving(::SceneNode* hitNode)
 {
-	if (dragNode != nullptr)
+	if (m_draggingNode != nullptr)
 	{
-		if (hitNode != nullptr && hitNode != dragNode)
+		if (hitNode != nullptr && hitNode != m_draggingNode)
 		{
-			dragNode->OnDropping(hitNode, Button);
+			m_draggingNode->OnDropping(hitNode, Button);
 		}
 		else
 		{
-			dragNode->OnDragging(Button);
+			m_draggingNode->OnDragging(Button);
 		}
 	}
 }
@@ -367,8 +392,8 @@ void Scene::OnMouseMoving()
 
 ::SceneNode* Scene::FindInteractiveObject(const gml::coord& cursorPos)
 {
-	auto cur = std::rbegin(m_cameraOrder);
-	auto end = std::rend(m_cameraOrder);
+	auto cur = m_cameraOrder.rbegin();
+	auto end = m_cameraOrder.rend();
 
 	for (; cur != end; cur++)
 	{
@@ -407,8 +432,8 @@ void Scene::Render()
 
 		//sort visibleEntities by render order
 		std::sort(
-			std::begin(camera->visibleComponents),
-			std::end(camera->visibleComponents),
+			camera->visibleComponents.begin(),
+			camera->visibleComponents.end(),
 			RenderingOrderSorter);
 
 		for (auto& component : camera->visibleComponents)
@@ -421,8 +446,7 @@ void Scene::Render()
 
 g2d::Camera* Scene::CreateCameraNode()
 {
-	Camera* camera = new ::Camera(*this);
-	camera->SetID(static_cast<uint32_t>(m_cameras.size()));
+	Camera* camera = new ::Camera(*this, static_cast<uint32_t>(m_cameras.size()));
 	m_cameras.push_back(camera);
 	m_cameraOrderDirty = true;
 

@@ -1,10 +1,10 @@
 #pragma once
-#include <g2dconfig.h>
-#include <g2dinput.h>
-#include <gmlvector.h>
-#include <gmlmatrix.h>
-#include <gmlaabb.h>
-#include <gmlrect.h>
+#include <gml/gmlvector.h>
+#include <gml/gmlmatrix.h>
+#include <gml/gmlaabb.h>
+#include <gml/gmlrect.h>
+#include "g2dconfig.h"
+#include "g2dinput.h"
 namespace g2d
 {
 	constexpr uint32_t DEF_VISIBLE_MASK = 0xFFFFFFFF;
@@ -15,137 +15,134 @@ namespace g2d
 	class SceneNode;
 	class Scene;
 
-
-	// 组件基类，挂在场景节点上，一个SceneNode可以挂多个Component
-	// 重载接口已获得自定义事件响应
+	// Component is very most important concept in Got2D engine, 
+	// add different components to SceneNode to present varity behaviors.
+	// One SceneNode can mounts several componets.
+	// Custom component inherit class Component to gain the ability 
+	// of acting different behaviors when different events occurred.
 	class G2DAPI Component : public GObject
 	{
 	public:
-		// 用户自定义实体需要组件的内存释放的接口
-		// 引擎内部会调用这个接口释放Component资源
-		// 只会在析构时候被调用
+		// Implement this function to release resources used in the component.
+		// Engine will call this function to destroy the component 
+		// when a SceneNode no longer being used.
 		virtual void Release() = 0;
 
-		// 局部坐标系下组件的包围盒大小
+		// Implement this function to define the boundry of a 
+		// visible object, the result of visibility testing depends 
+		// on the whether their aabb is intersection with cameras boundtry.
 		virtual const gml::aabb2d& GetLocalAABB() const { static gml::aabb2d b; return b; }
 
-		// 节点在世界空间中包围盒的大小
-		// 默认实现用世界矩阵变换局部坐标系下的包围盒
+		// AABB in world-space, by defaultm, calculating world-space
+		// AABB is transforming local AABB with their world transform.
 		virtual gml::aabb2d GetWorldAABB() const;
 
-		// 用户重载这个函数以修正组件执行顺序
-		// 这个值越大执行顺序约靠后
+		// Implement this function to redefine the expected execution order.
+		// Less number will be executed first.
 		virtual int GetExecuteOrder() const { return DEF_COMPONENT_ORDER; }
 
-		// 组件挂载的的场景节点
-		// 这个接口一般提供给用户自定义的component内部获取node相关属性
+		// Get the SceneNode holds the components.
+		// Provided to the custom component to retrieve the node.
 		SceneNode* GetSceneNode() const { return m_sceneNode; }
 
-		// 获取所在场景节点的摄像机可见Flag
-		// 这个是一个转发消息的快捷函数。
+		// It equals to GetSceneNode()->GetVisibleMask();
+		// The mask will collaborate with the camera's visible mask
 		uint32_t GetVisibleMask() const;
 
 	public:
-		// 节点被成功构造的事件
-		// 一般初始化代码写这个事件里
+		// Trigger when SceneNode being created or the
+		// component being added to the node successfully.
 		virtual void OnInitial() { }
 
-		// 节点进行更新的事件
-		// 一般每帧逻辑更新写这个事件里
+		// Trigger each frame
 		virtual void OnUpdate(uint32_t deltaTime) { }
 
-		// 节点进行渲染的事件
-		// 渲染节点的时候需要用户把render request加入到渲染队列中
+		// Trigger when the node going to render. 
+		// User need to commit a render request to render system.
 		virtual void OnRender() { }
 
-		// 节点局部旋转更新事件
+		// Trigger when local Roll rotation changes by calling SetRotation().
 		virtual void OnRotate(gml::radian r) { }
 
-		// 节点局部缩放更新事件
+		// Trigger when local scale changes by calling SetScale().
 		virtual void OnScale(const gml::vec2& newScaler) { }
 
-		// 节点局部位置更新事件
+		// Trigger when local position changes by calling SetPosition().
 		virtual void OnMove(const gml::vec2& newPos) { }
 
-		// 用户输入消息事件
-		// 单纯的获取原始消息，消息会被转化成以下特殊事件
+		// Trigger when raw messages comes. 
+		// Some messages will be converted to special events list below.
 		virtual void OnMessage(const g2d::Message& message) { }
 
-		// 节点局部坐标变化之后，第一次更新的事件
-		// 一般AABB的变换在这里计算。
-		// 顺序在 OnUpdate之后
+		// First update event after local tranform changes.
+		// It comes after OnUpdate event, do AABB update here.
 		virtual void OnUpdateMatrixChanged() { }
 
-		// 当光标碰到节点对象(Entity)的时候触发
-		// 参数是前一个光标悬停的对象
-		// 直接从未悬停状态下触碰对象时参数为空
+		// Trigger when cursor first hit the SceneNode.
+		// Adjacent SceneNode is the last cursor hovering node,
+		// it would be null if cursor hit the node from empty ground.
 		virtual void OnCursorEnterFrom(SceneNode* adjacency, const g2d::Mouse&, const g2d::Keyboard&) { }
 
-		// 当光标悬停在物体上的时候持续触发
+		// triggering Repeatly when cursor hovering the node.
 		virtual void OnCursorHovering(const g2d::Mouse&, const g2d::Keyboard&) { }
 
-		// 当光标离开节点对象(Entity)的时候触发
-		// 参数是当前光标悬停的对象
-		// 如果离开实体后光标没有触碰对象，此参数为空
+		// Trigger when cursor leave off the SceneNode.
+		// Adjacent SceneNode is the next cursor hovering node,
+		// it would be null if cursor goes to empty ground.
 		virtual void OnCursorLeaveTo(SceneNode* adjacency, const g2d::Mouse&, const g2d::Keyboard&) { }
 
-		// 单击鼠标事件
+		// Trigger when node is clicked.
 		virtual void OnLClick(const g2d::Mouse&, const g2d::Keyboard&) { }
 		virtual void OnRClick(const g2d::Mouse&, const g2d::Keyboard&) { }
 		virtual void OnMClick(const g2d::Mouse&, const g2d::Keyboard&) { }
 
-		// 双击鼠标的事件
+		// Trigger when node is double clicked.
 		virtual void OnLDoubleClick(const g2d::Mouse&, const g2d::Keyboard&) { }
 		virtual void OnRDoubleClick(const g2d::Mouse&, const g2d::Keyboard&) { }
 		virtual void OnMDoubleClick(const g2d::Mouse&, const g2d::Keyboard&) { }
 
-		// 光标拖拽开始
+		// Trigger when the node is dragged at first time.
 		virtual void OnLDragBegin(const g2d::Mouse&, const g2d::Keyboard&) { }
 		virtual void OnRDragBegin(const g2d::Mouse&, const g2d::Keyboard&) { }
 		virtual void OnMDragBegin(const g2d::Mouse&, const g2d::Keyboard&) { }
 
-		// 没有触碰到别的物体的时候，光标拖拽中
+		// Trigger when node is dragging without hitting other nodes.
 		virtual void OnLDragging(const g2d::Mouse&, const g2d::Keyboard&) { }
 		virtual void OnRDragging(const g2d::Mouse&, const g2d::Keyboard&) { }
 		virtual void OnMDragging(const g2d::Mouse&, const g2d::Keyboard&) { }
 
-		// 没有触碰到别的物体的时候，鼠标拖拽结时
+		// Trigger when node is drag end without hitting other nodes.
 		virtual void OnLDragEnd(const g2d::Mouse&, const g2d::Keyboard&) { }
 		virtual void OnRDragEnd(const g2d::Mouse&, const g2d::Keyboard&) { }
 		virtual void OnMDragEnd(const g2d::Mouse&, const g2d::Keyboard&) { }
 
-		// 光标触碰到别的物体的时候，鼠标拖拽中
-		// 如果dropped 是空的话，会把消息转发到OnDragging
+		// Trigger when node is dragging with hitting other nodes.
 		virtual void OnLDropping(SceneNode* dropped, const g2d::Mouse&, const g2d::Keyboard&) { }
 		virtual void OnRDropping(SceneNode* dropped, const g2d::Mouse&, const g2d::Keyboard&) { }
 		virtual void OnMDropping(SceneNode* dropped, const g2d::Mouse&, const g2d::Keyboard&) { }
 
-		// 光标触碰到别的物体的时候，鼠标拖拽结束
+		// Trigger when node is drag end with hitting other nodes.
 		virtual void OnLDropTo(SceneNode* dropped, const g2d::Mouse&, const g2d::Keyboard&) { }
 		virtual void OnRDropTo(SceneNode* dropped, const g2d::Mouse&, const g2d::Keyboard&) { }
 		virtual void OnMDropTo(SceneNode* dropped, const g2d::Mouse&, const g2d::Keyboard&) { }
 
-		// 键位被触发，与持续按下的情况互斥
+		// Trigger when key is pressed, mutex to pressing.
 		virtual void OnKeyPress(KeyCode key, const g2d::Mouse&, const g2d::Keyboard& keyboard) { }
 
-		// 键位被持续按下的第一下
+		// Trigger when key is pressing at first time, mutex to pressed.
 		virtual void OnKeyPressingBegin(KeyCode key, const g2d::Mouse&, const g2d::Keyboard& keyboard) { }
 
-		// 键位被持续按下
+		// Trigger when key pressing repeatly. 
 		virtual void OnKeyPressing(KeyCode key, const g2d::Mouse&, const g2d::Keyboard& keyboard) { }
 
-		// 键位被持续按下的最后一下
+		// Trigger when the key is released.
 		virtual void OnKeyPressingEnd(KeyCode key, const g2d::Mouse&, const g2d::Keyboard& keyboard) { }
 
-	public://内部使用
-
-		// 初始化场景节点的时候设置关联
+	public:// internal use
 		void SetSceneNode(g2d::SceneNode* node);
 
-		// 当节点顺序变更的时候，引擎会调用此接口修正渲染顺序
 		void SetRenderingOrder(uint32_t& order);
 
-		// 渲染的时候根据顺序排列组件
 		uint32_t GetRenderingOrder() { return m_renderingOrder; }
 
 	private:
@@ -153,276 +150,268 @@ namespace g2d
 		uint32_t m_renderingOrder = 0xFFFFFFFF;
 	};
 
-	// 一张图片
+	// Image Quad
 	class G2DAPI Quad : public Component
 	{
 	public:
 		static Quad* Create();
 
-		// 设置 Quad Mesh 大小
+		// Resize mesh size of the Quad.
 		virtual g2d::Quad* SetSize(const gml::vec2& size) = 0;
 
-		// 获取 Quad Mesh 大小
+		// Get the mesh size of the Quad.
 		virtual const gml::vec2& GetSize() const = 0;
 	};
 
-	//用于场景查找可见物体，进行渲染的摄像机
+	// Camera is used for visibility testing & rendering
 	class G2DAPI Camera : public Component
 	{
 	public:
-		// 摄像机在场景中的编号
-		// 默认摄像机的编号为0
+		// Index in scene, index of main(default) camera is 0
 		virtual uint32_t GetID() const = 0;
 
-		// 摄像机位置
-		// 返回自身，可以使用链式设置
+		// Setting eye's position.
 		virtual Camera* SetPosition(const gml::vec2& p) = 0;
 
-		// 摄像机镜头缩放
-		// 返回自身，可以使用链式设置
+		// Setting camera's boundry.
 		virtual Camera* SetScale(const gml::vec2& s) = 0;
 
-		// 摄像机 Roll 旋转
-		// 返回自身，可以使用链式设置
+		// Setting camera's Roll rotation.
 		virtual Camera* SetRotation(gml::radian r) = 0;
 
-		// 设置渲染顺序，多个摄像机会根据这个渲染顺序进行排列
-		// 顺序越小越优先渲染
+		// Setting camera's rendering order.
+		// Multiple cameras need to be sort before rendering,
+		// less rendering order will be rendered first
 		virtual void SetRenderingOrder(int order) = 0;
 
-		// 查找可见物体Flag
+		// Visible matching mask, used for visibility testing.
+		// If scene nodes's mask is overlapped this mask,
+		// we treat it as visible.
 		virtual void SetVisibleMask(uint32_t mask) = 0;
 
-		// 是否启用摄像机，如果不启用，摄像机不会查找物体进行渲染
+		// Wont do the visibility testing and rendering if camera is not activated.
 		virtual void SetActivity(bool activity) = 0;
 
-		// 渲染系统需要的视矩阵
 		virtual const gml::mat32& GetViewMatrix() const = 0;
 
-		// 判断一个aabb是否会被摄像机看见
+		// Check whether an AABB is intersect with the camera boundry.
+		// Point AABB is treat as not visible.
 		virtual bool TestVisible(const gml::aabb2d& bounding) const = 0;
 
-		// 判断一个Component是否会被摄像机看见
-		// aabb为一个点，mask不匹配视为不可见
+		// Check whether a component is visible.
+		// Point AABB, mask is not matching, will be regard to not visible.
 		virtual bool TestVisible(Component& component) const = 0;
 
-		// 查找可见物体Flag
 		virtual uint32_t GetVisibleMask() const = 0;
 
-		// 渲染顺序
 		virtual int GetRenderingOrder() const = 0;
 
-		// 摄像机是否被启用
+		// Is camera is not activated ? 
 		virtual bool IsActivity() const = 0;
 
+		// Convert screen-space coordinate to world-space coordinate
 		virtual gml::vec2 ScreenToWorld(const gml::coord& pos) const = 0;
 
+		// Convert world-space coordinate to screen-space coordinate
 		virtual gml::coord WorldToScreen(const gml::vec2& pos) const = 0;
 	};
 
-	// 场景节点，在场景中是一个以树形形式组成
+	// Node in Scene Tree
 	class G2DAPI SceneNode : public GObject
 	{
 	public:
-		// 析构节点，把当前节点从树种删除。
-		// 会同时把组件对象全部删除。
+		// Destroy the node, remove from its parent, and release all components.
 		virtual void Release() = 0;
 
-		// 节点所在场景
-		// Scene作为根节点会返回自身
+		// Which scene the node belongs to.
 		virtual Scene* GetScene() const = 0;
 
-		// 获取节点的父节点
-		// Scene作为根节点会返回nullptr
+		// Return nullptr if the parent is Scene.
 		virtual SceneNode* GetParentNode() const = 0;
 
-		// 获取同级节点的下一个节点
-		// 同级最后一个节点返回nullptr
+		// Return nullptr if the node is the first child.
 		virtual SceneNode* GetPrevSiblingNode() const = 0;
 
-		// 获取同级节点的上一个节点
-		// 同级第一个节点返回nullptr
+		// Return nullptr if the node is the last child.
 		virtual SceneNode* GetNextSiblingNode() const = 0;
 
-		// 获取第一个孩子
-		// 如果没有孩子则返回nullptr
+		// Retrieve the first child.
+		// If scene have no children, return nullptr.
 		virtual g2d::SceneNode* FirstChild() const = 0;
 
-		// 获取最后一个孩子
-		// 如果没有孩子则返回nullptr
+		// Retrieve the last child.
+		// If scene have no children,  return nullptr.
 		virtual g2d::SceneNode* LastChild() const = 0;
 
-		// 使用索引获得子节点
 		virtual g2d::SceneNode* GetChildByIndex(uint32_t index) const = 0;
 
-		// 获取子节点的数目
 		virtual uint32_t GetChildCount() const = 0;
 
-		// 创建子节点
+		// Create a child node, and add it to the node
 		virtual SceneNode* CreateChild() = 0;
 
-		// 把当前节点移动到同级最后一个
-		// 以保证第一个渲染！
+		// Swap index with the LAST child, make sure the 
+		// node is to rendering at bottom.
+		// CAUTION: Do nothing when the node is the first.
 		virtual void MoveToFront() = 0;
 
-		// 把当前节点移动到同级第一个
-		// 以保证是最后一个渲染！
+		// Swap index with the FIRST child, make sure the 
+		// node is to rendering at top.
+		// CAUTION: Do nothing when the node is the last.
 		virtual void MoveToBack() = 0;
 
-		// 跟同级前一个节点交换位置，以保证渲染顺序
-		// 当节点是同级第一个的时候什么也不做
+		// Swap index with PREV child, to adjust rendering order.
+		// Do nothing when the node is the first child.
 		virtual void MovePrev() = 0;
 
-		// 跟同级后一个节点交换位置，以保证渲染顺序
-		// 当节点是同级最后一个的时候什么也不做
+		// Swap index with NEXT child, to adjust rendering order.
+		// Do nothing when the node is the last child.
 		virtual void MoveNext() = 0;
 
-		// 添加组件接口
 		virtual bool AddComponent(Component*, bool autoRelease) = 0;
 
-		// 移除确定组件
+		// Remove a component with auto release setting.
+		// Component::Release will be called if auto release is set.
 		virtual bool RemoveComponent(Component*) = 0;
 
-		// 移除确定组件，并且强制不调用Release接口
+		// Remove a component without releasing.
 		virtual bool RemoveComponentWithoutRelease(Component*) = 0;
 
-		// 获取某个组件的释放条件，如果组件不存在，返回假。
+		// Query auto release state of a certain component.
+		// Return false if component is removed or not exist.
 		virtual bool IsComponentAutoRelease(Component*) const = 0;
 
-		// 根据下标索引获取组件，
-		// 注意， 不同组件会根据优先级变化，组件的索引是会发生改变的
+		// Get component by index.
+		// CAUTION: Index of component will changes 
+		// due to change the execution order.
 		virtual Component* GetComponentByIndex(uint32_t index) const = 0;
 
-		// 组件的个数
 		virtual uint32_t GetComponentCount() const = 0;
 
-		// 当前节点的局部矩阵
 		virtual const gml::mat32& GetLocalMatrix() = 0;
 
-		// 累乘上所有父节点之后的世界矩阵
 		virtual const gml::mat32& GetWorldMatrix() = 0;
 
-		// 设置节点的位置
-		// 返回自身，可以使用链式设置
+		// Setting local-space position.
 		virtual SceneNode* SetPosition(const gml::vec2& position) = 0;
 
-		// 设置节点的世界位置，这个API会改变局部坐标
-		// 返回自身，可以使用链式设置
+		// Setting world-space position, it will changes local position.
 		virtual g2d::SceneNode* SetWorldPosition(const gml::vec2& position) = 0;
 
-		// 设置节点的世界位置，这个API会改变局部的Rotation
-		// 返回自身，可以使用链式设置
+		// Setting world-space right direction, it will changes local rotation.
 		virtual g2d::SceneNode* SetRight(const gml::vec2& right) = 0;
 
-		// 设置节点的世界位置，这个API会改变局部的Rotation
-		// 返回自身，可以使用链式设置
+		// Setting world-space up direction, it will changes local rotation.
 		virtual g2d::SceneNode* SetUp(const gml::vec2& up) = 0;
 
-		// 设置节点的中心偏移，会影响缩放
-		// 返回自身，可以使用链式设置
+		// Setting offset of center.
 		virtual SceneNode* SetPivot(const gml::vec2& pivot) = 0;
 
-		// 设置节点的缩放
-		// 返回自身，可以使用链式设置
+		// Setting local scale.
 		virtual SceneNode* SetScale(const gml::vec2& scale) = 0;
 
-		// 设置节点的 Roll 旋转
-		// 返回自身，可以使用链式设置
+		// Setting local Roll rotation.
 		virtual SceneNode* SetRotation(gml::radian r) = 0;
 
-		// 手都设置是否可见，不可见的节点不会进行渲染
+		// Manually setting visibility.
+		// None-seen node will not be rendered.
 		virtual void SetVisible(bool) = 0;
 
-		// 是否是固定节点
-		// 固定节点会被加入到场景四叉树中
-		// 优化可见判断速度
+		// Static node will be add to spatial graph(quadtree)
+		// to boost efficiency of visibility testing.
 		virtual void SetStatic(bool) = 0;
 
-		// 设置摄像机可见的 Mask
+		// Setting visible mask.
+		// The mask will collaborate with camera's visible mask 
+		// to determin whether it will be seen by the camera.
 		virtual void SetVisibleMask(uint32_t mask, bool recursive) = 0;
 
-		// 获得节点位置
+		// Local position.
 		virtual const gml::vec2& GetPosition() const = 0;
 
-		// 获得节点世界坐标的位置
+		// World-space position, it equals to local position tranfromed by world transform.
 		virtual gml::vec2 GetWorldPosition() = 0;
 
-		// 获得节点的右方向向量
+		// World-space right direction.
 		virtual const gml::vec2& GetRight() = 0;
 
-		// 获得节点的右方向向量
+		// World-space up directoin.
 		virtual const gml::vec2& GetUp() = 0;
 
-		// 获得节点中心偏移
+		// Local offset of center.
 		virtual const gml::vec2& GetPivot() const = 0;
 
-		// 获得节点缩放
+		// Local scale
 		virtual const gml::vec2& GetScale() const = 0;
 
-		// 获得节点Roll旋转
+		// Local Roll rotation 
 		virtual gml::radian GetRotation() const = 0;
 
-		// 获取当前节点是父亲的第几个节点
+		// Query the child index of his father.
 		virtual uint32_t GetChildIndex() const = 0;
 
-		// 节点是否可见设置
 		virtual bool IsVisible() const = 0;
 
-		// 节点是否是固定的设置
 		virtual bool IsStatic() const = 0;
 
-		// 节点可见性Mask的设置
+		// Is the node is released, but not being destroyed ?
+		virtual bool IsRemoved() const = 0;
+
+		// Visible Mask will collaborate with camera's visible mask 
+		// to determin whether the node will be seen by the camera.
 		virtual uint32_t GetVisibleMask() const = 0;
 
-		// 把坐标转换节点局部空间内
+		// Convert a world-space coordinate to the local-space coordinate.
 		virtual gml::vec2 WorldToLocal(const gml::vec2& pos) = 0;
 
-		// 把坐标转换节点同级的局部空间
+		// Convert a world-space coordinate to the parent-space coordinate.
 		virtual gml::vec2 WorldToParent(const gml::vec2& pos) = 0;
 	};
 
-	// 根据类型获取
+	// Query the first component by a certain type.
 	template<typename T> T* FindComponent(SceneNode* node);
 
 	class G2DAPI Scene : public GObject
 	{
 	public:
-		// 创建的场景需要用户手动释放资源
-		// 只能调用一次
+		// Call this manually when the scene no longer 
+		// being used, to destroy the entire scene tree
+		// and itself.
+		// Function can ONLY be called ONCE.
 		virtual void Release() = 0;
 
-		// 获取第一个孩子
-		// 如果没有孩子则返回nullptr
+		// Retrieve the first child.
+		// If scene have no children, return nullptr.
 		virtual g2d::SceneNode* FirstChild() const = 0;
 
-		// 获取最后一个孩子
-		// 如果没有孩子则返回nullptr
+		// Retrieve the last child.
+		// If scene have no children, return nullptr.
 		virtual g2d::SceneNode* LastChild() const = 0;
 
-		// 使用索引获得子节点
 		virtual g2d::SceneNode* GetChildByIndex(uint32_t index) const = 0;
 
-		// 获取子节点的数目
 		virtual uint32_t GetChildCount() const = 0;
 
-		// 创建子节点
+		// Create a child node, and add it to the node.
 		virtual SceneNode* CreateChild() = 0;
 
-		// 为场景创建一个摄像机
+		// Create a child node, with a camera component, 
+		// and add it the scene.
 		virtual Camera* CreateCameraNode() = 0;
 
-		// 获取默认的摄像机
+		// Default camera, it return the result of 
+		// scene->GetCameraByIndex(0);
 		virtual Camera* GetMainCamera() const = 0;
-
-		// 根据ID获取摄像机
-		// 默认摄像机编号为0
+		
+		// Get camera by ID.
+		// The ID of main(default) camera is 0.
 		virtual Camera* GetCameraByIndex(uint32_t index) const = 0;
 
-		// 获取摄像机的数目
+		// Number of exist cameras.
 		virtual uint32_t GetCameraCount() const = 0;
-
-		// 把场景中的物体加入渲染队列
-		// 需要用户主动调用
+		
+		// Call it manually each frame, to send OnRender event
+		// to scene tree, so that each node can notify its components.
 		virtual void Render() = 0;
 	};
 

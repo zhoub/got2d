@@ -1,6 +1,7 @@
+#include <algorithm>
+#include <gml/gmlconversion.h>
+#include "../include/g2dengine.h"
 #include "scene.h"
-#include <g2dengine.h>
-#include <gmlconversion.h>
 
 g2d::Quad* g2d::Quad::Create()
 {
@@ -148,7 +149,7 @@ bool Camera::TestVisible(g2d::Component& component) const
 {
 	if (Is<::Camera>(component) ||
 		component.GetLocalAABB().is_point() ||
-		!TestVisibleMask(component.GetVisibleMask()) )
+		!TestVisibleMask(component.GetVisibleMask()))
 	{
 		return false;
 	}
@@ -156,20 +157,39 @@ bool Camera::TestVisible(g2d::Component& component) const
 	return TestVisible(component.GetWorldAABB());
 }
 
+Camera::Camera(::Scene & scene, uint32_t index)
+	: m_scene(scene)
+	, m_id(index)
+{ }
+
 g2d::Component* Camera::FindNearestComponent(const gml::vec2& worldPosition)
 {
-	auto itCur = std::rbegin(visibleComponents);
-	auto itEnd = std::rend(visibleComponents);
+	auto itCur = visibleComponents.rbegin();
+	auto itEnd = visibleComponents.rend();
 	for (; itCur != itEnd; itCur++)
 	{
 		Component* component = *itCur;
-		auto localPos = component->GetSceneNode()->WorldToLocal(worldPosition);
-		if (component->GetLocalAABB().contains(localPos))
+		if (!component->GetSceneNode()->IsRemoved())
 		{
-			return component;
+			auto localPos = component->GetSceneNode()->WorldToLocal(worldPosition);
+			if (component->GetLocalAABB().contains(localPos))
+			{
+				return component;
+			}
 		}
 	}
 	return nullptr;
+}
+
+void Camera::OnRemoveSceneNode(::SceneNode & node)
+{
+	auto insideNode = [&](g2d::Component* component) -> bool {
+		return component->GetSceneNode() == &node;
+	};
+
+	auto oldEnd = visibleComponents.end();
+	auto newEnd = std::remove_if(visibleComponents.begin(), oldEnd, insideNode);
+	visibleComponents.erase(newEnd, oldEnd);
 }
 
 gml::vec2 Camera::ScreenToWorld(const gml::coord& pos) const

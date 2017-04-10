@@ -1,10 +1,10 @@
 #pragma once
+#include <vector>
+#include <gml/gmlmatrix.h>
 #include "../include/g2dscene.h"
 #include "component.h"
 #include "spatial_graph.h"
 #include "input.h"
-#include <gmlmatrix.h>
-#include <vector>
 
 class SceneNode;
 class Scene;
@@ -150,9 +150,9 @@ public:
 
 	template<typename FUNC> void InverseTraversal(FUNC func)
 	{
-		auto it = std::rbegin(m_children);
-		auto end = std::rend(m_children);
-		for (; it != end; it++) func(*child);
+		auto it = m_children.rbegin();
+		auto end = m_children.rend();
+		for (; it != end; it++) func(*it);
 	}
 
 public:
@@ -205,11 +205,11 @@ public:
 private:
 	void SetMatrixDirty();
 
-	gml::vec2 m_position;
-	gml::vec2 m_pivot;
-	gml::vec2 m_scale;
-	gml::radian m_rotation;
-	gml::mat32 m_matrix;
+	gml::vec2 m_position = gml::vec2::zero();
+	gml::vec2 m_pivot = gml::vec2::zero();
+	gml::vec2 m_scale = gml::vec2::one();
+	gml::radian m_rotation = gml::radian(0.0f);
+	gml::mat32 m_matrix = gml::mat32::identity();
 	bool m_matrixDirty = true;
 };
 
@@ -237,10 +237,10 @@ public:
 private:
 	::SceneNode& m_sceneNode;
 	LocalTransform& m_localTransform;
-	gml::vec2 m_position;
-	gml::vec2 m_right;
-	gml::vec2 m_up;
-	gml::mat32 m_matrix;
+	gml::vec2 m_position = gml::vec2::zero();
+	gml::vec2 m_right = gml::vec2::right();
+	gml::vec2 m_up = gml::vec2::up();
+	gml::mat32 m_matrix = gml::mat32::identity();
 	bool m_matrixDirty = true;
 	bool m_positionDirty = true;
 	bool m_rightDirty = true;
@@ -268,7 +268,8 @@ public:
 
 	void SetRenderingOrder(uint32_t& order);
 
-	//提供给Move函数临时交换用
+	// provided to Move function for 
+	// temporary setting rendering order
 	void SetRenderingOrderOnly(uint32_t order);
 
 	bool ParentIsScene() const { return m_parent == nullptr; }
@@ -388,6 +389,8 @@ public:	//g2d::SceneNode
 
 	virtual bool IsStatic() const override { return m_isStatic; }
 
+	virtual bool IsRemoved() const override { return m_isRemoved; }
+
 	virtual uint32_t GetVisibleMask() const override { return m_visibleMask; }
 
 	virtual gml::vec2 WorldToLocal(const gml::vec2& pos) override;
@@ -414,8 +417,9 @@ private:
 	bool m_isVisible = true;
 	bool m_isStatic = false;
 	bool m_matrixDirtyUpdate = true;
+	bool m_isRemoved = false;
 	uint32_t m_childIndex = 0;
-	uint32_t m_renderingOrder = 0xFFFFFFFF;//保证一开始是错误的
+	uint32_t m_renderingOrder = 0xFFFFFFFF;	// make sure the order maxinum(error) at the beginning
 	uint32_t m_visibleMask = g2d::DEF_VISIBLE_MASK;
 
 };
@@ -439,6 +443,8 @@ public:
 	SpatialGraph& GetSpatialGraph() { return m_spatial; }
 
 	void AdjustRenderingOrder();
+
+	void OnRemoveSceneNode(::SceneNode& node);
 
 public: //g2d::Scene
 
@@ -513,7 +519,7 @@ private:
 
 	class MouseButtonState
 	{
-		::SceneNode* dragNode = nullptr;
+		::SceneNode* m_draggingNode = nullptr;
 	public:
 		const g2d::MouseButton Button;
 		MouseButtonState(int index) : Button((g2d::MouseButton)index) { }
@@ -521,6 +527,7 @@ private:
 		void OnPressingBegin(::SceneNode* hitNode);
 		void OnPressing(::SceneNode* hitNode);
 		void OnPressingEnd(::SceneNode* hitNode);
+		void OnRemoveSceneNode(::SceneNode& node);
 	} m_mouseButtonState[3];
 
 	SceneNodeContainer m_children;

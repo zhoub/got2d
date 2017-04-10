@@ -1,5 +1,5 @@
-#include "scene.h"
 #include <algorithm>
+#include "scene.h"
 
 ComponentContainer::~ComponentContainer()
 {
@@ -36,8 +36,8 @@ bool ComponentContainer::Add(g2d::SceneNode* parent, g2d::Component* component, 
 	}
 	else
 	{
-		auto itEndReleased = std::end(m_released);
-		auto itFoundReleased = std::find_if(std::begin(m_released), itEndReleased,
+		auto itEndReleased = m_released.end();
+		auto itFoundReleased = std::find_if(m_released.begin(), itEndReleased,
 			[component](const NodeComponent& c) { return component == c.ComponentPtr; });
 		if (itFoundReleased != itEndReleased)
 		{
@@ -45,8 +45,8 @@ bool ComponentContainer::Add(g2d::SceneNode* parent, g2d::Component* component, 
 			return true;
 		}
 
-		auto itEnd = std::end(m_components);
-		auto itFound = std::find_if(std::begin(m_components), itEnd,
+		auto itEnd = m_components.end();
+		auto itFound = std::find_if(m_components.begin(), itEnd,
 			[component](const NodeComponent& c) { return component == c.ComponentPtr; });
 		if (itFound != itEnd)
 		{
@@ -61,8 +61,7 @@ bool ComponentContainer::Add(g2d::SceneNode* parent, g2d::Component* component, 
 		}
 		else //try insert
 		{
-			auto itCur = std::begin(m_components);
-			auto itEnd = std::end(m_components);
+			auto itCur = m_components.begin();
 			for (; itCur != itEnd; itCur++)
 			{
 				if (itCur->ComponentPtr->GetExecuteOrder() > cOrder)
@@ -79,15 +78,15 @@ bool ComponentContainer::Add(g2d::SceneNode* parent, g2d::Component* component, 
 
 bool ComponentContainer::Remove(g2d::Component* component, bool forceNotReleased)
 {
-	auto itEndReleased = std::end(m_released);
-	if (itEndReleased != std::find_if(std::begin(m_released), itEndReleased,
+	auto itEndReleased = m_released.end();
+	if (itEndReleased != std::find_if(m_released.begin(), itEndReleased,
 		[component](const NodeComponent& c) { return component == c.ComponentPtr; }))
 	{
 		return false;
 	}
 
-	auto itEnd = std::end(m_components);
-	auto itFound = std::find_if(std::begin(m_components), itEnd,
+	auto itEnd = m_components.end();
+	auto itFound = std::find_if(m_components.begin(), itEnd,
 		[component](NodeComponent& c) {return c.ComponentPtr == component; });
 
 	if (itFound != itEnd)
@@ -106,16 +105,16 @@ bool ComponentContainer::Remove(g2d::Component* component, bool forceNotReleased
 bool ComponentContainer::IsAutoRelease(g2d::Component* component) const
 {
 	bool forcedNotReleased = false;
-	auto itEndReleased = std::end(m_released);
-	auto itFoundReleased = std::find_if(std::begin(m_released), itEndReleased,
+	auto itEndReleased = m_released.end();
+	auto itFoundReleased = std::find_if(m_released.begin(), itEndReleased,
 		[component](const NodeComponent& c) { return component == c.ComponentPtr; });
 	if (itFoundReleased != itEndReleased)
 	{
 		forcedNotReleased = itFoundReleased->AutoRelease;
 	}
 
-	auto itEnd = std::end(m_components);
-	auto itFound = std::find_if(std::begin(m_components), itEnd,
+	auto itEnd = m_components.end();
+	auto itFound = std::find_if(m_components.begin(), itEnd,
 		[component](const NodeComponent& c) { return component == c.ComponentPtr; });
 
 	if (itFound == itEnd)
@@ -222,17 +221,17 @@ void SceneNodeContainer::Remove(::SceneNode& child)
 {
 	::SceneNode* releasedChild = &child;
 
-	auto itEndReleased = std::end(m_released);
-	if (itEndReleased == std::find(std::begin(m_released), itEndReleased, releasedChild))
+	auto itEndReleased = m_released.end();
+	if (itEndReleased == std::find(m_released.begin(), itEndReleased, releasedChild))
 	{
-		auto itEnd = std::end(m_children);
-		auto itFound = std::find(std::begin(m_children), itEnd, releasedChild);
+		auto itEnd = m_children.end();
+		auto itFound = std::find(m_children.begin(), itEnd, releasedChild);
 		if (itFound != itEnd)
 		{
 			uint32_t index = releasedChild->GetChildIndex();
 			m_released.push_back(releasedChild);
 			itFound = m_children.erase(itFound);
-			itEnd = std::end(m_children);
+			itEnd = m_children.end();
 			for (; itFound != itEnd; itFound++)
 			{
 				(*itFound)->SetChildIndex(index++);
@@ -253,7 +252,7 @@ bool SceneNodeContainer::Move(uint32_t from, uint32_t to)
 	auto formOrder = siblings[from]->GetRenderingOrder();
 	auto toOrder = siblings[to]->GetRenderingOrder();
 
-	// 为了能够正确置脏 RenderingOrderDirtyNode
+	// for actual dirty flag: RenderingOrderDirtyNode
 	fromNode->SetRenderingOrderOnly(toOrder);
 	siblings[to]->SetRenderingOrderOnly(formOrder);
 
@@ -302,8 +301,7 @@ void SceneNodeContainer::Recollect()
 
 
 
-// 以下是消息派发函数
-
+// Event Dispatcher 
 void ComponentContainer::OnRotate(gml::radian r)
 {
 	for (auto& c : m_components)
@@ -641,7 +639,9 @@ void ComponentContainer::OnKeyPressingEnd(g2d::KeyCode key)
 
 void SceneNodeContainer::OnMessage(const g2d::Message & message)
 {
-	// 不能先collect，有可能产生添加递归的潜在问题
+	// Collecting  must not be process before
+	// dispatching, or will cause potential 
+	// recursive dispatching
 	for (auto& child : m_collection)
 	{
 		child->OnMessage(message);
@@ -651,7 +651,9 @@ void SceneNodeContainer::OnMessage(const g2d::Message & message)
 
 void SceneNodeContainer::OnUpdate(uint32_t deltaTime)
 {
-	// 不能先collect，有可能产生添加递归的潜在问题
+	// Collecting  must not be process before
+	// dispatching, or will cause potential 
+	// recursive dispatching
 	for (auto& child : m_collection)
 	{
 		child->OnUpdate(deltaTime);
@@ -661,7 +663,9 @@ void SceneNodeContainer::OnUpdate(uint32_t deltaTime)
 
 void SceneNodeContainer::OnKeyPress(g2d::KeyCode key)
 {
-	// 不能先collect，有可能产生添加递归的潜在问题
+	// Collecting  must not be process before
+	// dispatching, or will cause potential 
+	// recursive dispatching
 	for (auto& child : m_collection)
 	{
 		child->OnKeyPress(key);
@@ -671,7 +675,9 @@ void SceneNodeContainer::OnKeyPress(g2d::KeyCode key)
 
 void SceneNodeContainer::OnKeyPressingBegin(g2d::KeyCode key)
 {
-	// 不能先collect，有可能产生添加递归的潜在问题
+	// Collecting  must not be process before
+	// dispatching, or will cause potential 
+	// recursive dispatching
 	for (auto& child : m_collection)
 	{
 		child->OnKeyPressingBegin(key);
@@ -681,7 +687,9 @@ void SceneNodeContainer::OnKeyPressingBegin(g2d::KeyCode key)
 
 void SceneNodeContainer::OnKeyPressing(g2d::KeyCode key)
 {
-	// 不能先collect，有可能产生添加递归的潜在问题
+	// Collecting  must not be process before
+	// dispatching, or will cause potential 
+	// recursive dispatching
 	for (auto& child : m_collection)
 	{
 		child->OnKeyPressing(key);
@@ -691,7 +699,9 @@ void SceneNodeContainer::OnKeyPressing(g2d::KeyCode key)
 
 void SceneNodeContainer::OnKeyPressingEnd(g2d::KeyCode key)
 {
-	// 不能先collect，有可能产生添加递归的潜在问题
+	// Collecting  must not be process before
+	// dispatching, or will cause potential 
+	// recursive dispatching
 	for (auto& child : m_collection)
 	{
 		child->OnKeyPressingEnd(key);

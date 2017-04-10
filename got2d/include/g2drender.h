@@ -1,30 +1,23 @@
 #pragma once
-
-#include <g2dconfig.h>
-#include <gmlvector.h>
-#include <gmlmatrix.h>
-#include <gmlcolor.h>
-#include <gmlrect.h>
+#include <gml/gmlvector.h>
+#include <gml/gmlmatrix.h>
+#include <gml/gmlcolor.h>
+#include <gml/gmlrect.h>
+#include "g2dconfig.h"
 
 namespace g2d
 {
-	// 半透明混合种类
+	// Semi-transparent blending method.
 	enum class G2DAPI BlendMode
 	{
-		// 不混合
-		None,
+		None,		// src*1 + dst*0 = src
 
-		// 半透明混合效果
-		Normal,
+		Normal,		// src*src_a + dst*(1-src_a)
 
-		// 叠加效果
-		Additve,
-
-		// 屏幕混合效果
-		Screen,
+		Additve,	// src*1 + dst*1
 	};
 
-	// Mesh中使用的内存布局
+	// Memory layout of Mesh.
 	struct GeometryVertex
 	{
 		gml::vec2 position;
@@ -32,163 +25,187 @@ namespace g2d
 		gml::color4 vtxcolor;
 	};
 
-	// 用户自定义模型组件
-	// 数据保存在内存中，引擎在渲染过程中
-	// 会根据材质使用情况，随机地把内存数据上传到显存里。
+	// User defined model mesh, it is a render resource.
+	// Mesh data save in memory, render system will upload 
+	// datas to video memory when rendering, depends on which
+	// material be used.
 	class G2DAPI Mesh : public GObject
 	{
 	public:
 		static Mesh* Create(uint32_t vertexCount, uint32_t indexCount);
 
-		// 释放内存，只能调用一次
-		// 用户需要手动调用
+		// Call this manually when the mesh no longer 
+		// being used, to release used memory and itself.
+		// Function can ONLY be called ONCE.
 		virtual void Release() = 0;
 
-		// 获得顶点数据指针，用户通过这个指针填充数据。
-		// 用户需要自己保证数据不超过创建时指定的大小。
-		// 否则会造成数组越界
+		// Retrieve the memory pointer of vertices data.
+		// User write datas to the adress pointer to fill 
+		// mesh vertices. Make sure not to exceed the boundry 
+		// of the vertex data memory, otherwise it will 
+		// raise a out-of-memory exception.
+		// length = sizeof(GeometryVertex) * VertexCount;
 		virtual const GeometryVertex* GetRawVertices() const = 0;
 		virtual GeometryVertex* GetRawVertices() = 0;
 
-		// 获得索引数据指针，用户通过这个指针填充数据。
-		// 用户需要自己保证数据不超过创建时指定的大小。
-		// 否则会造成数组越界
+		// Retrieve the memory pointer of indices data.
+		// User write datas to the adress pointer to fill 
+		// mesh indices. Make sure not to exceed the boundry 
+		// of the index data memory, otherwise it will 
+		// raise a out-of-memory exception.
+		// length = sizeof(uint32_t) * IndexCount.
 		virtual const uint32_t* GetRawIndices() const = 0;
 		virtual uint32_t* GetRawIndices() = 0;
 
-		// 获得顶点数据大小，为GeometryVertex数组的个数
+		// Number of vertices.
+		// length = sizeof(GeometryVertex) * VertexCount;
 		virtual uint32_t GetVertexCount() const = 0;
 
-		// 获得索引数据数组的个数
+		// Number of indices.
+		// length = sizeof(uint32_t) * IndexCount;
 		virtual uint32_t GetIndexCount() const = 0;
 
-		// 重设顶点数据大小，原有数据会被自动迁移到新数组上
+		// Resize the length of vertex data memory, old data will be keeped.
 		virtual void ResizeVertexArray(uint32_t vertexCount) = 0;
 
-		// 重设索引数据大小，原有数据会被自动迁移到新数组上
+		// Resize the length of index data memory, old data will be keeped.
 		virtual void ResizeIndexArray(uint32_t indexCount) = 0;
 
-		// 将另一个模型合并到自身上
+		// Merge another mesh to the mesh, with a given transform.
+		// The transfrom will apply to that mesh, regard it as world transform
 		virtual bool Merge(Mesh* other, const gml::mat32& transform) = 0;
 	};
 
-	// 纹理对象，用来作为渲染资源，是一个共享资源
-	// 每次获取对象的时候需要在手动调用 AddRef 增加引用计数
-	// 每次不需要资源后需要显式调用 Release 接口释放引用
+	// Texture is a render resource refer to 2d image.
+	// It is a shared resources, so manually calling AddRef to increasing
+	// reference count, and do Release when it no longer being used.
 	class G2DAPI Texture : public GObject
 	{
 	public:
-		// 从文件中读取构建纹理
-		// 支持 bmp/png/tga，不支持的类型会返回nullptr
-		// 支持透明和不透明的文件格式
+		// Read and parse colors from a image file, it support 
+		// BMP/PNG/TGA files, with or without alpha channel.
+		// Return nullptr if meets an unsupport file format,
+		// or an error occured when loading.
 		static Texture* LoadFromFile(const char* path);
-
-		// 释放引用计数，每次不需要使用之后需要手动调用
+		
+		// Call this manually when the texture no longer
+		// being referenced, to decrease reference count.
+		// Texture will be destroyed when count drop to 0.
 		virtual void Release() = 0;
 
-		// 增加引用计数，当共享纹理的时候需要显式调用。
+		// Call this manually when texture being referenced
+		// to add reference count.
 		virtual void AddRef() = 0;
 
-		// 纹理的标识符，现在纹理只能存文件里读取
-		// 标识符等于文件路径
+		// Texture ID.
+		// At this stage, texture can only be create by loading 
+		// from files, so ID eaquals to file path of the file.
 		virtual const char* Identifier() const = 0;
 
-		// 判断两个纹理是否相同
+		// Return true if texture is loading from same file,
+		// otherwise return false.
 		virtual bool IsSame(Texture* other) const = 0;
 	};
 
-	// 材质渲染Pass
-	/// 此对象在之后的构建中会被拓展成多个子类
-	/// 用户需要使用子类来填充材质数据
-	// keep it simple and stupid.
-	// there is no other more easy way to define param setting interface elegantly
-	// TODO: make it more elegant.
+	// Pass is a rendering resouces, a pass refer to one drawcall.
+	/// Keep it simple and stupid.
+	/// there is no other more easy way to define param setting interface elegantly
+	/// TODO: make it more elegant.
 	class G2DAPI Pass : public GObject
 	{
 	public:
-		// 使用的Vertex Shader类型
+		// Indicate what vertex shader will be used.
 		virtual const char* GetVertexShaderName() const = 0;
 
-		// 使用的Pixel Shader类型
+		// Indicate what pixel shader will be used.
 		virtual const char* GetPixelShaderName() const = 0;
 
-		// 判断两个pass是否完全一致，包括其中的数据
+		// Return true if two passes using same VS/PS, and
+		// the datas including in passes is same. otherwise return false.
 		virtual bool IsSame(Pass* other) const = 0;
 
-		// 设置半透明混合模式
 		virtual void SetBlendMode(BlendMode mode) = 0;
 
-		// 填充Vertex Shader常量数据
+		// Fill datas to the vertex constant buffer, user should 
+		// make sure not to exceed the boundry of the buffer memory,
+		// or it will raise a out-of-memory exception.
 		virtual void SetVSConstant(uint32_t index, float* data, uint32_t size, uint32_t count) = 0;
 
-		// 填充Pixel Shader常量数据
+		// Fill datas to the pixel constant buffer, user should 
+		// make sure not to exceed the boundry of the buffer memory,
+		// or it will raise a out-of-memory exception.
 		virtual void SetPSConstant(uint32_t index, float* data, uint32_t size, uint32_t count) = 0;
 
-		// 设置材质信息，有些纹理不需要自动释放
-		// 当Index被拓展的时候，中间没有被设置过的Index会自动填充nullptr
-		// 并且TextureCount会被拉长
-		// 如果索引中纹理为空，引擎不会设置渲染环境，会沿用之前的纹理状态。
+		// Set a texture to a pass.
+		// if texture index is exceed the max texture index,
+		// it will automatic expand the max texture. count of Texture
+		// will changes, and those index between old/new max index, 
+		// will be set to nullptr.
+		// Render system will keep last sampling states of each slot when 
+		// there is no texture in the slot during render process.
 		virtual void SetTexture(uint32_t index, Texture*, bool autoRelease) = 0;
 
-		// 根据Inedx获取设置的纹理
+		// Not every slot has solid data, it means some index
+		// may return nullptr when they never be set.
 		virtual Texture* GetTextureByIndex(uint32_t index) const = 0;
 
-		// 获取最大的纹理索引，并不是每一个索引都有数据
+		// Get the max count of texture slot.
 		virtual uint32_t GetTextureCount() const = 0;
 
-		// 获取 Vertex Shader 常量数据
+		// Retrieve vertex constant buffer pointer.
 		virtual const float* GetVSConstant() const = 0;
 
-		// 获取 Vertex Shader 常量数据大小
+		// memory size of vertex constant buffer.
 		virtual uint32_t GetVSConstantLength() const = 0;
 
-		// 获取 Pixel Shader 常量数据
+		// Retrieve pixel constant buffer pointer.
 		virtual const float* GetPSConstant() const = 0;
 
-		// 获取 Pixel Shader 常量数据大小
+		// memory size of pixel constant buffer.
 		virtual uint32_t GetPSConstantLength() const = 0;
 
-		// 当前的半透明混合状态
 		virtual BlendMode GetBlendMode() const = 0;
 	};
 
-	// 物体材质，这个是用来抽象渲染资源的对象
-	// 一个材质可能会分为多个不同的Pass（比如阴影会有shaodowmap pass 和 rendering pass）
-	// 材质会保存物体数据，一般不能不同的物体通用一个mesh
+	// Material is another rendering resources.
+	// One material can holds one or more passes,
+	// each pass will save the material info datas,
+	// so do NOT use one material with different objects.
 	class G2DAPI Material : public GObject
 	{
 	public:
-		// 渲染顶点颜色、纹理的材质
+		// Create a new material that rendering with 
+		// combination of vertex color and texture color
 		static Material* CreateColorTexture();
 
-		//只渲染纹理的材质
+		// Create a new material that rendering with texture color
 		static Material* CreateSimpleTexture();
 
-		// 只渲染顶点颜色的材质
+		// Create a new material that rendering with vertex color 
 		static Material* CreateSimpleColor();
 
-		// 释放内存，只能调用一次
-		// 用户需要手动调用
+		// Call this manually when the material no longer 
+		// being used, to release passes and itself.
+		// Function can ONLY be called ONCE.
 		virtual void Release() = 0;
 
-		// 根据索引获取Pass
-		// 现在提供的(一般)只有一个Pass
-		// 做Filter相关（柔化描边）会有多个Pass
+		// Usually, a material holds one pass, but some can 
+		// holds multiple passes, such as filtering,
+		// silhouette materials, they can invoke multiple drawcalls.
 		virtual Pass* GetPassByIndex(uint32_t index) const = 0;
 
-		// 获取材质中Pass数量
 		virtual uint32_t GetPassCount() const = 0;
 
-		// 判断两个材质是否完全一致
+		// Check whether two material holds same passes.
 		virtual bool IsSame(Material* other) const = 0;
 
-		// 复制一个数据、类型完全一致材质
+		// Create a new material contains same passes inside.
 		virtual Material* Clone() const = 0;
 	};
 
-	// 渲染分层，2D渲染力很重要的一个环节，一般渲染是可以指定在某个层次之前或者在之后的。
-	/// 这个其实可以通过SceneNode的关系去调整，引擎暂时没想好是否需要这个内容
-	/// 根据以往的经验先加上
+	// Define the order of a render request.
+	// In 2D rendering, adjusting rendering order is a common need.
+	// e.g. we need draw shadow sprites before all character sprites
 	class G2DAPI RenderLayer
 	{
 	public:
@@ -199,31 +216,32 @@ namespace g2d
 		constexpr static uint32_t Overlay = 0x8000;
 	};
 
-	// 渲染系统接口
 	class G2DAPI RenderSystem : public GObject
 	{
 	public:
-		// 渲染开始的初始化工作
-		// 所有的Render接口都需要在这个接口被调用之后使用
+		// Begin rendering task, do some prepare jobs 
+		// like clear screen and so on, all render requests
+		// need to be sent after this function be called.
 		virtual void BeginRender() = 0;
 
-		// 渲染结束的收尾工作
-		// 所有的Render接口都需要在这个接口被调用之前使用
+		// Finished rendering task, flush all requests rendering pipe.
+		// It must be called after BeginRender(), all render requests
+		// need to be sent before this function be called.
 		virtual void EndRender() = 0;
 
-		// 提供确定的Material Mesh注册渲染请求。
-		// 一般是用户自定义的Entity在OnRender事件中使用
+		// Register a rendering request.
+		// It provide ability to those custom components, to tell 
+		// rendersytem drawing object when OnRender event occured.
 		virtual void RenderMesh(uint32_t layer, Mesh*, Material*, const gml::mat32&) = 0;
 
-		// nativeWindow 当前的大小
-		// 过后会改成 引擎初始化的时候，提供一个接口
+		// Retrieve size of rendering window.
 		virtual uint32_t GetWindowWidth() const = 0;
 		virtual uint32_t GetWindowHeight() const = 0;
 
-		// 从屏幕坐标转到摄像机坐标系
+		// Convert screen-space coordinate to camera-space coordinate.
 		virtual gml::vec2 ScreenToView(const gml::coord& screen) const = 0;
 
-		// 从摄像机坐标系转换到屏幕坐标系
+		// Convert camera-space coordinate to screen-space coordinate.
 		virtual gml::coord ViewToScreen(const gml::vec2 & view) const = 0;
 	};
 }

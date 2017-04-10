@@ -1,22 +1,20 @@
-#include "render_system.h"
-#include "inner_utility.h"
 #include <string>
+#include "render_system.h"
 
 RenderSystem* RenderSystem::Instance = nullptr;
-
-RenderSystem::RenderSystem() :m_bkColor(gml::color4::blue())
-{
-	m_matView.identity();
-}
 
 bool RenderSystem::OnResize(uint32_t width, uint32_t height)
 {
 	//though we create an individual render target
 	//we do not use it for rendering, for now.
 	//it will be used after Compositor System finished.
-	SR(m_colorTexture);
-	SR(m_rtView);
-	SR(m_bbView);
+	m_colorTexture.release();
+	m_rtView.release();
+	m_bbView.release();
+
+	autor<ID3D11Texture2D> colorTexture = nullptr;
+	autor<ID3D11RenderTargetView> rtView = nullptr;
+	autor<ID3D11RenderTargetView> bbView = nullptr;
 
 	if (S_OK != m_swapChain->ResizeBuffers(0, width, height, DXGI_FORMAT_UNKNOWN, 0))
 	{
@@ -37,31 +35,34 @@ bool RenderSystem::OnResize(uint32_t width, uint32_t height)
 	colorTexDesc.CPUAccessFlags = 0;
 	colorTexDesc.MiscFlags = 0;
 
-	if (S_OK != m_d3dDevice->CreateTexture2D(&colorTexDesc, nullptr, &m_colorTexture))
+	if (S_OK != m_d3dDevice->CreateTexture2D(&colorTexDesc, nullptr, &(colorTexture.pointer)))
 	{
 		return false;
 	}
-	ENSURE(m_colorTexture != nullptr);
+	ENSURE(colorTexture.is_not_null());
 
-	if (S_OK != m_d3dDevice->CreateRenderTargetView(m_colorTexture, NULL, &m_rtView))
+	if (S_OK != m_d3dDevice->CreateRenderTargetView(colorTexture, NULL, &(rtView.pointer)))
 	{
 		return false;
 	}
-	ENSURE(m_rtView != nullptr);
+	ENSURE(rtView.is_not_null());
 
-	ID3D11Texture2D* backBuffer = nullptr;
-	auto bbRelease = create_fallback([&] {SR(backBuffer); });
-	if (S_OK != m_swapChain->GetBuffer(0, _uuidof(ID3D11Texture2D), reinterpret_cast<void**>(&backBuffer)))
+	autor<ID3D11Texture2D> backBuffer = nullptr;
+	if (S_OK != m_swapChain->GetBuffer(0, _uuidof(ID3D11Texture2D), reinterpret_cast<void**>(&(backBuffer.pointer))))
 	{
 		return false;
 	}
-	ENSURE(backBuffer != nullptr);
+	ENSURE(backBuffer.is_not_null());
 
-	if (S_OK != m_d3dDevice->CreateRenderTargetView(backBuffer, NULL, &m_bbView))
+	if (S_OK != m_d3dDevice->CreateRenderTargetView(backBuffer, NULL, &(bbView.pointer)))
 	{
 		return false;
 	}
-	ENSURE(m_bbView != nullptr);
+	ENSURE(bbView.is_not_null());
+
+	m_colorTexture = std::move(colorTexture);
+	m_rtView = std::move(rtView);
+	m_bbView = std::move(bbView);
 
 	m_matrixProjDirty = true;
 	m_matrixConstBufferDirty = true;
@@ -69,15 +70,15 @@ bool RenderSystem::OnResize(uint32_t width, uint32_t height)
 	m_windowHeight = height;
 	m_viewport =
 	{
-		0.0f,//FLOAT TopLeftX;
-		0.0f,//FLOAT TopLeftY;
-		(FLOAT)m_windowWidth,//FLOAT Width;
-		(FLOAT)m_windowHeight,//FLOAT Height;
-		0.0f,//FLOAT MinDepth;
-		1.0f,//FLOAT MaxDepth;
+		0.0f,					//FLOAT TopLeftX;
+		0.0f,					//FLOAT TopLeftY;
+		(FLOAT)m_windowWidth,	//FLOAT Width;
+		(FLOAT)m_windowHeight,	//FLOAT Height;
+		0.0f,					//FLOAT MinDepth;
+		1.0f,					//FLOAT MaxDepth;
 	};
 
-	m_d3dContext->OMSetRenderTargets(1, &m_bbView, NULL);
+	m_d3dContext->OMSetRenderTargets(1, &(m_bbView.pointer), NULL);
 	m_d3dContext->RSSetViewports(1, &m_viewport);
 
 	return true;
@@ -139,11 +140,6 @@ bool RenderSystem::CreateBlendModes()
 		blendDesc.RenderTarget[i].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
 	}
 
-	hr = m_d3dDevice->CreateBlendState(&blendDesc, &blendState);
-	if (hr != S_OK)
-		return false;
-	m_blendModes[g2d::BlendMode::Screen] = blendState;
-
 	return true;
 }
 
@@ -155,44 +151,45 @@ bool RenderSystem::Create(void* nativeWindow)
 	}
 
 	auto fb = create_fallback([&] { Destroy(); });
+	autor<IDXGIDevice> dxgiDevice = nullptr;
+	autor<IDXGIAdapter> adapter = nullptr;
 
-	HRESULT hr;
+	HRESULT hr = S_OK;
 
 	//Create Device
 	D3D_DRIVER_TYPE driverType = D3D_DRIVER_TYPE_HARDWARE;
 	D3D11_CREATE_DEVICE_FLAG deviceFlag = D3D11_CREATE_DEVICE_SINGLETHREADED;
 	D3D_FEATURE_LEVEL featureLevel = D3D_FEATURE_LEVEL_11_0;
-	hr = ::D3D11CreateDevice(NULL, driverType, NULL, deviceFlag, &featureLevel, 1, D3D11_SDK_VERSION, &m_d3dDevice, NULL, &m_d3dContext);
+	hr = ::D3D11CreateDevice(NULL, driverType, NULL, deviceFlag, &featureLevel, 1, D3D11_SDK_VERSION, 
+		&(m_d3dDevice.pointer), NULL, &(m_d3dContext.pointer));
 	if (S_OK != hr)
 	{
 		return false;
 	}
-	ENSURE(m_d3dDevice != nullptr && m_d3dContext != nullptr);
+	ENSURE(m_d3dDevice.is_not_null() && m_d3dContext.is_not_null());
 
-	IDXGIDevice * dxgiDevice = nullptr;
-	hr = m_d3dDevice->QueryInterface(__uuidof(IDXGIDevice), (void **)&dxgiDevice);
+	hr = m_d3dDevice->QueryInterface(__uuidof(IDXGIDevice), (void **)&(dxgiDevice.pointer));
 	if (S_OK != hr)
 	{
 		return false;
 	}
-	ENSURE(dxgiDevice != nullptr);
+	ENSURE(dxgiDevice.is_not_null());
 
-	IDXGIAdapter * adapter = nullptr;
-	hr = dxgiDevice->GetParent(__uuidof(IDXGIAdapter), (void **)&adapter);
+	hr = dxgiDevice->GetParent(__uuidof(IDXGIAdapter), (void **)&(adapter.pointer));
 	if (S_OK != hr)
 	{
 		return false;
 	}
-	ENSURE(adapter != nullptr);
+	ENSURE(adapter.is_not_null());
 
 	//CreateSwapChain
-	IDXGIFactory* factory = nullptr;
-	hr = adapter->GetParent(__uuidof(IDXGIFactory), (void **)&factory);
-	if (S_OK != hr || factory == nullptr)
+	autor<IDXGIFactory> factory = nullptr;
+	hr = adapter->GetParent(__uuidof(IDXGIFactory), (void **)&(factory.pointer));
+	if (S_OK != hr)
 	{
 		return false;
 	}
-	ENSURE(factory != nullptr);
+	ENSURE(factory.is_not_null());
 
 	DXGI_SWAP_CHAIN_DESC scDesc;
 	scDesc.BufferDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
@@ -213,13 +210,12 @@ bool RenderSystem::Create(void* nativeWindow)
 	scDesc.SampleDesc.Quality = 0;
 	scDesc.Flags = 0;
 
-	hr = factory->CreateSwapChain(m_d3dDevice, &scDesc, &m_swapChain);
-	factory->Release();
+	hr = factory->CreateSwapChain(m_d3dDevice, &scDesc, &(m_swapChain.pointer));
 	if (S_OK != hr)
 	{
 		return false;
 	}
-	ENSURE(m_swapChain != nullptr);
+	ENSURE(m_swapChain.is_not_null());
 
 	m_swapChain->GetDesc(&scDesc);
 	m_windowWidth = scDesc.BufferDesc.Width;
@@ -235,12 +231,12 @@ bool RenderSystem::Create(void* nativeWindow)
 		0								//UINT StructureByteStride;
 	};
 
-	hr = m_d3dDevice->CreateBuffer(&bufferDesc, NULL, &m_sceneConstBuffer);
+	hr = m_d3dDevice->CreateBuffer(&bufferDesc, NULL, &(m_sceneConstBuffer.pointer));
 	if (S_OK != hr)
 	{
 		return false;
 	}
-	ENSURE(m_sceneConstBuffer != nullptr);
+	ENSURE(m_sceneConstBuffer.is_not_null());
 
 	if (!OnResize(m_windowWidth, m_windowHeight))
 	{
@@ -285,14 +281,13 @@ void RenderSystem::Destroy()
 	m_geometry.Destroy();
 	m_texPool.Destroy();
 
-	SR(m_sceneConstBuffer);
-
-	SR(m_swapChain);
-	SR(m_d3dDevice);
-	SR(m_d3dContext);
-	SR(m_colorTexture);
-	SR(m_rtView);
-	SR(m_bbView);
+	m_sceneConstBuffer.release();
+	m_swapChain.release();
+	m_d3dDevice.release();
+	m_d3dContext.release();
+	m_colorTexture.release();
+	m_rtView.release();
+	m_bbView.release();
 
 	if (Instance == this)
 	{
@@ -397,7 +392,7 @@ void RenderSystem::FlushBatch(Mesh& mesh, g2d::Material& material)
 			m_d3dContext->VSSetShader(shader->GetVertexShader(), NULL, 0);
 			m_d3dContext->PSSetShader(shader->GetPixelShader(), NULL, 0);
 			UpdateSceneConstBuffer();
-			m_d3dContext->VSSetConstantBuffers(0, 1, &m_sceneConstBuffer);
+			m_d3dContext->VSSetConstantBuffers(0, 1, &(m_sceneConstBuffer.pointer));
 			SetBlendMode(pass->GetBlendMode());
 
 			auto vcb = shader->GetVertexConstBuffer();
@@ -431,20 +426,20 @@ void RenderSystem::FlushBatch(Mesh& mesh, g2d::Material& material)
 			{
 				std::vector<ID3D11ShaderResourceView*> views(pass->GetTextureCount());
 				std::vector<ID3D11SamplerState*> samplerstates(pass->GetTextureCount());
-				for (uint32_t i = 0; i < pass->GetTextureCount(); i++)
+				for (uint32_t t = 0; t < pass->GetTextureCount(); t++)
 				{
-					::Texture* timpl = reinterpret_cast<::Texture*>(pass->GetTextureByIndex(i));
+					::Texture* timpl = reinterpret_cast<::Texture*>(pass->GetTextureByIndex(t));
 					std::string textureName = (timpl == nullptr) ? "" : timpl->GetResourceName();
 					auto texture = m_texPool.GetTexture(textureName);
 					if (texture)
 					{
-						views[i] = texture->m_shaderView;
+						views[t] = texture->m_shaderView;
 					}
 					else
 					{
-						views[i] = nullptr;
+						views[t] = nullptr;
 					}
-					samplerstates[i] = nullptr;
+					samplerstates[t] = nullptr;
 				}
 				UINT numView = static_cast<UINT>(views.size());
 				m_d3dContext->PSSetShaderResources(0, numView, &(views[0]));

@@ -1,16 +1,14 @@
 #pragma once
+#include <Windows.h>
+#include <map>
+#include <vector>
+#include <d3d11.h>
+#include <gml/gmlcolor.h>
 #include "../include/g2drender.h"
 #include "inner_utility.h"
 #include "scope_utility.h"
-#include <map>
-#include <vector>
-#include <windows.h>
-#include <d3d11.h>
-#include <gmlcolor.h>
-#include <vector>
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "dxgi.lib")
-
 
 class Geometry
 {
@@ -102,8 +100,8 @@ public:
 
 	void Destroy();
 
-	ID3D11Texture2D* m_texture = nullptr;
-	ID3D11ShaderResourceView* m_shaderView = nullptr;
+	autor<ID3D11Texture2D> m_texture = nullptr;
+	autor<ID3D11ShaderResourceView> m_shaderView = nullptr;
 	uint32_t m_width = 0;
 	uint32_t m_height = 0;
 };
@@ -173,11 +171,11 @@ public:
 	uint32_t GetPixelConstBufferLength() { return m_pixelConstBufferLength; }
 
 private:
-	ID3D11InputLayout* m_shaderLayout = nullptr;
-	ID3D11VertexShader*  m_vertexShader = nullptr;
-	ID3D11PixelShader* m_pixelShader = nullptr;
-	ID3D11Buffer* m_vertexConstBuffer = nullptr;
-	ID3D11Buffer* m_pixelConstBuffer = nullptr;
+	autor<ID3D11InputLayout> m_shaderLayout = nullptr;
+	autor<ID3D11VertexShader>  m_vertexShader = nullptr;
+	autor<ID3D11PixelShader> m_pixelShader = nullptr;
+	autor<ID3D11Buffer> m_vertexConstBuffer = nullptr;
+	autor<ID3D11Buffer> m_pixelConstBuffer = nullptr;
 	uint32_t m_vertexConstBufferLength = 0;
 	uint32_t m_pixelConstBufferLength = 0;
 };
@@ -248,12 +246,12 @@ public:
 	virtual g2d::BlendMode GetBlendMode() const override { return m_blendMode; }
 
 private:
-	std::string m_vsName;
-	std::string m_psName;
+	std::string m_vsName = "";
+	std::string m_psName = "";
 	std::vector<g2d::Texture*> m_textures;
 	std::vector<gml::vec4> m_vsConstants;
 	std::vector<gml::vec4> m_psConstants;
-	g2d::BlendMode m_blendMode;
+	g2d::BlendMode m_blendMode = g2d::BlendMode::None;
 };
 
 class Material : public g2d::Material
@@ -290,8 +288,6 @@ class RenderSystem : public g2d::RenderSystem
 public:
 	static RenderSystem* Instance;
 
-	RenderSystem();
-
 	bool Create(void* nativeWindow);
 
 	void Destroy();
@@ -315,6 +311,7 @@ public:
 	ID3D11DeviceContext* GetContext() { return m_d3dContext; }
 
 	bool OnResize(uint32_t width, uint32_t height);
+
 public:
 	virtual void BeginRender() override;
 
@@ -339,12 +336,13 @@ private:
 
 	void UpdateSceneConstBuffer();
 
-	IDXGISwapChain* m_swapChain = nullptr;
-	ID3D11Device* m_d3dDevice = nullptr;
-	ID3D11DeviceContext* m_d3dContext = nullptr;
-	ID3D11Texture2D* m_colorTexture = nullptr;
-	ID3D11RenderTargetView* m_rtView = nullptr;
-	ID3D11RenderTargetView* m_bbView = nullptr;
+	autor<IDXGISwapChain> m_swapChain = nullptr;
+	autor<ID3D11Device> m_d3dDevice = nullptr;
+	autor<ID3D11DeviceContext> m_d3dContext = nullptr;
+	autor<ID3D11Texture2D> m_colorTexture = nullptr;
+	autor<ID3D11RenderTargetView> m_rtView = nullptr;
+	autor<ID3D11RenderTargetView> m_bbView = nullptr;
+	autor<ID3D11Buffer> m_sceneConstBuffer = nullptr;
 	D3D11_VIEWPORT m_viewport;
 	std::map<g2d::BlendMode, ID3D11BlendState*> m_blendModes;
 
@@ -357,7 +355,7 @@ private:
 		{	}
 		g2d::Mesh& mesh;
 		g2d::Material& material;
-		gml::mat32 worldMatrix;
+		gml::mat32 worldMatrix = gml::mat32::identity();
 	};
 
 	typedef std::vector<RenderRequest> ReqList;
@@ -366,9 +364,8 @@ private:
 	Geometry m_geometry;
 	TexturePool m_texPool;
 	autod<ShaderLib> m_shaderlib = nullptr;
-	ID3D11Buffer* m_sceneConstBuffer = nullptr;
-	gml::mat32 m_matView;
-	gml::mat44 m_matProj;
+	gml::mat32 m_matView = gml::mat32::identity();
+	gml::mat44 m_matProj = gml::mat44::identity();
 	bool m_matrixConstBufferDirty = true;
 	bool m_matrixProjDirty = true;
 	uint32_t m_windowWidth = 0;

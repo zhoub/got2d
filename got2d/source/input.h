@@ -1,13 +1,13 @@
 #pragma once
-#include <gmlrect.h>
-#include <g2dinput.h>
 #include <functional>
-#include <map>
 #include <vector>
+#include <map>
+#include <gml/gmlrect.h>
+#include "../include/g2dinput.h"
 
 constexpr uint32_t PRESSING_INTERVAL = 500u;
 
-//用户填充这个收听键盘消息
+// fill this structure, to listen keyboard event
 struct KeyEventReceiver
 {
 	void* UserData = nullptr;
@@ -15,6 +15,7 @@ struct KeyEventReceiver
 	bool operator==(const KeyEventReceiver& other) const;
 };
 
+// fill this structure, to listen mouse event
 struct MouseEventReceiver
 {
 	void* UserData = nullptr;
@@ -28,15 +29,15 @@ template<typename RECEIVER> class EventDelegate
 public:
 	void operator+=(const RECEIVER& receiver)
 	{
-		auto itEnd = std::end(receivers);
-		if (itEnd == std::find(std::begin(receivers), itEnd, receiver))
+		auto itEnd = receivers.end();
+		if (itEnd == std::find(receivers.begin(), itEnd, receiver))
 			receivers.push_back(receiver);
 	}
 
 	void operator-=(const RECEIVER& receiver)
 	{
-		auto itEnd = std::end(receivers);
-		auto itFound = std::find(std::begin(receivers), itEnd, receiver);
+		auto itEnd = receivers.end();
+		auto itFound = std::find(receivers.begin(), itEnd, receiver);
 		if (itEnd != itFound) receivers.erase(itFound);
 	}
 
@@ -104,7 +105,6 @@ private:
 	};
 	KeyState& GetState(g2d::KeyCode key) const;
 	void CreateKeyState(g2d::KeyCode key);
-	bool VirtualKeyDown(uint32_t virtualKey);
 	std::map<g2d::KeyCode, KeyState*> m_states;
 };
 
@@ -181,3 +181,5 @@ inline ::Mouse& GetMouse()
 {
 	return ::Mouse::Instance;
 }
+
+bool AltDownWin32();
