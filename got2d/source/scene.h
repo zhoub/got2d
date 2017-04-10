@@ -519,7 +519,7 @@ private:
 
 	class MouseButtonState
 	{
-		::SceneNode* dragNode = nullptr;
+		::SceneNode* m_draggingNode = nullptr;
 	public:
 		const g2d::MouseButton Button;
 		MouseButtonState(int index) : Button((g2d::MouseButton)index) { }
@@ -527,6 +527,7 @@ private:
 		void OnPressingBegin(::SceneNode* hitNode);
 		void OnPressing(::SceneNode* hitNode);
 		void OnPressingEnd(::SceneNode* hitNode);
+		void OnRemove(::SceneNode& node);
 	} m_mouseButtonState[3];
 
 	SceneNodeContainer m_children;

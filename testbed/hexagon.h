@@ -29,7 +29,7 @@ public:
 	virtual void OnLClick(const g2d::Mouse& mouse, const g2d::Keyboard& keyboard) override;
 
 	virtual void OnCursorEnterFrom(g2d::SceneNode* adjacency, const g2d::Mouse& mouse, const g2d::Keyboard& keyboard) override;
-	
+
 	virtual void OnCursorLeaveTo(g2d::SceneNode* adjacency, const g2d::Mouse& mouse, const g2d::Keyboard& keyboard) override;
 
 	virtual void OnLDragBegin(const g2d::Mouse& mouse, const g2d::Keyboard& keyboard) override;
@@ -98,5 +98,14 @@ public: //implement
 		auto worldP = GetSceneNode()->GetScene()->GetMainCamera()->ScreenToWorld(mouse.GetCursorPosition());
 		GetSceneNode()->SetWorldPosition(worldP - m_dragOffset);
 	}
+
+	virtual void OnKeyPress(g2d::KeyCode key, const g2d::Mouse& mouse, const g2d::Keyboard& keyboard) override
+	{
+		if (key == g2d::KeyCode::KeyZ)
+		{
+			GetSceneNode()->Release();
+		}
+	}
+
 	gml::vec2 m_dragOffset;
 };

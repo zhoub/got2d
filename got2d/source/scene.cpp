@@ -222,6 +222,10 @@ void Scene::OnRemoveSceneNode(::SceneNode& node)
 	{
 		m_hoverNode = nullptr;
 	}
+	for (auto& button : m_mouseButtonState)
+	{
+		button.OnRemove(node);
+	}
 }
 
 g2d::SceneNode * Scene::CreateChild()
@@ -263,8 +267,8 @@ void Scene::MouseButtonState::OnPressingBegin(::SceneNode* hitNode)
 {
 	if (hitNode != nullptr)
 	{
-		dragNode = hitNode;
-		dragNode->OnDragBegin(Button);
+		m_draggingNode = hitNode;
+		m_draggingNode->OnDragBegin(Button);
 	}
 }
 
@@ -276,15 +280,15 @@ void Scene::OnMousePressingBegin(g2d::MouseButton button)
 void Scene::MouseButtonState::OnPressing(::SceneNode* hitNode)
 {
 	//*  heart-beaten?
-	if (dragNode != nullptr)
+	if (m_draggingNode != nullptr)
 	{
-		if (hitNode != nullptr && hitNode != dragNode)
+		if (hitNode != nullptr && hitNode != m_draggingNode)
 		{
-			dragNode->OnDropping(hitNode, Button);
+			m_draggingNode->OnDropping(hitNode, Button);
 		}
 		else
 		{
-			dragNode->OnDragging(Button);
+			m_draggingNode->OnDragging(Button);
 		}
 	}
 }
@@ -296,19 +300,27 @@ void Scene::OnMousePressing(g2d::MouseButton button)
 
 void Scene::MouseButtonState::OnPressingEnd(::SceneNode* hitNode)
 {
-	if (dragNode != nullptr)
+	if (m_draggingNode != nullptr)
 	{
-		if (hitNode == nullptr && hitNode != dragNode)
+		if (hitNode == nullptr && hitNode != m_draggingNode)
 		{
-			dragNode->OnDropTo(hitNode, Button);
-			hitNode->OnCursorEnterFrom(dragNode);
+			m_draggingNode->OnDropTo(hitNode, Button);
+			hitNode->OnCursorEnterFrom(m_draggingNode);
 		}
 		else
 		{
-			dragNode->OnDragEnd(Button);
-			dragNode->OnCursorEnterFrom(nullptr);
+			m_draggingNode->OnDragEnd(Button);
+			m_draggingNode->OnCursorEnterFrom(nullptr);
 		}
-		dragNode = nullptr;
+		m_draggingNode = nullptr;
+	}
+}
+
+void Scene::MouseButtonState::OnRemove(::SceneNode & node)
+{
+	if (&node == m_draggingNode)
+	{
+		m_draggingNode = nullptr;
 	}
 }
 
@@ -327,15 +339,15 @@ void Scene::OnMouseDoubleClick(g2d::MouseButton button)
 
 void Scene::MouseButtonState::OnMoving(::SceneNode* hitNode)
 {
-	if (dragNode != nullptr)
+	if (m_draggingNode != nullptr)
 	{
-		if (hitNode != nullptr && hitNode != dragNode)
+		if (hitNode != nullptr && hitNode != m_draggingNode)
 		{
-			dragNode->OnDropping(hitNode, Button);
+			m_draggingNode->OnDropping(hitNode, Button);
 		}
 		else
 		{
-			dragNode->OnDragging(Button);
+			m_draggingNode->OnDragging(Button);
 		}
 	}
 }
