@@ -148,7 +148,7 @@ bool Camera::TestVisible(g2d::Component& component) const
 {
 	if (Is<::Camera>(component) ||
 		component.GetLocalAABB().is_point() ||
-		!TestVisibleMask(component.GetVisibleMask()) )
+		!TestVisibleMask(component.GetVisibleMask()))
 	{
 		return false;
 	}
@@ -168,10 +168,13 @@ g2d::Component* Camera::FindNearestComponent(const gml::vec2& worldPosition)
 	for (; itCur != itEnd; itCur++)
 	{
 		Component* component = *itCur;
-		auto localPos = component->GetSceneNode()->WorldToLocal(worldPosition);
-		if (component->GetLocalAABB().contains(localPos))
+		if (!component->GetSceneNode()->IsRemoved())
 		{
-			return component;
+			auto localPos = component->GetSceneNode()->WorldToLocal(worldPosition);
+			if (component->GetLocalAABB().contains(localPos))
+			{
+				return component;
+			}
 		}
 	}
 	return nullptr;
