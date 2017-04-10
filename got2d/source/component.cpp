@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <gml/gmlconversion.h>
 #include "../include/g2dengine.h"
 #include "scene.h"
@@ -178,6 +179,17 @@ g2d::Component* Camera::FindNearestComponent(const gml::vec2& worldPosition)
 		}
 	}
 	return nullptr;
+}
+
+void Camera::OnRemoveSceneNode(::SceneNode & node)
+{
+	auto insideNode = [&](g2d::Component* component) -> bool {
+		return component->GetSceneNode() == &node;
+	};
+
+	auto oldEnd = visibleComponents.end();
+	auto newEnd = std::remove_if(visibleComponents.begin(), oldEnd, insideNode);
+	visibleComponents.erase(newEnd, oldEnd);
 }
 
 gml::vec2 Camera::ScreenToWorld(const gml::coord& pos) const

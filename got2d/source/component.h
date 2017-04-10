@@ -6,6 +6,7 @@
 #include "inner_utility.h"
 #include "scope_utility.h"
 
+class SceneNode;
 class Scene;
 
 class Quad : public g2d::Quad
@@ -41,6 +42,8 @@ public:
 	void SetID(uint32_t index) { m_id = index; }
 
 	g2d::Component* FindNearestComponent(const gml::vec2& worldPosition);
+
+	void OnRemoveSceneNode(::SceneNode& node);
 
 	std::vector<Component*> visibleComponents;
 

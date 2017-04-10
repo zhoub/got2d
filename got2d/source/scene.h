@@ -527,7 +527,7 @@ private:
 		void OnPressingBegin(::SceneNode* hitNode);
 		void OnPressing(::SceneNode* hitNode);
 		void OnPressingEnd(::SceneNode* hitNode);
-		void OnRemove(::SceneNode& node);
+		void OnRemoveSceneNode(::SceneNode& node);
 	} m_mouseButtonState[3];
 
 	SceneNodeContainer m_children;
