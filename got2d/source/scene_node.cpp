@@ -208,7 +208,9 @@ void SceneNode::Release()
 	// deleteing node will affect continuity of
 	// rendering order, but wont change the order,
 	// so we do nothing when deleting nodes
+	m_isRemoved = true;
 	m_parentContainer.Remove(*this);
+	m_scene.OnRemoveSceneNode(*this);
 }
 
 void SceneNode::MoveToFront()

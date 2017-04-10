@@ -354,6 +354,9 @@ namespace g2d
 
 		virtual bool IsStatic() const = 0;
 
+		// Is the node is released, but not being destroyed ?
+		virtual bool IsRemoved() const = 0;
+
 		// Visible Mask will collaborate with camera's visible mask 
 		// to determin whether the node will be seen by the camera.
 		virtual uint32_t GetVisibleMask() const = 0;

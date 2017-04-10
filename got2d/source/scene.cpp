@@ -216,6 +216,14 @@ void Scene::AdjustRenderingOrder()
 	});
 }
 
+void Scene::OnRemoveSceneNode(::SceneNode& node)
+{
+	if (&node == m_hoverNode)
+	{
+		m_hoverNode = nullptr;
+	}
+}
+
 g2d::SceneNode * Scene::CreateChild()
 {
 	auto child = m_children.CreateChild(*this, m_children);

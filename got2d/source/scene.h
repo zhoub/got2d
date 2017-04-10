@@ -389,6 +389,8 @@ public:	//g2d::SceneNode
 
 	virtual bool IsStatic() const override { return m_isStatic; }
 
+	virtual bool IsRemoved() const override { return m_isRemoved; }
+
 	virtual uint32_t GetVisibleMask() const override { return m_visibleMask; }
 
 	virtual gml::vec2 WorldToLocal(const gml::vec2& pos) override;
@@ -415,6 +417,7 @@ private:
 	bool m_isVisible = true;
 	bool m_isStatic = false;
 	bool m_matrixDirtyUpdate = true;
+	bool m_isRemoved = false;
 	uint32_t m_childIndex = 0;
 	uint32_t m_renderingOrder = 0xFFFFFFFF;	// make sure the order maxinum(error) at the beginning
 	uint32_t m_visibleMask = g2d::DEF_VISIBLE_MASK;
@@ -440,6 +443,8 @@ public:
 	SpatialGraph& GetSpatialGraph() { return m_spatial; }
 
 	void AdjustRenderingOrder();
+
+	void OnRemoveSceneNode(::SceneNode& node);
 
 public: //g2d::Scene
 
