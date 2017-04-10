@@ -249,7 +249,8 @@ int Framework::MainLoop()
 			TranslateMessage(&msg);
 			DispatchMessage(&msg);
 		}
-		else if (!needExit)
+
+		if (!needExit)
 		{
 			if (!Tick())
 			{
