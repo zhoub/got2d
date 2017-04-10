@@ -222,9 +222,15 @@ void Scene::OnRemoveSceneNode(::SceneNode& node)
 	{
 		m_hoverNode = nullptr;
 	}
+
 	for (auto& button : m_mouseButtonState)
 	{
-		button.OnRemove(node);
+		button.OnRemoveSceneNode(node);
+	}
+
+	for (auto& camera : m_cameras)
+	{
+		camera->OnRemoveSceneNode(node);
 	}
 }
 
@@ -316,7 +322,7 @@ void Scene::MouseButtonState::OnPressingEnd(::SceneNode* hitNode)
 	}
 }
 
-void Scene::MouseButtonState::OnRemove(::SceneNode & node)
+void Scene::MouseButtonState::OnRemoveSceneNode(::SceneNode & node)
 {
 	if (&node == m_draggingNode)
 	{
