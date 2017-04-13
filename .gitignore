@@ -6,6 +6,7 @@ ipch
 .vs
 Debug
 Release
+project
 
 *.suo
 *.user
@@ -15,3 +16,7 @@ Release
 *.aps
 
 *.db
+
+# cmake files
+CMakeFiles
+*.cmake
