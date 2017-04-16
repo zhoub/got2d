@@ -158,13 +158,13 @@ void Geometry::UploadVertices(uint32_t offset, g2d::GeometryVertex* vertices, ui
 {
 	ENSURE(vertices != nullptr && m_vertexBuffer != nullptr);
 
-	D3D11_MAPPED_SUBRESOURCE mappedResource;
-	if (S_OK == GetRenderSystem()->GetContext()->GetRaw()->Map(m_vertexBuffer->GetRaw(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource))
+	auto mappedResource = GetRenderSystem()->GetContext()->Map(m_vertexBuffer);
+	if (mappedResource.success)
 	{
 		count = __min(m_numVertices - offset, count);
-		g2d::GeometryVertex* data = reinterpret_cast<g2d::GeometryVertex*>(mappedResource.pData);
+		g2d::GeometryVertex* data = reinterpret_cast<g2d::GeometryVertex*>(mappedResource.data);
 		memcpy(data + offset, vertices, sizeof(g2d::GeometryVertex) * count);
-		GetRenderSystem()->GetContext()->GetRaw()->Unmap(m_vertexBuffer->GetRaw(), 0);
+		GetRenderSystem()->GetContext()->Unmap(m_vertexBuffer);
 	}
 }
 
@@ -172,13 +172,13 @@ void Geometry::UploadIndices(uint32_t offset, uint32_t* indices, uint32_t count)
 {
 	ENSURE(indices != nullptr && m_indexBuffer != nullptr);
 
-	D3D11_MAPPED_SUBRESOURCE mappedResource;
-	if (S_OK == GetRenderSystem()->GetContext()->GetRaw()->Map(m_indexBuffer->GetRaw(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource))
+	auto mappedResource = GetRenderSystem()->GetContext()->Map(m_indexBuffer);
+	if (mappedResource.success)
 	{
 		count = __min(m_numIndices - offset, count);
-		uint32_t* data = reinterpret_cast<uint32_t*>(mappedResource.pData);
+		uint32_t* data = reinterpret_cast<uint32_t*>(mappedResource.data);
 		memcpy(data + offset, indices, sizeof(uint32_t) * count);
-		GetRenderSystem()->GetContext()->GetRaw()->Unmap(m_indexBuffer->GetRaw(), 0);
+		GetRenderSystem()->GetContext()->Unmap(m_indexBuffer);
 	}
 }
 

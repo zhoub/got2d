@@ -69,6 +69,13 @@ namespace rhi
 
 		virtual ID3D11Device* GetRaw() = 0;
 	};
+	
+	struct MappedResource
+	{
+		bool success = false;
+		void* data = nullptr;
+		uint32_t linePitch = 0;
+	};
 
 	class Context :public RHIObject
 	{
@@ -77,12 +84,16 @@ namespace rhi
 
 		//virtual void SetIndexBuffer(Buffer* buffer, uint32_t offset, IndexFormat format) = 0;
 
+		virtual MappedResource Map(Buffer* buffer) = 0;
+
+		virtual void Unmap(Buffer* buffer) = 0;
+
 		virtual ID3D11DeviceContext* GetRaw() = 0;
 	};
 
 	struct RHICreationResult
 	{
-		bool result = false;
+		bool success = false;
 		Device* device = nullptr;
 		Context* context = nullptr;
 	};

@@ -26,8 +26,6 @@ public:
 
 	~Buffer();
 
-	void Upload(::Context* context, const uint8_t* data, uint32_t dataLength);
-
 private:
 	ID3D11Buffer& m_buffer;
 	rhi::BufferBinding m_bufferBinding;
@@ -81,7 +79,9 @@ class Context : public rhi::Context
 public:
 	virtual void Release() override { delete this; }
 
-	virtual void UploadBuffer(rhi::Buffer* buffer, const uint8_t* data, uint32_t length);
+	virtual rhi::MappedResource Map(rhi::Buffer* buffer) override;
+
+	virtual void Unmap(rhi::Buffer* buffer) override;
 
 	ID3D11DeviceContext& GetContext() { return m_d3dContext; }
 

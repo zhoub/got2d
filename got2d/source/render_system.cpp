@@ -157,7 +157,7 @@ bool RenderSystem::Create(void* nativeWindow)
 	HRESULT hr = S_OK;
 	auto rhiResult = rhi::CreateRHI();
 
-	if (!rhiResult.result)
+	if (!rhiResult.success)
 	{
 		return false;
 	}
@@ -285,12 +285,12 @@ Texture* RenderSystem::CreateTextureFromFile(const char* resPath)
 
 void RenderSystem::UpdateConstBuffer(rhi::Buffer* cbuffer, const void* data, uint32_t length)
 {
-	D3D11_MAPPED_SUBRESOURCE mappedData;
-	if (S_OK == m_context->GetRaw()->Map(cbuffer->GetRaw(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData))
+	auto mappedData= m_context->Map(cbuffer);
+	if (mappedData.success)
 	{
-		uint8_t*  dstBuffre = reinterpret_cast<uint8_t*>(mappedData.pData);
+		uint8_t*  dstBuffre = reinterpret_cast<uint8_t*>(mappedData.data);
 		memcpy(dstBuffre, data, length);
-		m_context->GetRaw()->Unmap(cbuffer->GetRaw(), 0);
+		m_context->Unmap(cbuffer);
 	}
 }
 
@@ -300,14 +300,14 @@ void RenderSystem::UpdateSceneConstBuffer()
 		return;
 
 	m_matrixConstBufferDirty = false;
-	D3D11_MAPPED_SUBRESOURCE mappedData;
-	if (S_OK == m_context->GetRaw()->Map(m_sceneConstBuffer->GetRaw(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData))
+	auto mappedData = m_context->Map(m_sceneConstBuffer);
+	if (mappedData.success)
 	{
-		uint8_t*  dstBuffer = reinterpret_cast<uint8_t*>(mappedData.pData);
+		uint8_t*  dstBuffer = reinterpret_cast<uint8_t*>(mappedData.data);
 		memcpy(dstBuffer, &(m_matView.row[0]), sizeof(gml::vec3));
 		memcpy(dstBuffer + sizeof(gml::vec4), &(m_matView.row[1]), sizeof(gml::vec3));
 		memcpy(dstBuffer + sizeof(gml::vec4) * 2, GetProjectionMatrix().m, sizeof(gml::mat44));
-		m_context->GetRaw()->Unmap(m_sceneConstBuffer->GetRaw(), 0);
+		m_context->Unmap(m_sceneConstBuffer);
 	}
 }
 

@@ -30,12 +30,12 @@ rhi::RHICreationResult rhi::CreateRHI()
 
 	if (S_OK != hr)
 	{
-		pair.result = false;
+		pair.success = false;
 	}
 	else
 	{
 		ENSURE(d3dDevice != nullptr && d3dContext != nullptr);
-		pair.result = true;
+		pair.success = true;
 		pair.device = new ::Device(*d3dDevice);
 		pair.context = new ::Context(*d3dContext);
 		fb.cancel();
@@ -55,31 +55,6 @@ Buffer::~Buffer()
 {
 	m_buffer.Release();
 }
-
-void Buffer::Upload(::Context * context, const uint8_t * data, uint32_t dataLength)
-{
-	if (GetUsage() == rhi::BufferUsage::Dynamic)
-	{
-		D3D11_MAPPED_SUBRESOURCE mappedData;
-		if (S_OK == context->GetContext().Map(&m_buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData))
-		{
-			uint8_t*  dstBuffre = reinterpret_cast<uint8_t*>(mappedData.pData);
-			memcpy(dstBuffre, data, dataLength);
-			context->GetContext().Unmap(&m_buffer, 0);
-		}
-	}
-	else
-	{
-		D3D11_MAPPED_SUBRESOURCE mappedData;
-		if (S_OK == context->GetContext().Map(&m_buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData))
-		{
-			uint8_t*  dstBuffre = reinterpret_cast<uint8_t*>(mappedData.pData);
-			memcpy(dstBuffre, data, dataLength);
-			context->GetContext().Unmap(&m_buffer, 0);
-		}
-	}
-}
-
 
 SwapChain::SwapChain(IDXGISwapChain & swapChain)
 	: m_swapChain(swapChain)
@@ -101,6 +76,34 @@ Device::~Device()
 	m_d3dDevice.Release();
 }
 
+
+rhi::MappedResource Context::Map(rhi::Buffer * buffer)
+{
+	::Buffer* bufferImpl = reinterpret_cast<::Buffer*>(buffer);
+	ENSURE(bufferImpl != nullptr);
+
+	D3D11_MAPPED_SUBRESOURCE d3dMappedRes;
+	rhi::MappedResource mappedRes;
+	if (S_OK == m_d3dContext.Map(bufferImpl->GetRaw(), 0, D3D11_MAP_WRITE_DISCARD, 0, &d3dMappedRes))
+	{
+		mappedRes.success = true;
+		mappedRes.data = d3dMappedRes.pData;
+		mappedRes.linePitch = d3dMappedRes.RowPitch;
+	}
+	else
+	{
+		mappedRes.success = false;
+	}
+	return mappedRes;
+}
+
+void Context::Unmap(rhi::Buffer* buffer)
+{
+	::Buffer* bufferImpl = reinterpret_cast<::Buffer*>(buffer);
+	ENSURE(bufferImpl != nullptr);
+
+	m_d3dContext.Unmap(bufferImpl->GetRaw(), 0);
+}
 
 Context::Context(ID3D11DeviceContext& d3dContext)
 	: m_d3dContext(d3dContext)
@@ -219,14 +222,4 @@ gml::rect SwapChain::GetRect()
 void SwapChain::Present()
 {
 	m_swapChain.Present(0, 0);
-}
-
-
-
-void Context::UploadBuffer(rhi::Buffer* buffer, const uint8_t* data, uint32_t length)
-{
-	::Buffer* bufferImpl = reinterpret_cast<::Buffer*>(buffer);
-	ENSURE(bufferImpl != nullptr);
-
-	bufferImpl->Upload(this, data, length);
 }
