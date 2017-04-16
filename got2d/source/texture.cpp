@@ -60,7 +60,7 @@ bool Texture2D::Create(uint32_t width, uint32_t height)
 	texDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 	texDesc.MiscFlags = 0;
 
-	if (S_OK != GetRenderSystem()->GetDevice()->CreateTexture2D(&texDesc, nullptr, &(texturePtr.pointer)))
+	if (S_OK != GetRenderSystem()->GetDevice()->GetRaw()->CreateTexture2D(&texDesc, nullptr, &(texturePtr.pointer)))
 	{
 		return false;
 	}
@@ -72,7 +72,7 @@ bool Texture2D::Create(uint32_t width, uint32_t height)
 	viewDesc.Texture2D.MipLevels = -1;
 	viewDesc.Texture2D.MostDetailedMip = 0;
 
-	if (S_OK != GetRenderSystem()->GetDevice()->CreateShaderResourceView(texturePtr.pointer, &viewDesc, &(shaderResourceViewPtr.pointer)))
+	if (S_OK != GetRenderSystem()->GetDevice()->GetRaw()->CreateShaderResourceView(texturePtr.pointer, &viewDesc, &(shaderResourceViewPtr.pointer)))
 	{
 		return false;
 	}
@@ -87,7 +87,7 @@ bool Texture2D::Create(uint32_t width, uint32_t height)
 void Texture2D::UploadImage(uint8_t* data, bool hasAlpha)
 {
 	D3D11_MAPPED_SUBRESOURCE mappedRes;
-	if (S_OK == GetRenderSystem()->GetContext()->Map(m_texture, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedRes))
+	if (S_OK == GetRenderSystem()->GetContext()->GetRaw()->Map(m_texture, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedRes))
 	{
 		uint8_t* colorBuffer = static_cast<uint8_t*>(mappedRes.pData);
 		if (hasAlpha)
@@ -115,8 +115,8 @@ void Texture2D::UploadImage(uint8_t* data, bool hasAlpha)
 			}
 		}
 
-		GetRenderSystem()->GetContext()->Unmap(m_texture, 0);
-		GetRenderSystem()->GetContext()->GenerateMips(m_shaderView);
+		GetRenderSystem()->GetContext()->GetRaw()->Unmap(m_texture, 0);
+		GetRenderSystem()->GetContext()->GetRaw()->GenerateMips(m_shaderView);
 	}
 }
 

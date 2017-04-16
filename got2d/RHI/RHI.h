@@ -41,6 +41,12 @@ namespace rhi
 	{
 	public:
 		virtual ID3D11Buffer* GetRaw() = 0;
+
+		virtual rhi::BufferBinding GetBinding() const = 0;
+
+		virtual rhi::BufferUsage GetUsage() const = 0;
+
+		virtual uint32_t GetLength() const = 0;
 	};
 
 	class SwapChain : public RHIObject

@@ -43,10 +43,11 @@ rhi::RHICreationResult rhi::CreateRHI()
 	return pair;
 }
 
-Buffer::Buffer(ID3D11Buffer & buffer, rhi::BufferBinding binding, rhi::BufferUsage usage)
+Buffer::Buffer(ID3D11Buffer & buffer, rhi::BufferBinding binding, rhi::BufferUsage usage, uint32_t length)
 	: m_buffer(buffer)
 	, m_bufferBinding(binding)
 	, m_bufferUsage(usage)
+	, m_bufferLength(length)
 {
 }
 
@@ -57,12 +58,25 @@ Buffer::~Buffer()
 
 void Buffer::Upload(::Context * context, const uint8_t * data, uint32_t dataLength)
 {
-	D3D11_MAPPED_SUBRESOURCE mappedData;
-	if (S_OK == context->GetContext().Map(&m_buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData))
+	if (GetUsage() == rhi::BufferUsage::Dynamic)
 	{
-		uint8_t*  dstBuffre = reinterpret_cast<uint8_t*>(mappedData.pData);
-		memcpy(dstBuffre, data, dataLength);
-		context->GetContext().Unmap(&m_buffer, 0);
+		D3D11_MAPPED_SUBRESOURCE mappedData;
+		if (S_OK == context->GetContext().Map(&m_buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData))
+		{
+			uint8_t*  dstBuffre = reinterpret_cast<uint8_t*>(mappedData.pData);
+			memcpy(dstBuffre, data, dataLength);
+			context->GetContext().Unmap(&m_buffer, 0);
+		}
+	}
+	else
+	{
+		D3D11_MAPPED_SUBRESOURCE mappedData;
+		if (S_OK == context->GetContext().Map(&m_buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData))
+		{
+			uint8_t*  dstBuffre = reinterpret_cast<uint8_t*>(mappedData.pData);
+			memcpy(dstBuffre, data, dataLength);
+			context->GetContext().Unmap(&m_buffer, 0);
+		}
 	}
 }
 
@@ -189,7 +203,7 @@ rhi::Buffer * Device::CreateBuffer(rhi::BufferBinding binding, rhi::BufferUsage 
 	}
 
 	ENSURE(buffer != nullptr);
-	return new ::Buffer(*buffer, binding, usage);
+	return new ::Buffer(*buffer, binding, usage, bufferLength);
 }
 
 gml::rect SwapChain::GetRect()

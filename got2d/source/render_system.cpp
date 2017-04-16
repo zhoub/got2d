@@ -176,22 +176,11 @@ bool RenderSystem::Create(void* nativeWindow)
 	m_windowWidth = swapChainSize.width();
 	m_windowHeight = swapChainSize.height();
 
-	D3D11_BUFFER_DESC bufferDesc =
-	{
-		sizeof(gml::vec4) * 6,			//UINT ByteWidth;
-		D3D11_USAGE_DYNAMIC,			//D3D11_USAGE Usage;
-		D3D11_BIND_CONSTANT_BUFFER,		//UINT BindFlags;
-		D3D11_CPU_ACCESS_WRITE,			//UINT CPUAccessFlags;
-		0,								//UINT MiscFlags;
-		0								//UINT StructureByteStride;
-	};
-
-	hr = m_device->GetRaw()->CreateBuffer(&bufferDesc, NULL, &(m_sceneConstBuffer.pointer));
-	if (S_OK != hr)
+	m_sceneConstBuffer = m_device->CreateBuffer(rhi::BufferBinding::Constant, rhi::BufferUsage::Dynamic, sizeof(gml::vec4) * 6);
+	if (m_sceneConstBuffer.is_null())
 	{
 		return false;
 	}
-	ENSURE(m_sceneConstBuffer.is_not_null());
 
 	if (!OnResize(m_windowWidth, m_windowHeight))
 	{
@@ -294,14 +283,14 @@ Texture* RenderSystem::CreateTextureFromFile(const char* resPath)
 	return new Texture(resPath);
 }
 
-void RenderSystem::UpdateConstBuffer(ID3D11Buffer* cbuffer, const void* data, uint32_t length)
+void RenderSystem::UpdateConstBuffer(rhi::Buffer* cbuffer, const void* data, uint32_t length)
 {
 	D3D11_MAPPED_SUBRESOURCE mappedData;
-	if (S_OK == m_context->GetRaw()->Map(cbuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData))
+	if (S_OK == m_context->GetRaw()->Map(cbuffer->GetRaw(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData))
 	{
 		uint8_t*  dstBuffre = reinterpret_cast<uint8_t*>(mappedData.pData);
 		memcpy(dstBuffre, data, length);
-		m_context->GetRaw()->Unmap(cbuffer, 0);
+		m_context->GetRaw()->Unmap(cbuffer->GetRaw(), 0);
 	}
 }
 
@@ -312,13 +301,13 @@ void RenderSystem::UpdateSceneConstBuffer()
 
 	m_matrixConstBufferDirty = false;
 	D3D11_MAPPED_SUBRESOURCE mappedData;
-	if (S_OK == m_context->GetRaw()->Map(m_sceneConstBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData))
+	if (S_OK == m_context->GetRaw()->Map(m_sceneConstBuffer->GetRaw(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData))
 	{
 		uint8_t*  dstBuffer = reinterpret_cast<uint8_t*>(mappedData.pData);
 		memcpy(dstBuffer, &(m_matView.row[0]), sizeof(gml::vec3));
 		memcpy(dstBuffer + sizeof(gml::vec4), &(m_matView.row[1]), sizeof(gml::vec3));
 		memcpy(dstBuffer + sizeof(gml::vec4) * 2, GetProjectionMatrix().m, sizeof(gml::mat44));
-		m_context->GetRaw()->Unmap(m_sceneConstBuffer, 0);
+		m_context->GetRaw()->Unmap(m_sceneConstBuffer->GetRaw(), 0);
 	}
 }
 
@@ -340,14 +329,16 @@ void RenderSystem::FlushBatch(Mesh& mesh, g2d::Material& material)
 		{
 			uint32_t stride = sizeof(g2d::GeometryVertex);
 			uint32_t offset = 0;
-			m_context->GetRaw()->IASetVertexBuffers(0, 1, &(m_geometry.m_vertexBuffer.pointer), &stride, &offset);
-			m_context->GetRaw()->IASetIndexBuffer(m_geometry.m_indexBuffer, DXGI_FORMAT_R32_UINT, 0);
+			auto vb = m_geometry.m_vertexBuffer->GetRaw();
+			m_context->GetRaw()->IASetVertexBuffers(0, 1, &vb, &stride, &offset);
+			m_context->GetRaw()->IASetIndexBuffer(m_geometry.m_indexBuffer->GetRaw(), DXGI_FORMAT_R32_UINT, 0);
 			m_context->GetRaw()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 			m_context->GetRaw()->IASetInputLayout(shader->GetInputLayout());
 			m_context->GetRaw()->VSSetShader(shader->GetVertexShader(), NULL, 0);
 			m_context->GetRaw()->PSSetShader(shader->GetPixelShader(), NULL, 0);
 			UpdateSceneConstBuffer();
-			m_context->GetRaw()->VSSetConstantBuffers(0, 1, &(m_sceneConstBuffer.pointer));
+			auto sceneConstantBuffer = m_sceneConstBuffer->GetRaw();
+			m_context->GetRaw()->VSSetConstantBuffers(0, 1, &sceneConstantBuffer);
 			SetBlendMode(pass->GetBlendMode());
 
 			auto vcb = shader->GetVertexConstBuffer();
@@ -358,8 +349,9 @@ void RenderSystem::FlushBatch(Mesh& mesh, g2d::Material& material)
 					: shader->GetVertexConstBufferLength();
 				if (length > 0)
 				{
+					auto vcbraw = vcb->GetRaw();
 					UpdateConstBuffer(vcb, pass->GetVSConstant(), length);
-					m_context->GetRaw()->VSSetConstantBuffers(1, 1, &vcb);
+					m_context->GetRaw()->VSSetConstantBuffers(1, 1, &vcbraw);
 
 				}
 			}
@@ -372,8 +364,9 @@ void RenderSystem::FlushBatch(Mesh& mesh, g2d::Material& material)
 					: shader->GetPixelConstBufferLength();
 				if (length > 0)
 				{
+					auto pcbraw = pcb->GetRaw();
 					UpdateConstBuffer(pcb, pass->GetPSConstant(), length);
-					m_context->GetRaw()->PSSetConstantBuffers(0, 1, &pcb);
+					m_context->GetRaw()->PSSetConstantBuffers(0, 1, &pcbraw);
 				}
 			}
 

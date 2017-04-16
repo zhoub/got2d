@@ -13,10 +13,16 @@ class Buffer : public rhi::Buffer
 public:
 	virtual void Release() override { delete this; }
 
+	virtual rhi::BufferBinding GetBinding() const override { return m_bufferBinding; }
+
+	virtual rhi::BufferUsage GetUsage() const override { return m_bufferUsage; }
+
+	virtual uint32_t GetLength() const override { return m_bufferLength; }
+
 	virtual ID3D11Buffer* GetRaw() { return &m_buffer; }
 
 public:
-	Buffer(ID3D11Buffer& buffer, rhi::BufferBinding binding, rhi::BufferUsage usage);
+	Buffer(ID3D11Buffer& buffer, rhi::BufferBinding binding, rhi::BufferUsage usage, uint32_t length);
 
 	~Buffer();
 
@@ -26,6 +32,7 @@ private:
 	ID3D11Buffer& m_buffer;
 	rhi::BufferBinding m_bufferBinding;
 	rhi::BufferUsage m_bufferUsage;
+	uint32_t m_bufferLength;
 };
 
 class SwapChain : public rhi::SwapChain

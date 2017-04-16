@@ -38,8 +38,8 @@ bool Shader::Create(const std::string& vsCode, uint32_t vcbLength, const std::st
 	autor<ID3D11InputLayout> shaderLayout = nullptr;
 	autor<ID3D11VertexShader>  vertexShader = nullptr;
 	autor<ID3D11PixelShader> pixelShader = nullptr;
-	autor<ID3D11Buffer> vertexConstBuffer = nullptr;
-	autor<ID3D11Buffer> pixelConstBuffer = nullptr;
+	autor<rhi::Buffer> vertexConstBuffer = nullptr;
+	autor<rhi::Buffer> pixelConstBuffer = nullptr;
 
 	//compile shader
 	auto ret = ::D3DCompile(
@@ -69,7 +69,7 @@ bool Shader::Create(const std::string& vsCode, uint32_t vcbLength, const std::st
 	}
 
 	// create shader
-	ret = GetRenderSystem()->GetDevice()->CreateVertexShader(
+	ret = GetRenderSystem()->GetDevice()->GetRaw()->CreateVertexShader(
 		vsBlob->GetBufferPointer(),
 		vsBlob->GetBufferSize(),
 		NULL,
@@ -78,7 +78,7 @@ bool Shader::Create(const std::string& vsCode, uint32_t vcbLength, const std::st
 	if (S_OK != ret)
 		return false;
 
-	ret = GetRenderSystem()->GetDevice()->CreatePixelShader(
+	ret = GetRenderSystem()->GetDevice()->GetRaw()->CreatePixelShader(
 		psBlob->GetBufferPointer(),
 		psBlob->GetBufferSize(),
 		NULL,
@@ -105,7 +105,7 @@ bool Shader::Create(const std::string& vsCode, uint32_t vcbLength, const std::st
 	layoutDesc[2].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
 	layoutDesc[2].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
 
-	ret = GetRenderSystem()->GetDevice()->CreateInputLayout(
+	ret = GetRenderSystem()->GetDevice()->GetRaw()->CreateInputLayout(
 		layoutDesc, sizeof(layoutDesc) / sizeof(layoutDesc[0]),
 		vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(),
 		&(shaderLayout.pointer));
@@ -125,15 +125,24 @@ bool Shader::Create(const std::string& vsCode, uint32_t vcbLength, const std::st
 	
 	if (vcbLength > 0)
 	{
-		cbDesc.ByteWidth = m_vertexConstBufferLength = vcbLength;
-		if (S_OK != GetRenderSystem()->GetDevice()->CreateBuffer(&cbDesc, NULL, &(vertexConstBuffer.pointer)))
+		vertexConstBuffer = GetRenderSystem()->GetDevice()->CreateBuffer(
+			rhi::BufferBinding::Constant,
+			rhi::BufferUsage::Dynamic,
+			vcbLength
+		);
+		if (vertexConstBuffer.is_null())
 			return false;
+
 	}
 
 	if (pcbLength > 0)
 	{
-		cbDesc.ByteWidth = m_pixelConstBufferLength = pcbLength;
-		if (S_OK != GetRenderSystem()->GetDevice()->CreateBuffer(&cbDesc, NULL, &(pixelConstBuffer.pointer)))
+		pixelConstBuffer = GetRenderSystem()->GetDevice()->CreateBuffer(
+			rhi::BufferBinding::Constant,
+			rhi::BufferUsage::Dynamic,
+			pcbLength
+		);
+		if (pixelConstBuffer.is_null())
 			return false;
 	}
 
@@ -142,7 +151,8 @@ bool Shader::Create(const std::string& vsCode, uint32_t vcbLength, const std::st
 	m_shaderLayout = std::move(shaderLayout);
 	m_vertexConstBuffer = std::move(vertexConstBuffer);
 	m_pixelConstBuffer = std::move(pixelConstBuffer);
-
+	m_vertexConstBufferLength = vcbLength;
+	m_pixelConstBufferLength = pcbLength;
 	return true;
 }
 

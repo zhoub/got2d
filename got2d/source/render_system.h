@@ -22,8 +22,8 @@ public:
 
 	void Destroy();
 
-	autor<ID3D11Buffer> m_vertexBuffer = nullptr;
-	autor<ID3D11Buffer> m_indexBuffer = nullptr;
+	autor<rhi::Buffer> m_vertexBuffer = nullptr;
+	autor<rhi::Buffer> m_indexBuffer = nullptr;
 	uint32_t m_numVertices = 0;
 	uint32_t m_numIndices = 0;
 };
@@ -159,9 +159,9 @@ public:
 
 	ID3D11InputLayout* GetInputLayout() { return m_shaderLayout; }
 
-	ID3D11Buffer* GetVertexConstBuffer() { return m_vertexConstBuffer; }
+	rhi::Buffer* GetVertexConstBuffer() { return m_vertexConstBuffer; }
 
-	ID3D11Buffer* GetPixelConstBuffer() { return m_pixelConstBuffer; }
+	rhi::Buffer* GetPixelConstBuffer() { return m_pixelConstBuffer; }
 
 	uint32_t GetVertexConstBufferLength() { return m_vertexConstBufferLength; }
 
@@ -171,8 +171,8 @@ private:
 	autor<ID3D11InputLayout> m_shaderLayout = nullptr;
 	autor<ID3D11VertexShader>  m_vertexShader = nullptr;
 	autor<ID3D11PixelShader> m_pixelShader = nullptr;
-	autor<ID3D11Buffer> m_vertexConstBuffer = nullptr;
-	autor<ID3D11Buffer> m_pixelConstBuffer = nullptr;
+	autor<rhi::Buffer> m_vertexConstBuffer = nullptr;
+	autor<rhi::Buffer> m_pixelConstBuffer = nullptr;
 	uint32_t m_vertexConstBufferLength = 0;
 	uint32_t m_pixelConstBufferLength = 0;
 };
@@ -303,9 +303,9 @@ public:
 
 	Texture* CreateTextureFromFile(const char* resPath);
 
-	ID3D11Device* GetDevice() { return m_device->GetRaw(); }
+	rhi::Device* GetDevice() { return m_device; }
 
-	ID3D11DeviceContext* GetContext() { return m_context->GetRaw(); }
+	rhi::Context* GetContext() { return m_context; }
 
 	bool OnResize(uint32_t width, uint32_t height);
 
@@ -329,7 +329,7 @@ private:
 
 	void FlushBatch(Mesh& mesh, g2d::Material&);
 
-	void UpdateConstBuffer(ID3D11Buffer* cbuffer, const void* data, uint32_t length);
+	void UpdateConstBuffer(rhi::Buffer* cbuffer, const void* data, uint32_t length);
 
 	void UpdateSceneConstBuffer();
 
@@ -340,7 +340,7 @@ private:
 	autor<ID3D11Texture2D> m_colorTexture = nullptr;
 	autor<ID3D11RenderTargetView> m_rtView = nullptr;
 	autor<ID3D11RenderTargetView> m_bbView = nullptr;
-	autor<ID3D11Buffer> m_sceneConstBuffer = nullptr;
+	autor<rhi::Buffer> m_sceneConstBuffer = nullptr;
 	D3D11_VIEWPORT m_viewport;
 	std::map<g2d::BlendMode, ID3D11BlendState*> m_blendModes;
 
