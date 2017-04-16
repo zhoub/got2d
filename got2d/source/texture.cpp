@@ -129,8 +129,8 @@ void Texture2D::Destroy()
 }
 
 #include "engine.h"
-#include "file_data.h"
-#include "img_data.h"
+#include <img/file_data.h>
+#include <img/img_data.h>
 
 bool TexturePool::CreateDefaultTexture()
 {
