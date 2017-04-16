@@ -77,6 +77,17 @@ Device::~Device()
 }
 
 
+void Context::DrawIndexed(rhi::Primitive primitive, uint32_t startIndex, uint32_t indexOffset, uint32_t baseVertex)
+{
+	const D3D_PRIMITIVE_TOPOLOGY kPrimitive[] =
+	{
+		D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST,	//TriangleList = 0,
+		D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP,	//TriangleFan = 1,
+	};
+	m_d3dContext.IASetPrimitiveTopology(kPrimitive[(int)primitive]);
+	m_d3dContext.DrawIndexed(startIndex, indexOffset, baseVertex);
+}
+
 rhi::MappedResource Context::Map(rhi::Buffer * buffer)
 {
 	::Buffer* bufferImpl = reinterpret_cast<::Buffer*>(buffer);
@@ -217,6 +228,11 @@ gml::rect SwapChain::GetRect()
 	result.set_pos(0, 0);
 	result.set_size(scDesc.BufferDesc.Width, scDesc.BufferDesc.Height);
 	return result;
+}
+
+bool SwapChain::ResizeBackBuffer(uint32_t width, uint32_t height)
+{
+	return (S_OK == m_swapChain.ResizeBuffers(0, width, height, DXGI_FORMAT_UNKNOWN, 0));
 }
 
 void SwapChain::Present()

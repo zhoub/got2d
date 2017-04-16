@@ -16,7 +16,7 @@ bool RenderSystem::OnResize(uint32_t width, uint32_t height)
 	autor<ID3D11RenderTargetView> rtView = nullptr;
 	autor<ID3D11RenderTargetView> bbView = nullptr;
 
-	if (S_OK != m_swapChain->GetRaw()->ResizeBuffers(0, width, height, DXGI_FORMAT_UNKNOWN, 0))
+	if (!m_swapChain->ResizeBackBuffer(width, height))
 	{
 		return false;
 	}
@@ -151,8 +151,6 @@ bool RenderSystem::Create(void* nativeWindow)
 	}
 
 	auto fb = create_fallback([&] { Destroy(); });
-	autor<IDXGIDevice> dxgiDevice = nullptr;
-	autor<IDXGIAdapter> adapter = nullptr;
 
 	HRESULT hr = S_OK;
 	auto rhiResult = rhi::CreateRHI();
@@ -285,7 +283,7 @@ Texture* RenderSystem::CreateTextureFromFile(const char* resPath)
 
 void RenderSystem::UpdateConstBuffer(rhi::Buffer* cbuffer, const void* data, uint32_t length)
 {
-	auto mappedData= m_context->Map(cbuffer);
+	auto mappedData = m_context->Map(cbuffer);
 	if (mappedData.success)
 	{
 		uint8_t*  dstBuffre = reinterpret_cast<uint8_t*>(mappedData.data);
@@ -332,7 +330,6 @@ void RenderSystem::FlushBatch(Mesh& mesh, g2d::Material& material)
 			auto vb = m_geometry.m_vertexBuffer->GetRaw();
 			m_context->GetRaw()->IASetVertexBuffers(0, 1, &vb, &stride, &offset);
 			m_context->GetRaw()->IASetIndexBuffer(m_geometry.m_indexBuffer->GetRaw(), DXGI_FORMAT_R32_UINT, 0);
-			m_context->GetRaw()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 			m_context->GetRaw()->IASetInputLayout(shader->GetInputLayout());
 			m_context->GetRaw()->VSSetShader(shader->GetVertexShader(), NULL, 0);
 			m_context->GetRaw()->PSSetShader(shader->GetPixelShader(), NULL, 0);
@@ -394,7 +391,7 @@ void RenderSystem::FlushBatch(Mesh& mesh, g2d::Material& material)
 				m_context->GetRaw()->PSSetSamplers(0, numView, &(samplerstates[0]));
 			}
 
-			m_context->GetRaw()->DrawIndexed(mesh.GetIndexCount(), 0, 0);
+			m_context->DrawIndexed(rhi::Primitive::TriangleList, mesh.GetIndexCount(), 0, 0);
 		}
 	}
 

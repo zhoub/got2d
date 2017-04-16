@@ -40,6 +40,8 @@ public:
 
 	virtual gml::rect GetRect() override;
 
+	virtual bool ResizeBackBuffer(uint32_t width, uint32_t height) override;
+
 	virtual void Present() override;
 
 	virtual IDXGISwapChain* GetRaw() { return &m_swapChain; }
@@ -79,11 +81,11 @@ class Context : public rhi::Context
 public:
 	virtual void Release() override { delete this; }
 
+	virtual void DrawIndexed(rhi::Primitive primitive, uint32_t startIndex, uint32_t indexOffset, uint32_t baseVertex) override;
+
 	virtual rhi::MappedResource Map(rhi::Buffer* buffer) override;
 
 	virtual void Unmap(rhi::Buffer* buffer) override;
-
-	ID3D11DeviceContext& GetContext() { return m_d3dContext; }
 
 	virtual ID3D11DeviceContext* GetRaw() { return &m_d3dContext; }
 
