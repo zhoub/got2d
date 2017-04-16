@@ -16,7 +16,7 @@ bool RenderSystem::OnResize(uint32_t width, uint32_t height)
 	autor<ID3D11RenderTargetView> rtView = nullptr;
 	autor<ID3D11RenderTargetView> bbView = nullptr;
 
-	if (S_OK != m_swapChain->ResizeBuffers(0, width, height, DXGI_FORMAT_UNKNOWN, 0))
+	if (S_OK != m_swapChain->GetRaw()->ResizeBuffers(0, width, height, DXGI_FORMAT_UNKNOWN, 0))
 	{
 		return false;
 	}
@@ -35,26 +35,26 @@ bool RenderSystem::OnResize(uint32_t width, uint32_t height)
 	colorTexDesc.CPUAccessFlags = 0;
 	colorTexDesc.MiscFlags = 0;
 
-	if (S_OK != m_d3dDevice->CreateTexture2D(&colorTexDesc, nullptr, &(colorTexture.pointer)))
+	if (S_OK != m_device->GetRaw()->CreateTexture2D(&colorTexDesc, nullptr, &(colorTexture.pointer)))
 	{
 		return false;
 	}
 	ENSURE(colorTexture.is_not_null());
 
-	if (S_OK != m_d3dDevice->CreateRenderTargetView(colorTexture, NULL, &(rtView.pointer)))
+	if (S_OK != m_device->GetRaw()->CreateRenderTargetView(colorTexture, NULL, &(rtView.pointer)))
 	{
 		return false;
 	}
 	ENSURE(rtView.is_not_null());
 
 	autor<ID3D11Texture2D> backBuffer = nullptr;
-	if (S_OK != m_swapChain->GetBuffer(0, _uuidof(ID3D11Texture2D), reinterpret_cast<void**>(&(backBuffer.pointer))))
+	if (S_OK != m_swapChain->GetRaw()->GetBuffer(0, _uuidof(ID3D11Texture2D), reinterpret_cast<void**>(&(backBuffer.pointer))))
 	{
 		return false;
 	}
 	ENSURE(backBuffer.is_not_null());
 
-	if (S_OK != m_d3dDevice->CreateRenderTargetView(backBuffer, NULL, &(bbView.pointer)))
+	if (S_OK != m_device->GetRaw()->CreateRenderTargetView(backBuffer, NULL, &(bbView.pointer)))
 	{
 		return false;
 	}
@@ -78,8 +78,8 @@ bool RenderSystem::OnResize(uint32_t width, uint32_t height)
 		1.0f,					//FLOAT MaxDepth;
 	};
 
-	m_d3dContext->OMSetRenderTargets(1, &(m_bbView.pointer), NULL);
-	m_d3dContext->RSSetViewports(1, &m_viewport);
+	m_context->GetRaw()->OMSetRenderTargets(1, &(m_bbView.pointer), NULL);
+	m_context->GetRaw()->RSSetViewports(1, &m_viewport);
 
 	return true;
 }
@@ -106,7 +106,7 @@ bool RenderSystem::CreateBlendModes()
 		blendDesc.RenderTarget[i].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
 	}
 
-	hr = m_d3dDevice->CreateBlendState(&blendDesc, &blendState);
+	hr = m_device->GetRaw()->CreateBlendState(&blendDesc, &blendState);
 	if (hr != S_OK)
 		return false;
 	m_blendModes[g2d::BlendMode::Normal] = blendState;
@@ -123,7 +123,7 @@ bool RenderSystem::CreateBlendModes()
 		blendDesc.RenderTarget[i].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
 	}
 
-	hr = m_d3dDevice->CreateBlendState(&blendDesc, &blendState);
+	hr = m_device->GetRaw()->CreateBlendState(&blendDesc, &blendState);
 	if (hr != S_OK)
 		return false;
 	m_blendModes[g2d::BlendMode::Additve] = blendState;
@@ -155,71 +155,26 @@ bool RenderSystem::Create(void* nativeWindow)
 	autor<IDXGIAdapter> adapter = nullptr;
 
 	HRESULT hr = S_OK;
+	auto rhiResult = rhi::CreateRHI();
 
-	//Create Device
-	D3D_DRIVER_TYPE driverType = D3D_DRIVER_TYPE_HARDWARE;
-	D3D11_CREATE_DEVICE_FLAG deviceFlag = D3D11_CREATE_DEVICE_SINGLETHREADED;
-	D3D_FEATURE_LEVEL featureLevel = D3D_FEATURE_LEVEL_11_0;
-	hr = ::D3D11CreateDevice(NULL, driverType, NULL, deviceFlag, &featureLevel, 1, D3D11_SDK_VERSION, 
-		&(m_d3dDevice.pointer), NULL, &(m_d3dContext.pointer));
-	if (S_OK != hr)
+	if (!rhiResult.result)
 	{
 		return false;
 	}
-	ENSURE(m_d3dDevice.is_not_null() && m_d3dContext.is_not_null());
 
-	hr = m_d3dDevice->QueryInterface(__uuidof(IDXGIDevice), (void **)&(dxgiDevice.pointer));
-	if (S_OK != hr)
+	m_device = rhiResult.device;
+	m_context = rhiResult.context;
+
+	auto swapChain = m_device->CreateSwapChain(nativeWindow, m_windowWidth, m_windowHeight);
+	if (swapChain == nullptr)
 	{
 		return false;
 	}
-	ENSURE(dxgiDevice.is_not_null());
+	m_swapChain = swapChain;
 
-	hr = dxgiDevice->GetParent(__uuidof(IDXGIAdapter), (void **)&(adapter.pointer));
-	if (S_OK != hr)
-	{
-		return false;
-	}
-	ENSURE(adapter.is_not_null());
-
-	//CreateSwapChain
-	autor<IDXGIFactory> factory = nullptr;
-	hr = adapter->GetParent(__uuidof(IDXGIFactory), (void **)&(factory.pointer));
-	if (S_OK != hr)
-	{
-		return false;
-	}
-	ENSURE(factory.is_not_null());
-
-	DXGI_SWAP_CHAIN_DESC scDesc;
-	scDesc.BufferDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
-	scDesc.BufferDesc.Width = m_windowWidth;
-	scDesc.BufferDesc.Height = m_windowHeight;
-	scDesc.BufferDesc.RefreshRate.Numerator = 60;
-	scDesc.BufferDesc.RefreshRate.Denominator = 1;
-	scDesc.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
-	scDesc.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
-	scDesc.BufferCount = 1;
-	scDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-
-	scDesc.OutputWindow = reinterpret_cast<HWND>(nativeWindow);
-	scDesc.Windowed = true;
-	scDesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
-
-	scDesc.SampleDesc.Count = 1;
-	scDesc.SampleDesc.Quality = 0;
-	scDesc.Flags = 0;
-
-	hr = factory->CreateSwapChain(m_d3dDevice, &scDesc, &(m_swapChain.pointer));
-	if (S_OK != hr)
-	{
-		return false;
-	}
-	ENSURE(m_swapChain.is_not_null());
-
-	m_swapChain->GetDesc(&scDesc);
-	m_windowWidth = scDesc.BufferDesc.Width;
-	m_windowHeight = scDesc.BufferDesc.Height;
+	auto swapChainSize = m_swapChain->GetRect();
+	m_windowWidth = swapChainSize.width();
+	m_windowHeight = swapChainSize.height();
 
 	D3D11_BUFFER_DESC bufferDesc =
 	{
@@ -231,7 +186,7 @@ bool RenderSystem::Create(void* nativeWindow)
 		0								//UINT StructureByteStride;
 	};
 
-	hr = m_d3dDevice->CreateBuffer(&bufferDesc, NULL, &(m_sceneConstBuffer.pointer));
+	hr = m_device->GetRaw()->CreateBuffer(&bufferDesc, NULL, &(m_sceneConstBuffer.pointer));
 	if (S_OK != hr)
 	{
 		return false;
@@ -283,8 +238,8 @@ void RenderSystem::Destroy()
 
 	m_sceneConstBuffer.release();
 	m_swapChain.release();
-	m_d3dDevice.release();
-	m_d3dContext.release();
+	m_device.release();
+	m_context.release();
 	m_colorTexture.release();
 	m_rtView.release();
 	m_bbView.release();
@@ -317,12 +272,12 @@ const gml::mat44& RenderSystem::GetProjectionMatrix()
 
 void RenderSystem::Clear()
 {
-	m_d3dContext->ClearRenderTargetView(m_bbView, static_cast<float*>(m_bkColor));
+	m_context->GetRaw()->ClearRenderTargetView(m_bbView, static_cast<float*>(m_bkColor));
 }
 
 void RenderSystem::Present()
 {
-	m_swapChain->Present(0, 0);
+	m_swapChain->Present();
 }
 
 void RenderSystem::SetBlendMode(g2d::BlendMode blendMode)
@@ -331,7 +286,7 @@ void RenderSystem::SetBlendMode(g2d::BlendMode blendMode)
 		return;
 
 	ID3D11BlendState* blendState = m_blendModes[blendMode];
-	m_d3dContext->OMSetBlendState(blendState, nullptr, 0xffffffff);
+	m_context->GetRaw()->OMSetBlendState(blendState, nullptr, 0xffffffff);
 }
 
 Texture* RenderSystem::CreateTextureFromFile(const char* resPath)
@@ -342,11 +297,11 @@ Texture* RenderSystem::CreateTextureFromFile(const char* resPath)
 void RenderSystem::UpdateConstBuffer(ID3D11Buffer* cbuffer, const void* data, uint32_t length)
 {
 	D3D11_MAPPED_SUBRESOURCE mappedData;
-	if (S_OK == m_d3dContext->Map(cbuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData))
+	if (S_OK == m_context->GetRaw()->Map(cbuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData))
 	{
 		uint8_t*  dstBuffre = reinterpret_cast<uint8_t*>(mappedData.pData);
 		memcpy(dstBuffre, data, length);
-		m_d3dContext->Unmap(cbuffer, 0);
+		m_context->GetRaw()->Unmap(cbuffer, 0);
 	}
 }
 
@@ -357,13 +312,13 @@ void RenderSystem::UpdateSceneConstBuffer()
 
 	m_matrixConstBufferDirty = false;
 	D3D11_MAPPED_SUBRESOURCE mappedData;
-	if (S_OK == m_d3dContext->Map(m_sceneConstBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData))
+	if (S_OK == m_context->GetRaw()->Map(m_sceneConstBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedData))
 	{
 		uint8_t*  dstBuffer = reinterpret_cast<uint8_t*>(mappedData.pData);
 		memcpy(dstBuffer, &(m_matView.row[0]), sizeof(gml::vec3));
 		memcpy(dstBuffer + sizeof(gml::vec4), &(m_matView.row[1]), sizeof(gml::vec3));
 		memcpy(dstBuffer + sizeof(gml::vec4) * 2, GetProjectionMatrix().m, sizeof(gml::mat44));
-		m_d3dContext->Unmap(m_sceneConstBuffer, 0);
+		m_context->GetRaw()->Unmap(m_sceneConstBuffer, 0);
 	}
 }
 
@@ -385,14 +340,14 @@ void RenderSystem::FlushBatch(Mesh& mesh, g2d::Material& material)
 		{
 			uint32_t stride = sizeof(g2d::GeometryVertex);
 			uint32_t offset = 0;
-			m_d3dContext->IASetVertexBuffers(0, 1, &(m_geometry.m_vertexBuffer.pointer), &stride, &offset);
-			m_d3dContext->IASetIndexBuffer(m_geometry.m_indexBuffer, DXGI_FORMAT_R32_UINT, 0);
-			m_d3dContext->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-			m_d3dContext->IASetInputLayout(shader->GetInputLayout());
-			m_d3dContext->VSSetShader(shader->GetVertexShader(), NULL, 0);
-			m_d3dContext->PSSetShader(shader->GetPixelShader(), NULL, 0);
+			m_context->GetRaw()->IASetVertexBuffers(0, 1, &(m_geometry.m_vertexBuffer.pointer), &stride, &offset);
+			m_context->GetRaw()->IASetIndexBuffer(m_geometry.m_indexBuffer, DXGI_FORMAT_R32_UINT, 0);
+			m_context->GetRaw()->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+			m_context->GetRaw()->IASetInputLayout(shader->GetInputLayout());
+			m_context->GetRaw()->VSSetShader(shader->GetVertexShader(), NULL, 0);
+			m_context->GetRaw()->PSSetShader(shader->GetPixelShader(), NULL, 0);
 			UpdateSceneConstBuffer();
-			m_d3dContext->VSSetConstantBuffers(0, 1, &(m_sceneConstBuffer.pointer));
+			m_context->GetRaw()->VSSetConstantBuffers(0, 1, &(m_sceneConstBuffer.pointer));
 			SetBlendMode(pass->GetBlendMode());
 
 			auto vcb = shader->GetVertexConstBuffer();
@@ -404,7 +359,7 @@ void RenderSystem::FlushBatch(Mesh& mesh, g2d::Material& material)
 				if (length > 0)
 				{
 					UpdateConstBuffer(vcb, pass->GetVSConstant(), length);
-					m_d3dContext->VSSetConstantBuffers(1, 1, &vcb);
+					m_context->GetRaw()->VSSetConstantBuffers(1, 1, &vcb);
 
 				}
 			}
@@ -418,7 +373,7 @@ void RenderSystem::FlushBatch(Mesh& mesh, g2d::Material& material)
 				if (length > 0)
 				{
 					UpdateConstBuffer(pcb, pass->GetPSConstant(), length);
-					m_d3dContext->PSSetConstantBuffers(0, 1, &pcb);
+					m_context->GetRaw()->PSSetConstantBuffers(0, 1, &pcb);
 				}
 			}
 
@@ -442,11 +397,11 @@ void RenderSystem::FlushBatch(Mesh& mesh, g2d::Material& material)
 					samplerstates[t] = nullptr;
 				}
 				UINT numView = static_cast<UINT>(views.size());
-				m_d3dContext->PSSetShaderResources(0, numView, &(views[0]));
-				m_d3dContext->PSSetSamplers(0, numView, &(samplerstates[0]));
+				m_context->GetRaw()->PSSetShaderResources(0, numView, &(views[0]));
+				m_context->GetRaw()->PSSetSamplers(0, numView, &(samplerstates[0]));
 			}
 
-			m_d3dContext->DrawIndexed(mesh.GetIndexCount(), 0, 0);
+			m_context->GetRaw()->DrawIndexed(mesh.GetIndexCount(), 0, 0);
 		}
 	}
 

@@ -48,6 +48,20 @@ set(GOT2D_SOURCE_SCENE_FILES
 	source/component.cpp
 )
 
+set(GOT2D_RHI_INCLUDE_FILES
+	RHI/RHI.h
+)
+
+if(MSVC)
+list(APPEND GOT2D_RHI_INCLUDE_FILES 
+	RHI/dx11/inner_RHI.h
+	RHI/dx11/RHI.cpp
+)
+source_group(RHI_DX11 FILES ${GOT2D_RHI_INCLUDE_FILES})
+else()
+source_group(RHI FILES ${GOT2D_RHI_INCLUDE_FILES})
+endif(MSVC)
+
 source_group(include FILES ${GOT2D_INCLUDE_FILES})
 source_group(source FILES ${GOT2D_SOURCE_FILES})
 source_group(source\\input FILES ${GOT2D_SOURCE_INPUT_FILES})
@@ -58,6 +72,7 @@ list(APPEND GOT2D_SOURCE_FILES
 	${GOT2D_SOURCE_INPUT_FILES}
 	${GOT2D_SOURCE_RENDER_FILES}
 	${GOT2D_SOURCE_SCENE_FILES}
+	${GOT2D_RHI_INCLUDE_FILES}
 )
 
 include_directories(got2d ../extern/res)

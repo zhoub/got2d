@@ -1,14 +1,11 @@
 #pragma once
-#include <Windows.h>
 #include <map>
 #include <vector>
-#include <d3d11.h>
 #include <gml/gmlcolor.h>
 #include "../include/g2drender.h"
 #include "inner_utility.h"
 #include "scope_utility.h"
-#pragma comment(lib, "d3d11.lib")
-#pragma comment(lib, "dxgi.lib")
+#include "../RHI/RHI.h"
 
 class Geometry
 {
@@ -306,9 +303,9 @@ public:
 
 	Texture* CreateTextureFromFile(const char* resPath);
 
-	ID3D11Device* GetDevice() { return m_d3dDevice; }
+	ID3D11Device* GetDevice() { return m_device->GetRaw(); }
 
-	ID3D11DeviceContext* GetContext() { return m_d3dContext; }
+	ID3D11DeviceContext* GetContext() { return m_context->GetRaw(); }
 
 	bool OnResize(uint32_t width, uint32_t height);
 
@@ -336,9 +333,10 @@ private:
 
 	void UpdateSceneConstBuffer();
 
-	autor<IDXGISwapChain> m_swapChain = nullptr;
-	autor<ID3D11Device> m_d3dDevice = nullptr;
-	autor<ID3D11DeviceContext> m_d3dContext = nullptr;
+	autor<rhi::Device> m_device = nullptr;
+	autor<rhi::Context> m_context = nullptr;
+	autor<rhi::SwapChain> m_swapChain = nullptr;
+
 	autor<ID3D11Texture2D> m_colorTexture = nullptr;
 	autor<ID3D11RenderTargetView> m_rtView = nullptr;
 	autor<ID3D11RenderTargetView> m_bbView = nullptr;
