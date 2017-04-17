@@ -121,7 +121,7 @@ bool Geometry::MakeEnoughVertexArray(uint32_t numVertices)
 		return true;
 	}
 
-	auto vertexBuffer = GetRenderSystem()->GetDevice()->CreateBuffer(rhi::BufferBinding::Vertex, rhi::BufferUsage::Dynamic, sizeof(g2d::GeometryVertex) * numVertices);
+	auto vertexBuffer = GetRenderSystem()->GetDevice()->CreateBuffer(rhi::BufferBinding::Vertex, rhi::ResourceUsage::Dynamic, sizeof(g2d::GeometryVertex) * numVertices);
 	if (vertexBuffer == nullptr)
 	{
 		return  false;
@@ -141,7 +141,7 @@ bool Geometry::MakeEnoughIndexArray(uint32_t numIndices)
 		return true;
 	}
 
-	auto indexBuffer = GetRenderSystem()->GetDevice()->CreateBuffer(rhi::BufferBinding::Index, rhi::BufferUsage::Dynamic, sizeof(uint32_t) * numIndices);
+	auto indexBuffer = GetRenderSystem()->GetDevice()->CreateBuffer(rhi::BufferBinding::Index, rhi::ResourceUsage::Dynamic, sizeof(uint32_t) * numIndices);
 	if (indexBuffer == nullptr)
 	{
 		return false;

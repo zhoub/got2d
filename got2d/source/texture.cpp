@@ -43,36 +43,27 @@ bool Texture2D::Create(uint32_t width, uint32_t height)
 	if (width == 0 || height == 0)
 		return false;
 
-	autor<ID3D11Texture2D> texturePtr = nullptr;
+	autor<rhi::Texture2D> texturePtr = nullptr;
 	autor<ID3D11ShaderResourceView> shaderResourceViewPtr = nullptr;
-	
-	D3D11_TEXTURE2D_DESC texDesc;
 
-	texDesc.Width = width;
-	texDesc.Height = height;
-	texDesc.MipLevels = 1;
-	texDesc.ArraySize = 1;
-	texDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	texDesc.SampleDesc.Count = 1;
-	texDesc.SampleDesc.Quality = 0;
-	texDesc.Usage = D3D11_USAGE_DYNAMIC;
-	texDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
-	texDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-	texDesc.MiscFlags = 0;
-
-	if (S_OK != GetRenderSystem()->GetDevice()->GetRaw()->CreateTexture2D(&texDesc, nullptr, &(texturePtr.pointer)))
+	texturePtr = GetRenderSystem()->GetDevice()->CreateTexture2D(
+		rhi::TextureFormat::RGBA,
+		rhi::ResourceUsage::Dynamic,
+		rhi::TextureBinding::ShaderResource,
+		width, height);
+	if (texturePtr.is_null())
 	{
 		return false;
 	}
 
 	D3D11_SHADER_RESOURCE_VIEW_DESC viewDesc;
 	::ZeroMemory(&viewDesc, sizeof(viewDesc));
-	viewDesc.Format = texDesc.Format;
+	viewDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
 	viewDesc.ViewDimension = D3D_SRV_DIMENSION_TEXTURE2D;
 	viewDesc.Texture2D.MipLevels = -1;
 	viewDesc.Texture2D.MostDetailedMip = 0;
 
-	if (S_OK != GetRenderSystem()->GetDevice()->GetRaw()->CreateShaderResourceView(texturePtr.pointer, &viewDesc, &(shaderResourceViewPtr.pointer)))
+	if (S_OK != GetRenderSystem()->GetDevice()->GetRaw()->CreateShaderResourceView(texturePtr->GetRaw(), &viewDesc, &(shaderResourceViewPtr.pointer)))
 	{
 		return false;
 	}
@@ -87,7 +78,7 @@ bool Texture2D::Create(uint32_t width, uint32_t height)
 void Texture2D::UploadImage(uint8_t* data, bool hasAlpha)
 {
 	D3D11_MAPPED_SUBRESOURCE mappedRes;
-	if (S_OK == GetRenderSystem()->GetContext()->GetRaw()->Map(m_texture, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedRes))
+	if (S_OK == GetRenderSystem()->GetContext()->GetRaw()->Map(m_texture->GetRaw(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedRes))
 	{
 		uint8_t* colorBuffer = static_cast<uint8_t*>(mappedRes.pData);
 		if (hasAlpha)
@@ -115,7 +106,7 @@ void Texture2D::UploadImage(uint8_t* data, bool hasAlpha)
 			}
 		}
 
-		GetRenderSystem()->GetContext()->GetRaw()->Unmap(m_texture, 0);
+		GetRenderSystem()->GetContext()->GetRaw()->Unmap(m_texture->GetRaw(), 0);
 		GetRenderSystem()->GetContext()->GetRaw()->GenerateMips(m_shaderView);
 	}
 }

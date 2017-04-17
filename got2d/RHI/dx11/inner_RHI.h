@@ -16,22 +16,46 @@ public:
 
 	virtual rhi::BufferBinding GetBinding() const override { return m_bufferBinding; }
 
-	virtual rhi::BufferUsage GetUsage() const override { return m_bufferUsage; }
+	virtual rhi::ResourceUsage GetUsage() const override { return m_bufferUsage; }
 
 	virtual uint32_t GetLength() const override { return m_bufferLength; }
 
 	ID3D11Buffer* GetRaw() { return &m_buffer; }
 
 public:
-	Buffer(ID3D11Buffer& buffer, rhi::BufferBinding binding, rhi::BufferUsage usage, uint32_t length);
+	Buffer(ID3D11Buffer& buffer, rhi::BufferBinding binding, rhi::ResourceUsage usage, uint32_t length);
 
 	~Buffer();
 
 private:
 	ID3D11Buffer& m_buffer;
 	rhi::BufferBinding m_bufferBinding;
-	rhi::BufferUsage m_bufferUsage;
-	uint32_t m_bufferLength;
+	rhi::ResourceUsage m_bufferUsage;
+	const uint32_t m_bufferLength;
+};
+
+class Texture2D : public rhi::Texture2D
+{
+public:
+	virtual void Release() override { delete this; }
+
+	virtual uint32_t GetWidth() const override { return m_textureWidth; }
+
+	virtual uint32_t GetHeight() const override { return m_textureHeight; }
+
+	//temporary
+	virtual ID3D11Texture2D* GetRaw() override { return &m_texture; }
+
+public:
+	Texture2D(ID3D11Texture2D& texture, uint32_t width, uint32_t height);
+
+	~Texture2D();
+
+private:
+	ID3D11Texture2D& m_texture;
+	const uint32_t m_textureWidth;
+	const uint32_t m_textureHeight;
+
 };
 
 class SwapChain : public rhi::SwapChain
@@ -39,7 +63,11 @@ class SwapChain : public rhi::SwapChain
 public:
 	virtual void Release() override { delete this; }
 
-	virtual gml::rect GetRect() override;
+	virtual rhi::Texture2D* GetBackBuffer() override;
+
+	virtual uint32_t GetWidth() const override { return m_windowWidth; }
+
+	virtual uint32_t GetHeight() const override { return m_windowHeight; }
 
 	virtual bool ResizeBackBuffer(uint32_t width, uint32_t height) override;
 
@@ -52,8 +80,12 @@ public:
 
 	~SwapChain();
 
+	void UpdateWindowSize();
+
 private:
 	IDXGISwapChain& m_swapChain;
+	uint32_t m_windowWidth;
+	uint32_t m_windowHeight;
 };
 
 class Device : public rhi::Device
@@ -63,7 +95,9 @@ public:
 
 	virtual rhi::SwapChain* CreateSwapChain(void* nativeWindow, uint32_t windowWidth, uint32_t windowHeight) override;
 
-	virtual rhi::Buffer* CreateBuffer(rhi::BufferBinding binding, rhi::BufferUsage usage, uint32_t bufferLength) override;
+	virtual rhi::Buffer* CreateBuffer(rhi::BufferBinding binding, rhi::ResourceUsage usage, uint32_t bufferLength) override;
+
+	virtual rhi::Texture2D* CreateTexture2D(rhi::TextureFormat format, rhi::ResourceUsage usage, uint32_t binding, uint32_t width, uint32_t height) override;
 
 	virtual ID3D11Device* GetRaw() { return &m_d3dDevice; }
 
@@ -74,7 +108,6 @@ public:
 
 private:
 	ID3D11Device& m_d3dDevice;
-
 };
 
 class Context : public rhi::Context

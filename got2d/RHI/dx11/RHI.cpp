@@ -43,7 +43,15 @@ rhi::RHICreationResult rhi::CreateRHI()
 	return pair;
 }
 
-Buffer::Buffer(ID3D11Buffer & buffer, rhi::BufferBinding binding, rhi::BufferUsage usage, uint32_t length)
+
+
+const D3D11_USAGE kResourceUsage[] =
+{
+	D3D11_USAGE_DEFAULT,	// Default = 0
+	D3D11_USAGE_DYNAMIC,	// Dynamic = 1,
+};
+
+Buffer::Buffer(ID3D11Buffer & buffer, rhi::BufferBinding binding, rhi::ResourceUsage usage, uint32_t length)
 	: m_buffer(buffer)
 	, m_bufferBinding(binding)
 	, m_bufferUsage(usage)
@@ -59,6 +67,7 @@ Buffer::~Buffer()
 SwapChain::SwapChain(IDXGISwapChain & swapChain)
 	: m_swapChain(swapChain)
 {
+	UpdateWindowSize();
 }
 
 SwapChain::~SwapChain()
@@ -66,16 +75,60 @@ SwapChain::~SwapChain()
 	m_swapChain.Release();
 }
 
-Device::Device(ID3D11Device& d3dDevice)
-	: m_d3dDevice(d3dDevice)
+Texture2D::Texture2D(ID3D11Texture2D & texture, uint32_t width, uint32_t height)
+	: m_texture(texture)
+	, m_textureWidth(width)
+	, m_textureHeight(height)
 {
 }
 
-Device::~Device()
+Texture2D::~Texture2D()
 {
-	m_d3dDevice.Release();
+	m_texture.Release();
 }
 
+
+rhi::Texture2D* SwapChain::GetBackBuffer()
+{
+	ID3D11Texture2D* backBuffer = nullptr;
+	if (S_OK != m_swapChain.GetBuffer(0, _uuidof(ID3D11Texture2D), reinterpret_cast<void**>(&backBuffer)))
+	{
+		return nullptr;
+	}
+	else
+	{
+		ENSURE(backBuffer != nullptr);
+		return new ::Texture2D(*backBuffer, m_windowWidth, m_windowHeight);
+	}
+}
+
+bool SwapChain::ResizeBackBuffer(uint32_t width, uint32_t height)
+{
+	return (S_OK == m_swapChain.ResizeBuffers(0, width, height, DXGI_FORMAT_UNKNOWN, 0));
+}
+
+void SwapChain::Present()
+{
+	m_swapChain.Present(0, 0);
+}
+
+void SwapChain::UpdateWindowSize()
+{
+	DXGI_SWAP_CHAIN_DESC scDesc;
+	m_swapChain.GetDesc(&scDesc);
+	m_windowWidth = scDesc.BufferDesc.Width;
+	m_windowHeight = scDesc.BufferDesc.Height;
+}
+
+Context::Context(ID3D11DeviceContext& d3dContext)
+	: m_d3dContext(d3dContext)
+{
+}
+
+Context::~Context()
+{
+	m_d3dContext.Release();
+}
 
 void Context::SetVertexBuffers(uint32_t startSlot, rhi::VertexBufferInfo * buffers, uint32_t bufferCount)
 {
@@ -168,16 +221,15 @@ void Context::Unmap(rhi::Buffer* buffer)
 	m_d3dContext.Unmap(bufferImpl->GetRaw(), 0);
 }
 
-Context::Context(ID3D11DeviceContext& d3dContext)
-	: m_d3dContext(d3dContext)
+Device::Device(ID3D11Device& d3dDevice)
+	: m_d3dDevice(d3dDevice)
 {
 }
 
-Context::~Context()
+Device::~Device()
 {
-	m_d3dContext.Release();
+	m_d3dDevice.Release();
 }
-
 
 rhi::SwapChain * Device::CreateSwapChain(void* nativeWindow, uint32_t windowWidth, uint32_t windowHeight)
 {
@@ -231,12 +283,14 @@ rhi::SwapChain * Device::CreateSwapChain(void* nativeWindow, uint32_t windowWidt
 	{
 		return nullptr;
 	}
-	ENSURE(swapChain != nullptr);
-
-	return new ::SwapChain(*swapChain);
+	else
+	{
+		ENSURE(swapChain != nullptr);
+		return new ::SwapChain(*swapChain);
+	}
 }
 
-rhi::Buffer * Device::CreateBuffer(rhi::BufferBinding binding, rhi::BufferUsage usage, uint32_t bufferLength)
+rhi::Buffer * Device::CreateBuffer(rhi::BufferBinding binding, rhi::ResourceUsage usage, uint32_t bufferLength)
 {
 	const UINT kBindings[] =
 	{
@@ -245,16 +299,10 @@ rhi::Buffer * Device::CreateBuffer(rhi::BufferBinding binding, rhi::BufferUsage 
 		D3D11_BIND_CONSTANT_BUFFER,		// Constant = 2,
 	};
 
-	const D3D11_USAGE kUsage[] =
-	{
-		D3D11_USAGE_DEFAULT,	// Default = 0
-		D3D11_USAGE_DYNAMIC,	// Dynamic = 1,
-	};
-
 	D3D11_BUFFER_DESC bufferDesc =
 	{
 		bufferLength,				//UINT ByteWidth;
-		kUsage[(int)usage],			//D3D11_USAGE Usage;
+		kResourceUsage[(int)usage],			//D3D11_USAGE Usage;
 		kBindings[(int)binding],	//UINT BindFlags;
 		D3D11_CPU_ACCESS_WRITE,		//UINT CPUAccessFlags;
 		0,							//UINT MiscFlags;
@@ -265,29 +313,66 @@ rhi::Buffer * Device::CreateBuffer(rhi::BufferBinding binding, rhi::BufferUsage 
 	HRESULT hr = m_d3dDevice.CreateBuffer(&bufferDesc, NULL, &buffer);
 	if (S_OK != hr)
 	{
-		return false;
+		return nullptr;
+	}
+	else
+	{
+		ENSURE(buffer != nullptr);
+		return new ::Buffer(*buffer, binding, usage, bufferLength);
+	}
+}
+
+rhi::Texture2D * Device::CreateTexture2D(rhi::TextureFormat format, rhi::ResourceUsage usage, uint32_t binding, uint32_t width, uint32_t height)
+{
+	const DXGI_FORMAT kTextureFormat[] =
+	{
+		DXGI_FORMAT_R8G8B8A8_UNORM,	// RGBA
+		DXGI_FORMAT_B8G8R8X8_UNORM,	// BGRA
+		DXGI_FORMAT_BC1_UNORM,		// DXT1
+		DXGI_FORMAT_BC2_UNORM,		// DXT3
+		DXGI_FORMAT_BC3_UNORM,		// DXT5
+		DXGI_FORMAT_R32_FLOAT,		// Float32
+	};
+
+	const D3D11_BIND_FLAG kBinding[] =
+	{
+		D3D11_BIND_SHADER_RESOURCE,
+		D3D11_BIND_RENDER_TARGET,
+		D3D11_BIND_DEPTH_STENCIL,
+		D3D11_BIND_STREAM_OUTPUT,
+		D3D11_BIND_UNORDERED_ACCESS
+	};
+
+	D3D11_TEXTURE2D_DESC colorTexDesc;
+	colorTexDesc.Width = width;
+	colorTexDesc.Height = height;
+	colorTexDesc.MipLevels = 1;
+	colorTexDesc.ArraySize = 1;
+	colorTexDesc.Format = kTextureFormat[(int)format];
+	colorTexDesc.SampleDesc.Count = 1;
+	colorTexDesc.SampleDesc.Quality = 0;
+	colorTexDesc.Usage = kResourceUsage[(int)usage];
+	colorTexDesc.CPUAccessFlags = usage == rhi::ResourceUsage::Dynamic ? D3D11_CPU_ACCESS_WRITE : 0;
+	colorTexDesc.MiscFlags = 0;
+	colorTexDesc.BindFlags = 0;
+
+	for (int i = 0, n = (int)rhi::TextureBinding::Count; i < n; i++)
+	{
+		auto bindingFlag = 1 << i;
+		if ((binding & bindingFlag) != 0)
+		{
+			colorTexDesc.BindFlags |= kBinding[i];
+		}
 	}
 
-	ENSURE(buffer != nullptr);
-	return new ::Buffer(*buffer, binding, usage, bufferLength);
-}
-
-gml::rect SwapChain::GetRect()
-{
-	DXGI_SWAP_CHAIN_DESC scDesc;
-	m_swapChain.GetDesc(&scDesc);
-	gml::rect result;
-	result.set_pos(0, 0);
-	result.set_size(scDesc.BufferDesc.Width, scDesc.BufferDesc.Height);
-	return result;
-}
-
-bool SwapChain::ResizeBackBuffer(uint32_t width, uint32_t height)
-{
-	return (S_OK == m_swapChain.ResizeBuffers(0, width, height, DXGI_FORMAT_UNKNOWN, 0));
-}
-
-void SwapChain::Present()
-{
-	m_swapChain.Present(0, 0);
+	ID3D11Texture2D* texture = nullptr;
+	if (S_OK != m_d3dDevice.CreateTexture2D(&colorTexDesc, nullptr, &texture))
+	{
+		return nullptr;
+	}
+	else
+	{
+		ENSURE(texture != nullptr);
+		return new ::Texture2D(*texture, width, height);
+	}
 }

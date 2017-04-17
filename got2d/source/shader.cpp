@@ -127,7 +127,7 @@ bool Shader::Create(const std::string& vsCode, uint32_t vcbLength, const std::st
 	{
 		vertexConstBuffer = GetRenderSystem()->GetDevice()->CreateBuffer(
 			rhi::BufferBinding::Constant,
-			rhi::BufferUsage::Dynamic,
+			rhi::ResourceUsage::Dynamic,
 			vcbLength
 		);
 		if (vertexConstBuffer.is_null())
@@ -139,7 +139,7 @@ bool Shader::Create(const std::string& vsCode, uint32_t vcbLength, const std::st
 	{
 		pixelConstBuffer = GetRenderSystem()->GetDevice()->CreateBuffer(
 			rhi::BufferBinding::Constant,
-			rhi::BufferUsage::Dynamic,
+			rhi::ResourceUsage::Dynamic,
 			pcbLength
 		);
 		if (pixelConstBuffer.is_null())
@@ -151,8 +151,6 @@ bool Shader::Create(const std::string& vsCode, uint32_t vcbLength, const std::st
 	m_shaderLayout = std::move(shaderLayout);
 	m_vertexConstBuffer = std::move(vertexConstBuffer);
 	m_pixelConstBuffer = std::move(pixelConstBuffer);
-	m_vertexConstBufferLength = vcbLength;
-	m_pixelConstBufferLength = pcbLength;
 	return true;
 }
 
@@ -163,8 +161,6 @@ void Shader::Destroy()
 	m_shaderLayout.release();
 	m_vertexConstBuffer.release();
 	m_pixelConstBuffer.release();
-	m_vertexConstBufferLength = 0;
-	m_pixelConstBufferLength = 0;
 }
 
 class DefaultVSData : public VSData

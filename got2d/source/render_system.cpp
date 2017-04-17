@@ -12,7 +12,7 @@ bool RenderSystem::OnResize(uint32_t width, uint32_t height)
 	m_rtView.release();
 	m_bbView.release();
 
-	autor<ID3D11Texture2D> colorTexture = nullptr;
+	autor<rhi::Texture2D> colorTexture = nullptr;
 	autor<ID3D11RenderTargetView> rtView = nullptr;
 	autor<ID3D11RenderTargetView> bbView = nullptr;
 
@@ -22,39 +22,29 @@ bool RenderSystem::OnResize(uint32_t width, uint32_t height)
 	}
 
 	//CreateRenderTarget and Views.
-	D3D11_TEXTURE2D_DESC colorTexDesc;
-	colorTexDesc.Width = width;
-	colorTexDesc.Height = height;
-	colorTexDesc.MipLevels = 1;
-	colorTexDesc.ArraySize = 1;
-	colorTexDesc.Format = DXGI_FORMAT_B8G8R8X8_UNORM;
-	colorTexDesc.SampleDesc.Count = 1;
-	colorTexDesc.SampleDesc.Quality = 0;
-	colorTexDesc.Usage = D3D11_USAGE_DEFAULT;
-	colorTexDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
-	colorTexDesc.CPUAccessFlags = 0;
-	colorTexDesc.MiscFlags = 0;
-
-	if (S_OK != m_device->GetRaw()->CreateTexture2D(&colorTexDesc, nullptr, &(colorTexture.pointer)))
+	colorTexture = m_device->CreateTexture2D(
+		rhi::TextureFormat::BGRA,
+		rhi::ResourceUsage::Default,
+		rhi::TextureBinding::RenderTarget | rhi::TextureBinding::ShaderResource,
+		width, height);
+	if (colorTexture.is_null())
 	{
 		return false;
 	}
-	ENSURE(colorTexture.is_not_null());
 
-	if (S_OK != m_device->GetRaw()->CreateRenderTargetView(colorTexture, NULL, &(rtView.pointer)))
+	if (S_OK != m_device->GetRaw()->CreateRenderTargetView(colorTexture->GetRaw(), NULL, &(rtView.pointer)))
 	{
 		return false;
 	}
 	ENSURE(rtView.is_not_null());
 
-	autor<ID3D11Texture2D> backBuffer = nullptr;
-	if (S_OK != m_swapChain->GetRaw()->GetBuffer(0, _uuidof(ID3D11Texture2D), reinterpret_cast<void**>(&(backBuffer.pointer))))
+	autor<rhi::Texture2D> backBuffer = m_swapChain->GetBackBuffer();
+	if (backBuffer.is_null())
 	{
 		return false;
 	}
-	ENSURE(backBuffer.is_not_null());
 
-	if (S_OK != m_device->GetRaw()->CreateRenderTargetView(backBuffer, NULL, &(bbView.pointer)))
+	if (S_OK != m_device->GetRaw()->CreateRenderTargetView(backBuffer->GetRaw(), NULL, &(bbView.pointer)))
 	{
 		return false;
 	}
@@ -169,12 +159,10 @@ bool RenderSystem::Create(void* nativeWindow)
 		return false;
 	}
 	m_swapChain = swapChain;
+	m_windowWidth = m_swapChain->GetWidth();
+	m_windowHeight = m_swapChain->GetHeight();
 
-	auto swapChainSize = m_swapChain->GetRect();
-	m_windowWidth = swapChainSize.width();
-	m_windowHeight = swapChainSize.height();
-
-	m_sceneConstBuffer = m_device->CreateBuffer(rhi::BufferBinding::Constant, rhi::BufferUsage::Dynamic, sizeof(gml::vec4) * 6);
+	m_sceneConstBuffer = m_device->CreateBuffer(rhi::BufferBinding::Constant, rhi::ResourceUsage::Dynamic, sizeof(gml::vec4) * 6);
 	if (m_sceneConstBuffer.is_null())
 	{
 		return false;
@@ -341,23 +329,22 @@ void RenderSystem::FlushBatch(Mesh& mesh, g2d::Material& material)
 			auto vcb = shader->GetVertexConstBuffer();
 			if (vcb)
 			{
-				auto length = (shader->GetVertexConstBufferLength() > pass->GetVSConstantLength())
+				auto length = (shader->GetVertexConstBuffer()->GetLength() > pass->GetVSConstantLength())
 					? pass->GetVSConstantLength()
-					: shader->GetVertexConstBufferLength();
+					: shader->GetVertexConstBuffer()->GetLength();
 				if (length > 0)
 				{
 					UpdateConstBuffer(vcb, pass->GetVSConstant(), length);
 					m_context->SetVertexShaderConstantBuffers(1, &vcb, 1);
-
 				}
 			}
 
 			auto pcb = shader->GetPixelConstBuffer();
 			if (pcb)
 			{
-				auto length = (shader->GetPixelConstBufferLength() > pass->GetPSConstantLength())
+				auto length = (shader->GetPixelConstBuffer()->GetLength() > pass->GetPSConstantLength())
 					? pass->GetPSConstantLength()
-					: shader->GetPixelConstBufferLength();
+					: shader->GetPixelConstBuffer()->GetLength();
 				if (length > 0)
 				{
 					UpdateConstBuffer(pcb, pass->GetPSConstant(), length);

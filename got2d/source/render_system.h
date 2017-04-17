@@ -97,7 +97,7 @@ public:
 
 	void Destroy();
 
-	autor<ID3D11Texture2D> m_texture = nullptr;
+	autor<rhi::Texture2D> m_texture = nullptr;
 	autor<ID3D11ShaderResourceView> m_shaderView = nullptr;
 	uint32_t m_width = 0;
 	uint32_t m_height = 0;
@@ -163,18 +163,12 @@ public:
 
 	rhi::Buffer* GetPixelConstBuffer() { return m_pixelConstBuffer; }
 
-	uint32_t GetVertexConstBufferLength() { return m_vertexConstBufferLength; }
-
-	uint32_t GetPixelConstBufferLength() { return m_pixelConstBufferLength; }
-
 private:
 	autor<ID3D11InputLayout> m_shaderLayout = nullptr;
 	autor<ID3D11VertexShader>  m_vertexShader = nullptr;
 	autor<ID3D11PixelShader> m_pixelShader = nullptr;
 	autor<rhi::Buffer> m_vertexConstBuffer = nullptr;
 	autor<rhi::Buffer> m_pixelConstBuffer = nullptr;
-	uint32_t m_vertexConstBufferLength = 0;
-	uint32_t m_pixelConstBufferLength = 0;
 };
 
 class ShaderLib
@@ -337,7 +331,7 @@ private:
 	autor<rhi::Context> m_context = nullptr;
 	autor<rhi::SwapChain> m_swapChain = nullptr;
 
-	autor<ID3D11Texture2D> m_colorTexture = nullptr;
+	autor<rhi::Texture2D> m_colorTexture = nullptr;
 	autor<ID3D11RenderTargetView> m_rtView = nullptr;
 	autor<ID3D11RenderTargetView> m_bbView = nullptr;
 	autor<rhi::Buffer> m_sceneConstBuffer = nullptr;
