@@ -44,7 +44,7 @@ bool Texture2D::Create(uint32_t width, uint32_t height)
 		return false;
 
 	autor<rhi::Texture2D> texturePtr = nullptr;
-	autor<ID3D11ShaderResourceView> shaderResourceViewPtr = nullptr;
+	autor<rhi::ShaderResourceView> shaderResourceViewPtr = nullptr;
 
 	texturePtr = GetRenderSystem()->GetDevice()->CreateTexture2D(
 		rhi::TextureFormat::RGBA,
@@ -56,14 +56,8 @@ bool Texture2D::Create(uint32_t width, uint32_t height)
 		return false;
 	}
 
-	D3D11_SHADER_RESOURCE_VIEW_DESC viewDesc;
-	::ZeroMemory(&viewDesc, sizeof(viewDesc));
-	viewDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	viewDesc.ViewDimension = D3D_SRV_DIMENSION_TEXTURE2D;
-	viewDesc.Texture2D.MipLevels = -1;
-	viewDesc.Texture2D.MostDetailedMip = 0;
-
-	if (S_OK != GetRenderSystem()->GetDevice()->GetRaw()->CreateShaderResourceView(texturePtr->GetRaw(), &viewDesc, &(shaderResourceViewPtr.pointer)))
+	shaderResourceViewPtr = GetRenderSystem()->GetDevice()->CreateShaderResourceView(texturePtr);
+	if (shaderResourceViewPtr.is_null())
 	{
 		return false;
 	}
@@ -107,7 +101,7 @@ void Texture2D::UploadImage(uint8_t* data, bool hasAlpha)
 		}
 
 		GetRenderSystem()->GetContext()->GetRaw()->Unmap(m_texture->GetRaw(), 0);
-		GetRenderSystem()->GetContext()->GetRaw()->GenerateMips(m_shaderView);
+		GetRenderSystem()->GetContext()->GenerateMipmaps(m_shaderView);
 	}
 }
 

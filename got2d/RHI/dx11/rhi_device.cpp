@@ -9,6 +9,18 @@ namespace
 		D3D11_USAGE_DEFAULT,	// Default = 0
 		D3D11_USAGE_DYNAMIC,	// Dynamic = 1,
 	};
+
+	const DXGI_FORMAT kTextureFormat[] =
+	{
+		DXGI_FORMAT_UNKNOWN,			// Unknown
+		DXGI_FORMAT_R8G8B8A8_UNORM,		// RGBA
+		DXGI_FORMAT_B8G8R8X8_UNORM,		// BGRA
+		DXGI_FORMAT_BC1_UNORM,			// DXT1
+		DXGI_FORMAT_BC2_UNORM,			// DXT3
+		DXGI_FORMAT_BC3_UNORM,			// DXT5
+		DXGI_FORMAT_D24_UNORM_S8_UINT,	// D24S8
+		DXGI_FORMAT_R32_FLOAT,			// Float32
+	};
 }
 
 Device::Device(ID3D11Device& d3dDevice)
@@ -114,16 +126,6 @@ rhi::Buffer * Device::CreateBuffer(rhi::BufferBinding binding, rhi::ResourceUsag
 
 rhi::Texture2D * Device::CreateTexture2D(rhi::TextureFormat format, rhi::ResourceUsage usage, uint32_t binding, uint32_t width, uint32_t height)
 {
-	const DXGI_FORMAT kTextureFormat[] =
-	{
-		DXGI_FORMAT_R8G8B8A8_UNORM,	// RGBA
-		DXGI_FORMAT_B8G8R8X8_UNORM,	// BGRA
-		DXGI_FORMAT_BC1_UNORM,		// DXT1
-		DXGI_FORMAT_BC2_UNORM,		// DXT3
-		DXGI_FORMAT_BC3_UNORM,		// DXT5
-		DXGI_FORMAT_R32_FLOAT,		// Float32
-	};
-
 	const D3D11_BIND_FLAG kBinding[] =
 	{
 		D3D11_BIND_SHADER_RESOURCE,
@@ -163,6 +165,65 @@ rhi::Texture2D * Device::CreateTexture2D(rhi::TextureFormat format, rhi::Resourc
 	else
 	{
 		ENSURE(texture != nullptr);
-		return new ::Texture2D(*texture, width, height);
+		return new ::Texture2D(*texture, format, width, height);
+	}
+}
+
+rhi::RenderTargetView * Device::CreateRenderTargetView(rhi::Texture2D * texture2D)
+{
+	::Texture2D* textureImpl = reinterpret_cast<::Texture2D*>(texture2D);
+	ENSURE(textureImpl != nullptr);
+
+	ID3D11RenderTargetView* rtView = nullptr;
+	if (S_OK != m_d3dDevice.CreateRenderTargetView(textureImpl->GetRaw(), NULL, &rtView))
+	{
+		return nullptr;
+	}
+	else
+	{
+		ENSURE(rtView != nullptr);
+		return new ::RenderTargetView(*rtView);
+	}
+
+}
+
+rhi::ShaderResourceView * Device::CreateShaderResourceView(rhi::Texture2D * texture2D)
+{
+	::Texture2D* textureImpl = reinterpret_cast<::Texture2D*>(texture2D);
+	ENSURE(textureImpl != nullptr);
+
+	D3D11_SHADER_RESOURCE_VIEW_DESC viewDesc;
+	::ZeroMemory(&viewDesc, sizeof(viewDesc));
+	viewDesc.Format = kTextureFormat[(int)textureImpl->GetFormat()];
+	viewDesc.ViewDimension = D3D_SRV_DIMENSION_TEXTURE2D;
+	viewDesc.Texture2D.MipLevels = -1;
+	viewDesc.Texture2D.MostDetailedMip = 0;
+
+	ID3D11ShaderResourceView* srView = nullptr;
+	if (S_OK != m_d3dDevice.CreateShaderResourceView(textureImpl->GetRaw(), &viewDesc, &srView))
+	{
+		return nullptr;
+	}
+	else
+	{
+		ENSURE(srView != nullptr);
+		return new ::ShaderResourceView(*srView);
+	}
+}
+
+rhi::DepthStencilView * Device::CreateDepthStencilView(rhi::Texture2D * texture2D)
+{
+	::Texture2D* textureImpl = reinterpret_cast<::Texture2D*>(texture2D);
+	ENSURE(textureImpl != nullptr);
+
+	ID3D11DepthStencilView* dsView = nullptr;
+	if (S_OK != m_d3dDevice.CreateDepthStencilView(textureImpl->GetRaw(), NULL, &dsView))
+	{
+		return nullptr;
+	}
+	else
+	{
+		ENSURE(dsView != nullptr);
+		return new ::DepthStencilView(*dsView);
 	}
 }

@@ -2,6 +2,7 @@
 #include <Windows.h>
 #include <d3d11.h>
 #include <cinttypes>
+#include <gml/gmlcolor.h>
 
 namespace rhi
 {
@@ -32,9 +33,10 @@ namespace rhi
 
 	enum class TextureFormat : int
 	{
-		RGBA = 0, BGRA = 1,
-		DXT1 = 2, DXT3 = 3, DXT5 = 4,
-		Float32 = 5,
+		Unknown = 0,
+		RGBA = 1, BGRA = 2,
+		DXT1 = 3, DXT3 = 4, DXT5 = 5,
+		D24S8 = 6, Float32 = 7,
 	};
 
 	class TextureBinding
@@ -77,8 +79,25 @@ namespace rhi
 
 		virtual uint32_t GetHeight() const = 0;
 
+		virtual TextureFormat GetFormat() const = 0;
+
 		//temporary
 		virtual ID3D11Texture2D* GetRaw() = 0;
+	};
+
+	class RenderTargetView : public RHIObject
+	{
+
+	};
+
+	class ShaderResourceView : public RHIObject
+	{
+
+	};
+
+	class DepthStencilView : public RHIObject
+	{
+
 	};
 
 	class SwapChain : public RHIObject
@@ -107,6 +126,12 @@ namespace rhi
 
 		virtual Texture2D* CreateTexture2D(TextureFormat format, ResourceUsage usage, uint32_t binding, uint32_t width, uint32_t height) = 0;
 
+		virtual RenderTargetView* CreateRenderTargetView(Texture2D* texture2D) = 0;
+
+		virtual ShaderResourceView* CreateShaderResourceView(Texture2D* texture2D) = 0;
+
+		virtual DepthStencilView* CreateDepthStencilView(Texture2D* texture2D) = 0;
+
 		// temporary
 		virtual ID3D11Device* GetRaw() = 0;
 	};
@@ -128,6 +153,10 @@ namespace rhi
 	class Context :public RHIObject
 	{
 	public:
+		virtual void ClearRenderTargetView(RenderTargetView* rtView, gml::color4 clearColor) = 0;
+
+		virtual void SetRenderTargets(uint32_t rtCount, RenderTargetView** renderTargets, DepthStencilView* dsView) = 0;
+
 		virtual void SetVertexBuffers(uint32_t startSlot, VertexBufferInfo* buffers, uint32_t bufferCount) = 0;
 
 		virtual void SetIndexBuffer(Buffer* buffer, uint32_t offset, IndexFormat format) = 0;
@@ -136,11 +165,15 @@ namespace rhi
 
 		virtual void SetPixelShaderConstantBuffers(uint32_t startSlot, Buffer** buffers, uint32_t bufferCount) = 0;
 
+		virtual void SetShaderResources(uint32_t startSlot, ShaderResourceView** srViews, uint32_t viewCount) = 0;
+
 		virtual void DrawIndexed(Primitive primitive, uint32_t indexCount, uint32_t startIndex, uint32_t baseVertex) = 0;
 
 		virtual MappedResource Map(Buffer* buffer) = 0;
 
 		virtual void Unmap(Buffer* buffer) = 0;
+
+		virtual void GenerateMipmaps(ShaderResourceView* srView) = 0;
 
 		// temporary
 		virtual ID3D11DeviceContext* GetRaw() = 0;

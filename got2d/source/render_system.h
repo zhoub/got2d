@@ -98,7 +98,7 @@ public:
 	void Destroy();
 
 	autor<rhi::Texture2D> m_texture = nullptr;
-	autor<ID3D11ShaderResourceView> m_shaderView = nullptr;
+	autor<rhi::ShaderResourceView> m_shaderView = nullptr;
 	uint32_t m_width = 0;
 	uint32_t m_height = 0;
 };
@@ -332,8 +332,8 @@ private:
 	autor<rhi::SwapChain> m_swapChain = nullptr;
 
 	autor<rhi::Texture2D> m_colorTexture = nullptr;
-	autor<ID3D11RenderTargetView> m_rtView = nullptr;
-	autor<ID3D11RenderTargetView> m_bbView = nullptr;
+	autor<rhi::RenderTargetView> m_rtView = nullptr;
+	autor<rhi::RenderTargetView> m_bbView = nullptr;
 	autor<rhi::Buffer> m_sceneConstBuffer = nullptr;
 	D3D11_VIEWPORT m_viewport;
 	std::map<g2d::BlendMode, ID3D11BlendState*> m_blendModes;

@@ -11,6 +11,26 @@ Context::~Context()
 	m_d3dContext.Release();
 }
 
+void Context::ClearRenderTargetView(rhi::RenderTargetView * rtView, gml::color4 clearColor)
+{
+	::RenderTargetView* rtViewImpl = reinterpret_cast<::RenderTargetView*>(rtView);
+	ENSURE(rtViewImpl != nullptr);
+	m_d3dContext.ClearRenderTargetView(rtViewImpl->GetRaw(), static_cast<float*>(clearColor));
+}
+
+void Context::SetRenderTargets(uint32_t rtCount, rhi::RenderTargetView ** renderTargets, rhi::DepthStencilView * dsView)
+{
+	m_rtViews.clear();
+	::RenderTargetView* rtViewImpl = nullptr;
+	::DepthStencilView* dsViewImpl = reinterpret_cast<::DepthStencilView*>(dsView);
+	for (uint32_t i = 0; i < rtCount; i++)
+	{
+		rtViewImpl = reinterpret_cast<::RenderTargetView*>(renderTargets[i]);
+		m_rtViews.push_back(rtViewImpl->GetRaw());
+	}
+	m_d3dContext.OMSetRenderTargets(rtCount, &(m_rtViews[0]), dsViewImpl ? dsViewImpl->GetRaw() : nullptr);
+}
+
 void Context::SetVertexBuffers(uint32_t startSlot, rhi::VertexBufferInfo * buffers, uint32_t bufferCount)
 {
 	m_vertexbuffers.clear();
@@ -63,6 +83,16 @@ void Context::SetPixelShaderConstantBuffers(uint32_t startSlot, rhi::Buffer** bu
 	m_d3dContext.PSSetConstantBuffers(startSlot, bufferCount, &(m_psConstantBuffers[0]));
 }
 
+void Context::SetShaderResources(uint32_t startSlot, rhi::ShaderResourceView ** srViews, uint32_t viewCount)
+{
+	m_srViews.clear();
+	for (uint32_t i = 0; i < viewCount; i++)
+	{
+		m_srViews.push_back(((::ShaderResourceView*)srViews[i])->GetRaw());
+	}
+	m_d3dContext.PSSetShaderResources(startSlot, viewCount, &(m_srViews[0]));
+}
+
 void Context::DrawIndexed(rhi::Primitive primitive, uint32_t startIndex, uint32_t indexOffset, uint32_t baseVertex)
 {
 	const D3D_PRIMITIVE_TOPOLOGY kPrimitive[] =
@@ -100,4 +130,11 @@ void Context::Unmap(rhi::Buffer* buffer)
 	ENSURE(bufferImpl != nullptr);
 
 	m_d3dContext.Unmap(bufferImpl->GetRaw(), 0);
+}
+
+void Context::GenerateMipmaps(rhi::ShaderResourceView * srView)
+{
+	::ShaderResourceView* srViewImpl = reinterpret_cast<::ShaderResourceView*>(srView);
+	ENSURE(srViewImpl != nullptr);
+	m_d3dContext.GenerateMips(srViewImpl->GetRaw());
 }

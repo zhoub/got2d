@@ -13,8 +13,8 @@ bool RenderSystem::OnResize(uint32_t width, uint32_t height)
 	m_bbView.release();
 
 	autor<rhi::Texture2D> colorTexture = nullptr;
-	autor<ID3D11RenderTargetView> rtView = nullptr;
-	autor<ID3D11RenderTargetView> bbView = nullptr;
+	autor<rhi::RenderTargetView> rtView = nullptr;
+	autor<rhi::RenderTargetView> rtViewBackBuffer = nullptr;
 
 	if (!m_swapChain->ResizeBackBuffer(width, height))
 	{
@@ -32,11 +32,11 @@ bool RenderSystem::OnResize(uint32_t width, uint32_t height)
 		return false;
 	}
 
-	if (S_OK != m_device->GetRaw()->CreateRenderTargetView(colorTexture->GetRaw(), NULL, &(rtView.pointer)))
+	rtView = m_device->CreateRenderTargetView(colorTexture);
+	if (rtView.is_null())
 	{
 		return false;
 	}
-	ENSURE(rtView.is_not_null());
 
 	autor<rhi::Texture2D> backBuffer = m_swapChain->GetBackBuffer();
 	if (backBuffer.is_null())
@@ -44,15 +44,15 @@ bool RenderSystem::OnResize(uint32_t width, uint32_t height)
 		return false;
 	}
 
-	if (S_OK != m_device->GetRaw()->CreateRenderTargetView(backBuffer->GetRaw(), NULL, &(bbView.pointer)))
+	rtViewBackBuffer = m_device->CreateRenderTargetView(backBuffer);
+	if (rtViewBackBuffer.is_null())
 	{
 		return false;
 	}
-	ENSURE(bbView.is_not_null());
 
 	m_colorTexture = std::move(colorTexture);
 	m_rtView = std::move(rtView);
-	m_bbView = std::move(bbView);
+	m_bbView = std::move(rtViewBackBuffer);
 
 	m_matrixProjDirty = true;
 	m_matrixConstBufferDirty = true;
@@ -68,7 +68,7 @@ bool RenderSystem::OnResize(uint32_t width, uint32_t height)
 		1.0f,					//FLOAT MaxDepth;
 	};
 
-	m_context->GetRaw()->OMSetRenderTargets(1, &(m_bbView.pointer), NULL);
+	m_context->SetRenderTargets(1, &(m_bbView.pointer), nullptr);
 	m_context->GetRaw()->RSSetViewports(1, &m_viewport);
 
 	return true;
@@ -247,7 +247,7 @@ const gml::mat44& RenderSystem::GetProjectionMatrix()
 
 void RenderSystem::Clear()
 {
-	m_context->GetRaw()->ClearRenderTargetView(m_bbView, static_cast<float*>(m_bkColor));
+	m_context->ClearRenderTargetView(m_bbView, m_bkColor);
 }
 
 void RenderSystem::Present()
@@ -354,7 +354,7 @@ void RenderSystem::FlushBatch(Mesh& mesh, g2d::Material& material)
 
 			if (pass->GetTextureCount() > 0)
 			{
-				std::vector<ID3D11ShaderResourceView*> views(pass->GetTextureCount());
+				std::vector<rhi::ShaderResourceView*> views(pass->GetTextureCount());
 				std::vector<ID3D11SamplerState*> samplerstates(pass->GetTextureCount());
 				for (uint32_t t = 0; t < pass->GetTextureCount(); t++)
 				{
@@ -372,7 +372,7 @@ void RenderSystem::FlushBatch(Mesh& mesh, g2d::Material& material)
 					samplerstates[t] = nullptr;
 				}
 				UINT numView = static_cast<UINT>(views.size());
-				m_context->GetRaw()->PSSetShaderResources(0, numView, &(views[0]));
+				m_context->SetShaderResources(0, &(views[0]), views.size());
 				m_context->GetRaw()->PSSetSamplers(0, numView, &(samplerstates[0]));
 			}
 

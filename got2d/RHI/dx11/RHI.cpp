@@ -2,6 +2,22 @@
 #include "../source/inner_utility.h"
 #include "../source/scope_utility.h"
 
+rhi::TextureFormat GetTextureFormat(DXGI_FORMAT format)
+{
+	switch (format)
+	{
+	default:
+	case DXGI_FORMAT_UNKNOWN: return rhi::TextureFormat::Unknown;
+	case DXGI_FORMAT_R8G8B8A8_UNORM: return rhi::TextureFormat::RGBA;
+	case DXGI_FORMAT_B8G8R8X8_UNORM: return rhi::TextureFormat::BGRA;
+	case DXGI_FORMAT_BC1_UNORM: return rhi::TextureFormat::DXT1;
+	case DXGI_FORMAT_BC2_UNORM: return rhi::TextureFormat::DXT3;
+	case DXGI_FORMAT_BC3_UNORM: return rhi::TextureFormat::DXT5;
+	case DXGI_FORMAT_D24_UNORM_S8_UINT: return rhi::TextureFormat::D24S8;
+	case DXGI_FORMAT_R32_FLOAT: return rhi::TextureFormat::Float32;
+	}
+}
+
 rhi::RHICreationResult rhi::CreateRHI()
 {
 	RHICreationResult pair;
@@ -56,6 +72,37 @@ Buffer::~Buffer()
 	m_buffer.Release();
 }
 
+
+RenderTargetView::RenderTargetView(ID3D11RenderTargetView & rtView)
+	: m_rtView(rtView)
+{
+}
+
+RenderTargetView::~RenderTargetView()
+{
+	m_rtView.Release();
+}
+
+DepthStencilView::DepthStencilView(ID3D11DepthStencilView & dsView)
+	: m_dsView(dsView)
+{
+}
+
+DepthStencilView::~DepthStencilView()
+{
+	m_dsView.Release();
+}
+
+ShaderResourceView::ShaderResourceView(ID3D11ShaderResourceView & srView)
+	: m_srView(srView)
+{
+}
+
+ShaderResourceView::~ShaderResourceView()
+{
+	m_srView.Release();
+}
+
 SwapChain::SwapChain(IDXGISwapChain & swapChain)
 	: m_swapChain(swapChain)
 {
@@ -67,10 +114,11 @@ SwapChain::~SwapChain()
 	m_swapChain.Release();
 }
 
-Texture2D::Texture2D(ID3D11Texture2D & texture, uint32_t width, uint32_t height)
+Texture2D::Texture2D(ID3D11Texture2D& texture, rhi::TextureFormat format, uint32_t width, uint32_t height)
 	: m_texture(texture)
 	, m_textureWidth(width)
 	, m_textureHeight(height)
+	, m_textureFormat(format)
 {
 }
 
@@ -90,7 +138,9 @@ rhi::Texture2D* SwapChain::GetBackBuffer()
 	else
 	{
 		ENSURE(backBuffer != nullptr);
-		return new ::Texture2D(*backBuffer, m_windowWidth, m_windowHeight);
+		D3D11_TEXTURE2D_DESC desc;
+		backBuffer->GetDesc(&desc);
+		return new ::Texture2D(*backBuffer, GetTextureFormat(desc.Format), m_windowWidth, m_windowHeight);
 	}
 }
 
