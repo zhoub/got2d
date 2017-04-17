@@ -46,8 +46,6 @@ namespace rhi
 	class Buffer : public RHIObject
 	{
 	public:
-		virtual ID3D11Buffer* GetRaw() = 0;
-
 		virtual rhi::BufferBinding GetBinding() const = 0;
 
 		virtual rhi::BufferUsage GetUsage() const = 0;
@@ -78,7 +76,7 @@ namespace rhi
 		// temporary
 		virtual ID3D11Device* GetRaw() = 0;
 	};
-	
+
 	struct MappedResource
 	{
 		bool success = false;
@@ -86,12 +84,23 @@ namespace rhi
 		uint32_t linePitch = 0;
 	};
 
+	struct VertexBufferInfo
+	{
+		Buffer* buffer = nullptr;
+		uint32_t stride = 0;
+		uint32_t offset = 0;
+	};
+
 	class Context :public RHIObject
 	{
 	public:
-		//virtual void SetVertexBuffers() = 0;
+		virtual void SetVertexBuffers(uint32_t startSlot, VertexBufferInfo* buffers, uint32_t bufferCount) = 0;
 
-		//virtual void SetIndexBuffer(Buffer* buffer, uint32_t offset, IndexFormat format) = 0;
+		virtual void SetIndexBuffer(Buffer* buffer, uint32_t offset, IndexFormat format) = 0;
+
+		virtual void SetVertexShaderConstantBuffers(uint32_t startSlot, Buffer** buffers, uint32_t bufferCount) = 0;
+
+		virtual void SetPixelShaderConstantBuffers(uint32_t startSlot, Buffer** buffers, uint32_t bufferCount) = 0;
 
 		virtual void DrawIndexed(Primitive primitive, uint32_t indexCount, uint32_t startIndex, uint32_t baseVertex) = 0;
 

@@ -1,6 +1,7 @@
 #pragma once
 #include <Windows.h>
 #include <d3d11.h>
+#include <vector>
 #include "../RHI.h"
 
 #pragma comment(lib, "d3d11.lib")
@@ -19,7 +20,7 @@ public:
 
 	virtual uint32_t GetLength() const override { return m_bufferLength; }
 
-	virtual ID3D11Buffer* GetRaw() { return &m_buffer; }
+	ID3D11Buffer* GetRaw() { return &m_buffer; }
 
 public:
 	Buffer(ID3D11Buffer& buffer, rhi::BufferBinding binding, rhi::BufferUsage usage, uint32_t length);
@@ -81,6 +82,14 @@ class Context : public rhi::Context
 public:
 	virtual void Release() override { delete this; }
 
+	virtual void SetVertexBuffers(uint32_t startSlot, rhi::VertexBufferInfo* buffers, uint32_t bufferCount) override;
+
+	virtual void SetIndexBuffer(rhi::Buffer* buffer, uint32_t offset, rhi::IndexFormat format) override;
+
+	virtual void SetVertexShaderConstantBuffers(uint32_t startSlot, rhi::Buffer** buffers, uint32_t bufferCount) override;
+
+	virtual void SetPixelShaderConstantBuffers(uint32_t startSlot, rhi::Buffer** buffers, uint32_t bufferCount) override;
+
 	virtual void DrawIndexed(rhi::Primitive primitive, uint32_t startIndex, uint32_t indexOffset, uint32_t baseVertex) override;
 
 	virtual rhi::MappedResource Map(rhi::Buffer* buffer) override;
@@ -96,4 +105,10 @@ public:
 
 private:
 	ID3D11DeviceContext& m_d3dContext;
+	std::vector<ID3D11Buffer*> m_vertexbuffers;
+	std::vector<ID3D11Buffer*> m_vsConstantBuffers;
+	std::vector<ID3D11Buffer*> m_psConstantBuffers;
+	std::vector<UINT> m_vertexBufferStrides;
+	std::vector<UINT> m_vertexBufferOffsets;
+
 };
