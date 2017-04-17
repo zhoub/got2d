@@ -4,9 +4,6 @@
 #include <vector>
 #include "../RHI.h"
 
-#pragma comment(lib, "d3d11.lib")
-#pragma comment(lib, "dxgi.lib")
-
 class Context;
 
 class Buffer : public rhi::Buffer
@@ -159,11 +156,11 @@ public:
 
 public:
 	BlendState(ID3D11BlendState& blendState, bool enable, rhi::BlendFactor srcFactor, rhi::BlendFactor dstFactor, rhi::BlendOperator blendOp);
-	
+
 	~BlendState();
 
 	ID3D11BlendState* GetRaw() { return &m_blendState; }
-		
+
 private:
 	ID3D11BlendState& m_blendState;
 	bool m_enabled = false;

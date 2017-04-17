@@ -1,5 +1,6 @@
 #include "inner_RHI.h"
-#include "../source/inner_utility.h"
+#include "../source/scope_utility.h"
+#include "dx11_enum.h"
 
 Context::Context(ID3D11DeviceContext& d3dContext)
 	: m_d3dContext(d3dContext)
@@ -11,7 +12,7 @@ Context::~Context()
 	m_d3dContext.Release();
 }
 
-void Context::ClearRenderTargetView(rhi::RenderTargetView * rtView, gml::color4 clearColor)
+void Context::ClearRenderTargetView(rhi::RenderTargetView* rtView, gml::color4 clearColor)
 {
 	::RenderTargetView* rtViewImpl = reinterpret_cast<::RenderTargetView*>(rtView);
 	ENSURE(rtViewImpl != nullptr);
@@ -73,12 +74,6 @@ void Context::SetVertexBuffers(uint32_t startSlot, rhi::VertexBufferInfo * buffe
 
 void Context::SetIndexBuffer(rhi::Buffer* buffer, uint32_t offset, rhi::IndexFormat format)
 {
-	const DXGI_FORMAT kIndexFormat[] =
-	{
-		DXGI_FORMAT_R16_UINT,//		Int16 = 0,
-		DXGI_FORMAT_R32_UINT,//		Int32 = 1,
-	};
-
 	::Buffer* bufferImpl = reinterpret_cast<::Buffer*>(buffer);
 
 	ID3D11Buffer* indexBuffer = bufferImpl == nullptr ? nullptr : bufferImpl->GetRaw();
@@ -179,11 +174,6 @@ void Context::SetTextureSampler(uint32_t startSlot, rhi::TextureSampler ** sampl
 
 void Context::DrawIndexed(rhi::Primitive primitive, uint32_t startIndex, uint32_t indexOffset, uint32_t baseVertex)
 {
-	const D3D_PRIMITIVE_TOPOLOGY kPrimitive[] =
-	{
-		D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST,	//TriangleList = 0,
-		D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP,	//TriangleFan = 1,
-	};
 	m_d3dContext.IASetPrimitiveTopology(kPrimitive[(int)primitive]);
 	m_d3dContext.DrawIndexed(startIndex, indexOffset, baseVertex);
 }

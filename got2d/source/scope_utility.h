@@ -1,6 +1,13 @@
 #pragma once
 #include <functional>
 #include <memory>
+#include <cassert>
+
+#define SR(x)  if(x) { x->Release(); x=nullptr; }
+#define SD(x)  if(x) { delete x; x=nullptr; }
+#define SDA(x) if(x) { delete[] x; x=nullptr; }
+
+#define ENSURE(b) { assert(b); if (b); else throw nullptr; }
 
 template <typename FUNC>
 class scope_fallback

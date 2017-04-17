@@ -1,32 +1,7 @@
 #include <d3dcompiler.h>
 #include "inner_RHI.h"
-#include "../source/inner_utility.h"
 #include "../source/scope_utility.h"
-
-#pragma comment(lib,"d3dcompiler.lib")
-
-namespace
-{
-	const D3D11_USAGE kResourceUsage[] =
-	{
-		D3D11_USAGE_DEFAULT,	// Default = 0
-		D3D11_USAGE_DYNAMIC,	// Dynamic = 1,
-	};
-
-	const DXGI_FORMAT kTextureFormat[] =
-	{
-		DXGI_FORMAT_UNKNOWN,			// Unknown
-		DXGI_FORMAT_R8G8B8A8_UNORM,		// RGBA
-		DXGI_FORMAT_B8G8R8X8_UNORM,		// BGRA
-		DXGI_FORMAT_BC1_UNORM,			// DXT1
-		DXGI_FORMAT_BC2_UNORM,			// DXT3
-		DXGI_FORMAT_BC3_UNORM,			// DXT5
-		DXGI_FORMAT_D24_UNORM_S8_UINT,	// D24S8
-		DXGI_FORMAT_R32_FLOAT,			// Float32
-	};
-
-
-}
+#include "dx11_enum.h"
 
 Device::Device(ID3D11Device& d3dDevice)
 	: m_d3dDevice(d3dDevice)
@@ -78,59 +53,41 @@ rhi::SwapChain * Device::CreateSwapChain(void* nativeWindow, uint32_t windowWidt
 	scDesc.Flags = 0;
 
 	IDXGISwapChain* swapChain = nullptr;
-	if (S_OK != factory->CreateSwapChain(&m_d3dDevice, &scDesc, &swapChain))
-	{
-		return nullptr;
-	}
-	else
+	if (S_OK == factory->CreateSwapChain(&m_d3dDevice, &scDesc, &swapChain))
 	{
 		return new ::SwapChain(*swapChain);
 	}
-}
-
-rhi::Buffer * Device::CreateBuffer(rhi::BufferBinding binding, rhi::ResourceUsage usage, uint32_t bufferLength)
-{
-	const UINT kBindings[] =
-	{
-		D3D11_BIND_VERTEX_BUFFER,		// Vertex = 0,
-		D3D11_BIND_INDEX_BUFFER,		// Index = 1,
-		D3D11_BIND_CONSTANT_BUFFER,		// Constant = 2,
-	};
-
-	D3D11_BUFFER_DESC bufferDesc =
-	{
-		bufferLength,				//UINT ByteWidth;
-		kResourceUsage[(int)usage],			//D3D11_USAGE Usage;
-		kBindings[(int)binding],	//UINT BindFlags;
-		D3D11_CPU_ACCESS_WRITE,		//UINT CPUAccessFlags;
-		0,							//UINT MiscFlags;
-		0							//UINT StructureByteStride;
-	};
-
-	ID3D11Buffer* buffer = nullptr;
-	HRESULT hr = m_d3dDevice.CreateBuffer(&bufferDesc, NULL, &buffer);
-	if (S_OK != hr)
+	else
 	{
 		return nullptr;
 	}
+}
+
+rhi::Buffer* Device::CreateBuffer(rhi::BufferBinding binding, rhi::ResourceUsage usage, uint32_t bufferLength)
+{
+	D3D11_BUFFER_DESC bufferDesc =
+	{
+		bufferLength,					//UINT ByteWidth;
+		kResourceUsage[(int)usage],		//D3D11_USAGE Usage;
+		kBufferBinding[(int)binding],	//UINT BindFlags;
+		D3D11_CPU_ACCESS_WRITE,			//UINT CPUAccessFlags;
+		0,								//UINT MiscFlags;
+		0								//UINT StructureByteStride;
+	};
+
+	ID3D11Buffer* buffer = nullptr;
+	if (S_OK == m_d3dDevice.CreateBuffer(&bufferDesc, NULL, &buffer))
+	{
+		return new ::Buffer(*buffer, binding, usage, bufferLength);
+	}
 	else
 	{
-		ENSURE(buffer != nullptr);
-		return new ::Buffer(*buffer, binding, usage, bufferLength);
+		return nullptr;
 	}
 }
 
-rhi::Texture2D * Device::CreateTexture2D(rhi::TextureFormat format, rhi::ResourceUsage usage, uint32_t binding, uint32_t width, uint32_t height)
+rhi::Texture2D* Device::CreateTexture2D(rhi::TextureFormat format, rhi::ResourceUsage usage, uint32_t binding, uint32_t width, uint32_t height)
 {
-	const D3D11_BIND_FLAG kBinding[] =
-	{
-		D3D11_BIND_SHADER_RESOURCE,
-		D3D11_BIND_RENDER_TARGET,
-		D3D11_BIND_DEPTH_STENCIL,
-		D3D11_BIND_STREAM_OUTPUT,
-		D3D11_BIND_UNORDERED_ACCESS
-	};
-
 	D3D11_TEXTURE2D_DESC colorTexDesc;
 	colorTexDesc.Width = width;
 	colorTexDesc.Height = height;
@@ -142,48 +99,37 @@ rhi::Texture2D * Device::CreateTexture2D(rhi::TextureFormat format, rhi::Resourc
 	colorTexDesc.Usage = kResourceUsage[(int)usage];
 	colorTexDesc.CPUAccessFlags = usage == rhi::ResourceUsage::Dynamic ? D3D11_CPU_ACCESS_WRITE : 0;
 	colorTexDesc.MiscFlags = 0;
-	colorTexDesc.BindFlags = 0;
-
-	for (int i = 0, n = (int)rhi::TextureBinding::Count; i < n; i++)
-	{
-		auto bindingFlag = 1 << i;
-		if ((binding & bindingFlag) != 0)
-		{
-			colorTexDesc.BindFlags |= kBinding[i];
-		}
-	}
+	colorTexDesc.BindFlags = GetTextureBindFlag(binding);
 
 	ID3D11Texture2D* texture = nullptr;
-	if (S_OK != m_d3dDevice.CreateTexture2D(&colorTexDesc, nullptr, &texture))
+	if (S_OK == m_d3dDevice.CreateTexture2D(&colorTexDesc, NULL, &texture))
 	{
-		return nullptr;
+		return new ::Texture2D(*texture, format, width, height);
 	}
 	else
 	{
-		ENSURE(texture != nullptr);
-		return new ::Texture2D(*texture, format, width, height);
+		return nullptr;
 	}
 }
 
-rhi::RenderTargetView * Device::CreateRenderTargetView(rhi::Texture2D * texture2D)
+rhi::RenderTargetView* Device::CreateRenderTargetView(rhi::Texture2D* texture2D)
 {
 	::Texture2D* textureImpl = reinterpret_cast<::Texture2D*>(texture2D);
 	ENSURE(textureImpl != nullptr);
 
 	ID3D11RenderTargetView* rtView = nullptr;
-	if (S_OK != m_d3dDevice.CreateRenderTargetView(textureImpl->GetRaw(), NULL, &rtView))
+	if (S_OK == m_d3dDevice.CreateRenderTargetView(textureImpl->GetRaw(), NULL, &rtView))
 	{
-		return nullptr;
+		return new ::RenderTargetView(*rtView);
 	}
 	else
 	{
-		ENSURE(rtView != nullptr);
-		return new ::RenderTargetView(*rtView);
+		return nullptr;
 	}
 
 }
 
-rhi::ShaderResourceView * Device::CreateShaderResourceView(rhi::Texture2D * texture2D)
+rhi::ShaderResourceView* Device::CreateShaderResourceView(rhi::Texture2D* texture2D)
 {
 	::Texture2D* textureImpl = reinterpret_cast<::Texture2D*>(texture2D);
 	ENSURE(textureImpl != nullptr);
@@ -196,31 +142,29 @@ rhi::ShaderResourceView * Device::CreateShaderResourceView(rhi::Texture2D * text
 	viewDesc.Texture2D.MostDetailedMip = 0;
 
 	ID3D11ShaderResourceView* srView = nullptr;
-	if (S_OK != m_d3dDevice.CreateShaderResourceView(textureImpl->GetRaw(), &viewDesc, &srView))
+	if (S_OK == m_d3dDevice.CreateShaderResourceView(textureImpl->GetRaw(), &viewDesc, &srView))
 	{
-		return nullptr;
+		return new ::ShaderResourceView(*srView);
 	}
 	else
 	{
-		ENSURE(srView != nullptr);
-		return new ::ShaderResourceView(*srView);
+		return nullptr;
 	}
 }
 
-rhi::DepthStencilView * Device::CreateDepthStencilView(rhi::Texture2D * texture2D)
+rhi::DepthStencilView* Device::CreateDepthStencilView(rhi::Texture2D* texture2D)
 {
 	::Texture2D* textureImpl = reinterpret_cast<::Texture2D*>(texture2D);
 	ENSURE(textureImpl != nullptr);
 
 	ID3D11DepthStencilView* dsView = nullptr;
-	if (S_OK != m_d3dDevice.CreateDepthStencilView(textureImpl->GetRaw(), NULL, &dsView))
+	if (S_OK == m_d3dDevice.CreateDepthStencilView(textureImpl->GetRaw(), NULL, &dsView))
 	{
-		return nullptr;
+		return new ::DepthStencilView(*dsView);
 	}
 	else
 	{
-		ENSURE(dsView != nullptr);
-		return new ::DepthStencilView(*dsView);
+		return nullptr;
 	}
 }
 
@@ -229,7 +173,7 @@ ID3DBlob* CompileShaderSource(std::string sourceCodes, std::string entryPoint, s
 	ID3DBlob* shaderBlob = nullptr;
 	ID3DBlob* errorBlob = nullptr;
 
-	if (S_OK != ::D3DCompile(
+	if (S_OK == ::D3DCompile(
 		sourceCodes.c_str(), sourceCodes.length(),
 		NULL,	//Name
 		NULL,	//Defines
@@ -240,18 +184,18 @@ ID3DBlob* CompileShaderSource(std::string sourceCodes, std::string entryPoint, s
 		0,		//Flag2
 		&shaderBlob, &errorBlob))
 	{
+		return shaderBlob;
+	}
+	else
+	{
 		const char* reason = (const char*)errorBlob->GetBufferPointer();
 		errorBlob->Release();
 		assert(false);
 		return nullptr;
 	}
-	else
-	{
-		return shaderBlob;
-	}
 }
 
-rhi::ShaderProgram * Device::CreateShaderProgram(
+rhi::ShaderProgram* Device::CreateShaderProgram(
 	const char * vsSource, const char * vsEntry,
 	const char * psSource, const char * psEntry,
 	rhi::InputLayout * layouts, uint32_t layoutCount)
@@ -291,13 +235,6 @@ rhi::ShaderProgram * Device::CreateShaderProgram(
 		return nullptr;
 	}
 
-	const DXGI_FORMAT kInputFormat[] =
-	{
-		DXGI_FORMAT_R32G32_FLOAT,
-		DXGI_FORMAT_R32G32B32_FLOAT,
-		DXGI_FORMAT_R32G32B32A32_FLOAT,
-	};
-
 	std::vector<D3D11_INPUT_ELEMENT_DESC> m_inputLayouts;
 	for (uint32_t i = 0; i < layoutCount; i++)
 	{
@@ -322,32 +259,11 @@ rhi::ShaderProgram * Device::CreateShaderProgram(
 	}
 
 	fb.cancel();
-
 	return new ::ShaderProgram(*vertexShader, *pixelShader, *inputLayout);
 }
 
-rhi::BlendState * Device::CreateBlendState(bool enabled, rhi::BlendFactor source, rhi::BlendFactor dest, rhi::BlendOperator op)
+rhi::BlendState* Device::CreateBlendState(bool enabled, rhi::BlendFactor source, rhi::BlendFactor dest, rhi::BlendOperator op)
 {
-	const D3D11_BLEND kBlendOperand[] =
-	{
-		D3D11_BLEND_ZERO,			// Zero = 0,
-		D3D11_BLEND_ONE,			// One = 1,
-		D3D11_BLEND_SRC_COLOR,		// SourceColor = 2,
-		D3D11_BLEND_SRC_ALPHA,		// SourceAlpha = 3,
-		D3D11_BLEND_DEST_COLOR,		// DestinationColor = 4,
-		D3D11_BLEND_DEST_ALPHA,		// DestinationAlpha = 5,
-		D3D11_BLEND_INV_SRC_COLOR,	// InverseSourceColor = 6,
-		D3D11_BLEND_INV_SRC_ALPHA,	// InverseSourceAlpha = 7,
-		D3D11_BLEND_INV_DEST_COLOR,	// InverseDestinationColor = 8,
-		D3D11_BLEND_INV_DEST_ALPHA,	// InverseDestinationAlpha = 9,
-	};
-
-	const D3D11_BLEND_OP kBlendOperator[] =
-	{
-		D3D11_BLEND_OP_ADD,			// Add,
-		D3D11_BLEND_OP_SUBTRACT,	// Sub
-	};
-
 	D3D11_BLEND srcBlend = kBlendOperand[(int)source];
 	D3D11_BLEND dstBlend = kBlendOperand[(int)dest];
 	D3D11_BLEND_OP blendOp = kBlendOperator[(int)op];
@@ -369,38 +285,23 @@ rhi::BlendState * Device::CreateBlendState(bool enabled, rhi::BlendFactor source
 	}
 
 	ID3D11BlendState* blendState = nullptr;
-	if (S_OK != m_d3dDevice.CreateBlendState(&blendDesc, &blendState))
+	if (S_OK == m_d3dDevice.CreateBlendState(&blendDesc, &blendState))
 	{
-		return nullptr;
+		return new ::BlendState(*blendState, enabled, source, dest, op);
 	}
 	else
 	{
-		ENSURE(blendState != nullptr);
-		return new ::BlendState(*blendState, enabled, source, dest, op);
+		return nullptr;
 	}
 }
 
 rhi::TextureSampler* Device::CreateTextureSampler(rhi::SamplerFilter filter, rhi::TextureAddress addressU, rhi::TextureAddress addressV)
 {
-	const D3D11_FILTER kSamplerFilters[] =
-	{
-		D3D11_FILTER_MIN_MAG_MIP_POINT, // MinMagMipPoint
-		D3D11_FILTER_MIN_MAG_MIP_LINEAR, // MinMagMipLinear
-	};
-
-	const D3D11_TEXTURE_ADDRESS_MODE kTextureAddressMode[] =
-	{
-		D3D11_TEXTURE_ADDRESS_WRAP,
-		D3D11_TEXTURE_ADDRESS_CLAMP,
-		D3D11_TEXTURE_ADDRESS_MIRROR
-	};
-
-
 	D3D11_SAMPLER_DESC samlerDesc;
 
 	samlerDesc.Filter = kSamplerFilters[(int)filter];
-	samlerDesc.AddressU = kTextureAddressMode[(int)addressU];
-	samlerDesc.AddressV = kTextureAddressMode[(int)addressV];
+	samlerDesc.AddressU = kTextureAddress[(int)addressU];
+	samlerDesc.AddressV = kTextureAddress[(int)addressV];
 	samlerDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
 	samlerDesc.MinLOD = -FLT_MAX;
 	samlerDesc.MaxLOD = FLT_MAX;
@@ -409,13 +310,12 @@ rhi::TextureSampler* Device::CreateTextureSampler(rhi::SamplerFilter filter, rhi
 	samlerDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
 
 	ID3D11SamplerState* sampler = nullptr;
-	if (S_OK != m_d3dDevice.CreateSamplerState(&samlerDesc, &sampler))
+	if (S_OK == m_d3dDevice.CreateSamplerState(&samlerDesc, &sampler))
 	{
-		return nullptr;
+		return new ::TextureSampler(*sampler);
 	}
 	else
 	{
-		ENSURE(sampler != nullptr);
-		return new ::TextureSampler(*sampler);
+		return nullptr;
 	}
 }

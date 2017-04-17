@@ -1,21 +1,6 @@
 #include "inner_RHI.h"
-#include "../source/inner_utility.h"
-
-rhi::TextureFormat GetTextureFormat(DXGI_FORMAT format)
-{
-	switch (format)
-	{
-	default:
-	case DXGI_FORMAT_UNKNOWN: return rhi::TextureFormat::Unknown;
-	case DXGI_FORMAT_R8G8B8A8_UNORM: return rhi::TextureFormat::RGBA;
-	case DXGI_FORMAT_B8G8R8X8_UNORM: return rhi::TextureFormat::BGRA;
-	case DXGI_FORMAT_BC1_UNORM: return rhi::TextureFormat::DXT1;
-	case DXGI_FORMAT_BC2_UNORM: return rhi::TextureFormat::DXT3;
-	case DXGI_FORMAT_BC3_UNORM: return rhi::TextureFormat::DXT5;
-	case DXGI_FORMAT_D24_UNORM_S8_UINT: return rhi::TextureFormat::D24S8;
-	case DXGI_FORMAT_R32_FLOAT: return rhi::TextureFormat::Float32;
-	}
-}
+#include "../source/scope_utility.h"
+#include "dx11_enum.h"
 
 SwapChain::SwapChain(IDXGISwapChain & swapChain)
 	: m_swapChain(swapChain)
@@ -35,17 +20,17 @@ SwapChain::~SwapChain()
 rhi::Texture2D* SwapChain::GetBackBuffer()
 {
 	ID3D11Texture2D* backBuffer = nullptr;
-	if (S_OK != m_swapChain.GetBuffer(0, _uuidof(ID3D11Texture2D), reinterpret_cast<void**>(&backBuffer)))
-	{
-		return nullptr;
-	}
-	else
+	if (S_OK == m_swapChain.GetBuffer(0, _uuidof(ID3D11Texture2D), reinterpret_cast<void**>(&backBuffer)))
 	{
 		D3D11_TEXTURE2D_DESC desc;
 		backBuffer->GetDesc(&desc);
 		return new ::Texture2D(*backBuffer,
-			GetTextureFormat(desc.Format),
+			GetTextureFormatDX11(desc.Format),
 			desc.Width, desc.Height);
+	}
+	else
+	{
+		return nullptr;
 	}
 }
 

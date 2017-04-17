@@ -2,7 +2,6 @@
 #include <vector>
 #include <map>
 #include <gml/gmlaabb.h>
-#include "inner_utility.h"
 #include "scope_utility.h"
 
 class Camera;

@@ -43,7 +43,6 @@ namespace rhi
 		Float2, Float3, Float4,
 	};
 
-
 	enum class BlendFactor : int
 	{
 		Zero = 0,
@@ -63,6 +62,17 @@ namespace rhi
 		Add = 0, Sub = 1,
 	};
 
+	class TextureBinding
+	{
+	public:
+		constexpr static int ShaderResource = 1 << 0;
+		constexpr static int RenderTarget = 1 << 1;
+		constexpr static int DepthStencil = 1 << 2;
+		constexpr static int StreamOutput = 1 << 3;
+		constexpr static int Unordered = 1 << 4;
+		constexpr static int Count = 5;
+	};
+
 	enum class SamplerFilter : int
 	{
 		MinMagMipPoint,
@@ -74,17 +84,6 @@ namespace rhi
 		Repeat = 0,
 		Clamp = 1,
 		Mirror = 2,
-	};
-
-	class TextureBinding
-	{
-	public:
-		constexpr static int ShaderResource = 1 << 0;
-		constexpr static int RenderTarget = 1 << 1;
-		constexpr static int DepthStencil = 1 << 2;
-		constexpr static int StreamOutput = 1 << 3;
-		constexpr static int Unordered = 1 << 4;
-		constexpr static int Count = 5;
 	};
 
 	class RHIObject

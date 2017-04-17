@@ -1,5 +1,4 @@
 #include "inner_RHI.h"
-#include "../source/inner_utility.h"
 #include "../source/scope_utility.h"
 
 rhi::RHICreationResult rhi::CreateRHI()

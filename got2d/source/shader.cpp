@@ -1,8 +1,6 @@
 #include <d3dcompiler.h>
 #include "render_system.h"
 
-#pragma comment(lib,"d3dcompiler.lib")
-
 g2d::Material* g2d::Material::CreateColorTexture()
 {
 	auto mat = new ::Material(1);

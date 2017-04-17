@@ -55,6 +55,7 @@ set(GOT2D_RHI_INCLUDE_FILES
 if(MSVC)
 list(APPEND GOT2D_RHI_INCLUDE_FILES 
 	RHI/dx11/inner_RHI.h
+	RHI/dx11/dx11_enum.h
 	RHI/dx11/RHI.cpp
 	RHI/dx11/rhi_device.cpp
 	RHI/dx11/rhi_context.cpp
@@ -82,5 +83,7 @@ include_directories(got2d ../extern/res)
 add_library(got2d SHARED ${GOT2D_INCLUDE_FILES} ${GOT2D_SOURCE_FILES})
 set_target_properties(got2d PROPERTIES COMPILE_DEFINITIONS GOT2D_EXPORTS)
 target_link_libraries(got2d res gml)
-
+if(MSVC)
+target_link_libraries(got2d d3d11.lib dxgi.lib d3dcompiler.lib)
+endif(MSVC)
 source_group(gml REGULAR_EXPRESSION "gml*")
