@@ -107,6 +107,28 @@ private:
 	ID3D11ShaderResourceView& m_srView;
 };
 
+class ShaderProgram : public rhi::ShaderProgram
+{
+public:
+	virtual void Release() override { delete this; }
+
+public:
+	ShaderProgram(ID3D11VertexShader& vertexShader, ID3D11PixelShader& pixelShader, ID3D11InputLayout& inputLayout);
+
+	~ShaderProgram();
+
+	ID3D11VertexShader* GetVertexShader() { return &m_vertexShader; }
+
+	ID3D11PixelShader* GetPixelShader() { return &m_pixelShader; }
+
+	ID3D11InputLayout* GetInputLayout() { return &m_inputLayout; }
+
+private:
+	ID3D11VertexShader&  m_vertexShader;
+	ID3D11PixelShader& m_pixelShader;
+	ID3D11InputLayout& m_inputLayout;
+};
+
 class SwapChain : public rhi::SwapChain
 {
 public:
@@ -154,6 +176,11 @@ public:
 
 	virtual rhi::DepthStencilView* CreateDepthStencilView(rhi::Texture2D* texture2D) override;
 
+	virtual rhi::ShaderProgram* CreateShaderProgram(
+		const char* vsSource, const char* vsEntry,
+		const char* psSource, const char* psEntry,
+		rhi::InputLayout* layouts, uint32_t layoutCount) override;
+
 	virtual ID3D11Device* GetRaw() { return &m_d3dDevice; }
 
 public:
@@ -162,6 +189,7 @@ public:
 	~Device();
 
 private:
+
 	ID3D11Device& m_d3dDevice;
 };
 
@@ -177,6 +205,8 @@ public:
 	virtual void SetVertexBuffers(uint32_t startSlot, rhi::VertexBufferInfo* buffers, uint32_t bufferCount) override;
 
 	virtual void SetIndexBuffer(rhi::Buffer* buffer, uint32_t offset, rhi::IndexFormat format) override;
+
+	virtual void SetShaderProgram(rhi::ShaderProgram* program) override;
 
 	virtual void SetVertexShaderConstantBuffers(uint32_t startSlot, rhi::Buffer** buffers, uint32_t bufferCount) override;
 

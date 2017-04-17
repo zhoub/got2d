@@ -83,6 +83,15 @@ void Context::SetPixelShaderConstantBuffers(uint32_t startSlot, rhi::Buffer** bu
 	m_d3dContext.PSSetConstantBuffers(startSlot, bufferCount, &(m_psConstantBuffers[0]));
 }
 
+void Context::SetShaderProgram(rhi::ShaderProgram * program)
+{
+	::ShaderProgram* programImpl = reinterpret_cast<::ShaderProgram*>(program);
+
+	m_d3dContext.IASetInputLayout(programImpl->GetInputLayout());
+	m_d3dContext.VSSetShader(programImpl->GetVertexShader(), NULL, 0);
+	m_d3dContext.PSSetShader(programImpl->GetPixelShader(), NULL, 0);
+}
+
 void Context::SetShaderResources(uint32_t startSlot, rhi::ShaderResourceView ** srViews, uint32_t viewCount)
 {
 	m_srViews.clear();

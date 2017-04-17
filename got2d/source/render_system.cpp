@@ -319,9 +319,7 @@ void RenderSystem::FlushBatch(Mesh& mesh, g2d::Material& material)
 			info.buffer = m_geometry.m_vertexBuffer;
 			m_context->SetVertexBuffers(0, &info, 1);
 			m_context->SetIndexBuffer(m_geometry.m_indexBuffer, 0, rhi::IndexFormat::Int32);
-			m_context->GetRaw()->IASetInputLayout(shader->GetInputLayout());
-			m_context->GetRaw()->VSSetShader(shader->GetVertexShader(), NULL, 0);
-			m_context->GetRaw()->PSSetShader(shader->GetPixelShader(), NULL, 0);
+			m_context->SetShaderProgram(shader->GetShaderProgram());
 			UpdateSceneConstBuffer();
 			m_context->SetVertexShaderConstantBuffers(0, &(m_sceneConstBuffer.pointer), 1);
 			SetBlendMode(pass->GetBlendMode());

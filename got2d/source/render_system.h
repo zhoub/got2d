@@ -153,20 +153,14 @@ public:
 
 	void Destroy();
 
-	ID3D11VertexShader* GetVertexShader() { return m_vertexShader; }
-
-	ID3D11PixelShader* GetPixelShader() { return m_pixelShader; }
-
-	ID3D11InputLayout* GetInputLayout() { return m_shaderLayout; }
+	rhi::ShaderProgram* GetShaderProgram() { return m_shaderProgram; }
 
 	rhi::Buffer* GetVertexConstBuffer() { return m_vertexConstBuffer; }
 
 	rhi::Buffer* GetPixelConstBuffer() { return m_pixelConstBuffer; }
 
 private:
-	autor<ID3D11InputLayout> m_shaderLayout = nullptr;
-	autor<ID3D11VertexShader>  m_vertexShader = nullptr;
-	autor<ID3D11PixelShader> m_pixelShader = nullptr;
+	autor<rhi::ShaderProgram> m_shaderProgram = nullptr;
 	autor<rhi::Buffer> m_vertexConstBuffer = nullptr;
 	autor<rhi::Buffer> m_pixelConstBuffer = nullptr;
 };

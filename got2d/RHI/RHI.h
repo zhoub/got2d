@@ -39,6 +39,13 @@ namespace rhi
 		D24S8 = 6, Float32 = 7,
 	};
 
+	enum class InputFormat : int
+	{
+		Float2,
+		Float3,
+		Float4,
+	};
+
 	class TextureBinding
 	{
 	public:
@@ -100,6 +107,22 @@ namespace rhi
 
 	};
 
+	struct InputLayout
+	{
+		const char* SemanticName = "";
+		uint32_t SemanticIndex = 0;
+		uint32_t InputSlot = 0;
+		uint32_t AlignOffset = 0xFFFFFFFF;
+		InputFormat Format = InputFormat::Float4;
+		bool IsInstanced = false;
+		uint32_t InstanceRepeatRate = 1;
+	};
+
+	class ShaderProgram : public RHIObject
+	{
+
+	};
+
 	class SwapChain : public RHIObject
 	{
 	public:
@@ -132,6 +155,11 @@ namespace rhi
 
 		virtual DepthStencilView* CreateDepthStencilView(Texture2D* texture2D) = 0;
 
+		virtual ShaderProgram* CreateShaderProgram(
+			const char* vsSource, const char* vsEntry,
+			const char* psSource, const char* psEntry,
+			InputLayout* layouts, uint32_t layoutCount) = 0;
+
 		// temporary
 		virtual ID3D11Device* GetRaw() = 0;
 	};
@@ -160,6 +188,8 @@ namespace rhi
 		virtual void SetVertexBuffers(uint32_t startSlot, VertexBufferInfo* buffers, uint32_t bufferCount) = 0;
 
 		virtual void SetIndexBuffer(Buffer* buffer, uint32_t offset, IndexFormat format) = 0;
+
+		virtual void SetShaderProgram(ShaderProgram* program) = 0;
 
 		virtual void SetVertexShaderConstantBuffers(uint32_t startSlot, Buffer** buffers, uint32_t bufferCount) = 0;
 

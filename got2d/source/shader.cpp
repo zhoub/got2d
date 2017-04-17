@@ -28,101 +28,25 @@ g2d::Material* g2d::Material::CreateSimpleColor()
 
 bool Shader::Create(const std::string& vsCode, uint32_t vcbLength, const std::string& psCode, uint32_t pcbLength)
 {
-	auto vsCodeLength = vsCode.size();
-	auto psCodeLength = psCode.size();
-
-	autor<ID3DBlob> vsBlob = nullptr;
-	autor<ID3DBlob> psBlob = nullptr;
-	autor<ID3DBlob> errorBlob = nullptr;
-
-	autor<ID3D11InputLayout> shaderLayout = nullptr;
-	autor<ID3D11VertexShader>  vertexShader = nullptr;
-	autor<ID3D11PixelShader> pixelShader = nullptr;
+	autor<rhi::ShaderProgram> shaderProgram = nullptr;
 	autor<rhi::Buffer> vertexConstBuffer = nullptr;
 	autor<rhi::Buffer> pixelConstBuffer = nullptr;
 
-	//compile shader
-	auto ret = ::D3DCompile(
-		vsCode.c_str(), vsCodeLength,
-		NULL, NULL, NULL,
-		"VSMain", "vs_5_0",
-		0, 0,
-		&vsBlob.pointer, &errorBlob.pointer);
-
-	if (S_OK != ret)
+	rhi::InputLayout layouts[3] =
 	{
-		const char* reason = (const char*)errorBlob->GetBufferPointer();
-		ENSURE(false);
-	}
-
-	ret = ::D3DCompile(
-		psCode.c_str(), psCodeLength,
-		NULL, NULL, NULL,
-		"PSMain", "ps_5_0",
-		0, 0,
-		&psBlob.pointer, &errorBlob.pointer);
-
-	if (S_OK != ret)
-	{
-		const char* reason = (const char*)errorBlob->GetBufferPointer();
-		ENSURE(false);
-	}
-
-	// create shader
-	ret = GetRenderSystem()->GetDevice()->GetRaw()->CreateVertexShader(
-		vsBlob->GetBufferPointer(),
-		vsBlob->GetBufferSize(),
-		NULL,
-		&(vertexShader.pointer));
-
-	if (S_OK != ret)
-		return false;
-
-	ret = GetRenderSystem()->GetDevice()->GetRaw()->CreatePixelShader(
-		psBlob->GetBufferPointer(),
-		psBlob->GetBufferSize(),
-		NULL,
-		&(pixelShader.pointer));
-
-	if (S_OK != ret)
-		return false;
-
-	D3D11_INPUT_ELEMENT_DESC layoutDesc[3];
-	::ZeroMemory(layoutDesc, sizeof(layoutDesc));
-
-	layoutDesc[0].SemanticName = "POSITION";
-	layoutDesc[0].Format = DXGI_FORMAT_R32G32_FLOAT;
-	layoutDesc[0].AlignedByteOffset = 0;
-	layoutDesc[0].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
-
-	layoutDesc[1].SemanticName = "TEXCOORD";
-	layoutDesc[1].Format = DXGI_FORMAT_R32G32_FLOAT;
-	layoutDesc[1].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
-	layoutDesc[1].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
-
-	layoutDesc[2].SemanticName = "COLOR";
-	layoutDesc[2].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-	layoutDesc[2].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
-	layoutDesc[2].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
-
-	ret = GetRenderSystem()->GetDevice()->GetRaw()->CreateInputLayout(
-		layoutDesc, sizeof(layoutDesc) / sizeof(layoutDesc[0]),
-		vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(),
-		&(shaderLayout.pointer));
-
-	if (S_OK != ret)
-		return false;
-
-	D3D11_BUFFER_DESC cbDesc =
-	{
-		0,							//UINT ByteWidth;
-		D3D11_USAGE_DYNAMIC,		//D3D11_USAGE Usage;
-		D3D11_BIND_CONSTANT_BUFFER,	//UINT BindFlags;
-		D3D11_CPU_ACCESS_WRITE,		//UINT CPUAccessFlags;
-		0,							//UINT MiscFlags;
-		0							//UINT StructureByteStride;
+		{ "POSITION" , 0, 0, 0xFFFFFFFF, rhi::InputFormat::Float2, false, 0},
+		{ "TEXCOORD" , 0, 0, 0xFFFFFFFF, rhi::InputFormat::Float2, false, 0 },
+		{ "COLOR" , 0, 0, 0xFFFFFFFF, rhi::InputFormat::Float4, false, 0 },
 	};
-	
+
+	shaderProgram = GetRenderSystem()->GetDevice()->CreateShaderProgram(
+		vsCode.c_str(), "VSMain",
+		psCode.c_str(), "PSMain",
+		layouts, 3);
+
+	if (shaderProgram.is_null())
+		return false;
+
 	if (vcbLength > 0)
 	{
 		vertexConstBuffer = GetRenderSystem()->GetDevice()->CreateBuffer(
@@ -146,9 +70,7 @@ bool Shader::Create(const std::string& vsCode, uint32_t vcbLength, const std::st
 			return false;
 	}
 
-	m_pixelShader = std::move(pixelShader);
-	m_vertexShader = std::move(vertexShader);
-	m_shaderLayout = std::move(shaderLayout);
+	m_shaderProgram = std::move(shaderProgram);
 	m_vertexConstBuffer = std::move(vertexConstBuffer);
 	m_pixelConstBuffer = std::move(pixelConstBuffer);
 	return true;
@@ -156,9 +78,7 @@ bool Shader::Create(const std::string& vsCode, uint32_t vcbLength, const std::st
 
 void Shader::Destroy()
 {
-	m_pixelShader.release();
-	m_vertexShader.release();
-	m_shaderLayout.release();
+	m_shaderProgram.release();
 	m_vertexConstBuffer.release();
 	m_pixelConstBuffer.release();
 }

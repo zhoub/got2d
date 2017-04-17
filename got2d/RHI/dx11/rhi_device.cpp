@@ -1,6 +1,9 @@
+#include <d3dcompiler.h>
 #include "inner_RHI.h"
 #include "../source/inner_utility.h"
 #include "../source/scope_utility.h"
+
+#pragma comment(lib,"d3dcompiler.lib")
 
 namespace
 {
@@ -21,6 +24,8 @@ namespace
 		DXGI_FORMAT_D24_UNORM_S8_UINT,	// D24S8
 		DXGI_FORMAT_R32_FLOAT,			// Float32
 	};
+
+
 }
 
 Device::Device(ID3D11Device& d3dDevice)
@@ -226,4 +231,108 @@ rhi::DepthStencilView * Device::CreateDepthStencilView(rhi::Texture2D * texture2
 		ENSURE(dsView != nullptr);
 		return new ::DepthStencilView(*dsView);
 	}
+}
+
+ID3DBlob* CompileShaderSource(std::string sourceCodes, std::string entryPoint, std::string profileTarget)
+{
+	ID3DBlob* shaderBlob = nullptr;
+	ID3DBlob* errorBlob = nullptr;
+
+	if (S_OK != ::D3DCompile(
+		sourceCodes.c_str(), sourceCodes.length(),
+		NULL,	//Name
+		NULL,	//Defines
+		NULL,	//Inlcudes
+		entryPoint.c_str(),
+		profileTarget.c_str(),
+		0,		//Flag1
+		0,		//Flag2
+		&shaderBlob, &errorBlob))
+	{
+		const char* reason = (const char*)errorBlob->GetBufferPointer();
+		errorBlob->Release();
+		assert(false);
+		return nullptr;
+	}
+	else
+	{
+		return shaderBlob;
+	}
+}
+
+
+
+rhi::ShaderProgram * Device::CreateShaderProgram(
+	const char * vsSource, const char * vsEntry,
+	const char * psSource, const char * psEntry,
+	rhi::InputLayout * layouts, uint32_t layoutCount)
+{
+	autor<ID3DBlob> vsBlob = CompileShaderSource(vsSource, vsEntry, "vs_5_0");
+	autor<ID3DBlob> psBlob = CompileShaderSource(psSource, psEntry, "ps_5_0");
+
+	if (vsBlob.is_null() || psBlob.is_null())
+		return nullptr;
+
+	ID3D11VertexShader* vertexShader = nullptr;
+	ID3D11PixelShader* pixelShader = nullptr;
+	ID3D11InputLayout* inputLayout = nullptr;
+
+	auto fb = create_fallback([&]
+	{
+		SR(vertexShader);
+		SR(pixelShader);
+		SR(inputLayout);
+	});
+
+	if (S_OK != m_d3dDevice.CreateVertexShader(
+		vsBlob->GetBufferPointer(),
+		vsBlob->GetBufferSize(),
+		NULL,
+		&vertexShader))
+	{
+		return nullptr;
+	}
+
+	if (S_OK != m_d3dDevice.CreatePixelShader(
+		psBlob->GetBufferPointer(),
+		psBlob->GetBufferSize(),
+		NULL,
+		&pixelShader))
+	{
+		return nullptr;
+	}
+
+	const DXGI_FORMAT kInputFormat[] =
+	{
+		DXGI_FORMAT_R32G32_FLOAT,
+		DXGI_FORMAT_R32G32B32_FLOAT,
+		DXGI_FORMAT_R32G32B32A32_FLOAT,
+	};
+
+	std::vector<D3D11_INPUT_ELEMENT_DESC> m_inputLayouts;
+	for (uint32_t i = 0; i < layoutCount; i++)
+	{
+		rhi::InputLayout& layout = layouts[i];
+		D3D11_INPUT_ELEMENT_DESC elementDesc;
+		elementDesc.SemanticName = layout.SemanticName;
+		elementDesc.SemanticIndex = layout.SemanticIndex;
+		elementDesc.Format = kInputFormat[(int)layout.Format];
+		elementDesc.InputSlot = layout.InputSlot;
+		elementDesc.AlignedByteOffset = (layout.AlignOffset == 0xFFFFFFFF) ? D3D11_APPEND_ALIGNED_ELEMENT : layout.AlignOffset;
+		elementDesc.InputSlotClass = layout.IsInstanced ? D3D11_INPUT_PER_INSTANCE_DATA : D3D11_INPUT_PER_VERTEX_DATA;
+		elementDesc.InstanceDataStepRate = layout.InstanceRepeatRate;
+		m_inputLayouts.push_back(elementDesc);
+	}
+
+	if (S_OK != m_d3dDevice.CreateInputLayout(
+		&(m_inputLayouts[0]), m_inputLayouts.size(),
+		vsBlob->GetBufferPointer(), vsBlob->GetBufferSize(),
+		&inputLayout))
+	{
+		return nullptr;
+	}
+
+	fb.cancel();
+
+	return new ::ShaderProgram(*vertexShader, *pixelShader, *inputLayout);
 }
