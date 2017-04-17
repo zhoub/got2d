@@ -45,7 +45,7 @@ void Context::SetRenderTargets(uint32_t rtCount, rhi::RenderTargetView ** render
 	for (uint32_t i = 0; i < rtCount; i++)
 	{
 		rtViewImpl = reinterpret_cast<::RenderTargetView*>(renderTargets[i]);
-		m_rtViews.push_back(rtViewImpl->GetRaw() == nullptr ? nullptr : rtViewImpl->GetRaw());
+		m_rtViews.push_back(rtViewImpl == nullptr ? nullptr : rtViewImpl->GetRaw());
 	}
 	m_d3dContext.OMSetRenderTargets(rtCount, &(m_rtViews[0]), dsViewImpl ? dsViewImpl->GetRaw() : nullptr);
 }
@@ -60,7 +60,7 @@ void Context::SetVertexBuffers(uint32_t startSlot, rhi::VertexBufferInfo * buffe
 	{
 		const rhi::VertexBufferInfo& info = buffers[i];
 		bufferImpl = reinterpret_cast<::Buffer*>(info.buffer);
-		m_vertexbuffers.push_back(bufferImpl->GetRaw() == nullptr ? nullptr : bufferImpl->GetRaw());
+		m_vertexbuffers.push_back(bufferImpl == nullptr ? nullptr : bufferImpl->GetRaw());
 		m_vertexBufferStrides.push_back(info.stride);
 		m_vertexBufferOffsets.push_back(info.offset);
 	}
@@ -81,7 +81,7 @@ void Context::SetIndexBuffer(rhi::Buffer* buffer, uint32_t offset, rhi::IndexFor
 
 	::Buffer* bufferImpl = reinterpret_cast<::Buffer*>(buffer);
 
-	ID3D11Buffer* indexBuffer = bufferImpl->GetRaw() == nullptr ? nullptr : bufferImpl->GetRaw();
+	ID3D11Buffer* indexBuffer = bufferImpl == nullptr ? nullptr : bufferImpl->GetRaw();
 	m_d3dContext.IASetIndexBuffer(indexBuffer, kIndexFormat[(int)format], offset);
 }
 
@@ -154,7 +154,7 @@ void Context::SetShaderResources(uint32_t startSlot, rhi::ShaderResourceView ** 
 void Context::SetBlendState(rhi::BlendState * state)
 {
 	::BlendState* stateImpl = reinterpret_cast<::BlendState*>(state);
-	ID3D11BlendState* blendState = stateImpl->GetRaw() == nullptr ? nullptr : stateImpl->GetRaw();
+	ID3D11BlendState* blendState = stateImpl == nullptr ? nullptr : stateImpl->GetRaw();
 	m_d3dContext.OMSetBlendState(blendState, nullptr, 0xFFFFFFFF);
 }
 
