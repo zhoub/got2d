@@ -188,7 +188,11 @@ public:
 
 	virtual rhi::MappedResource Map(rhi::Buffer* buffer) override;
 
+	virtual rhi::MappedResource Map(rhi::Texture2D* buffer) override;
+
 	virtual void Unmap(rhi::Buffer* buffer) override;
+
+	virtual void Unmap(rhi::Texture2D* buffer) override;
 
 	virtual void GenerateMipmaps(rhi::ShaderResourceView* srView) override;
 
@@ -200,6 +204,10 @@ public:
 	~Context();
 
 private:
+	rhi::MappedResource Map(ID3D11Resource * resource, UINT subResource, D3D11_MAP mappingType, UINT flag);
+
+	void Unmap(ID3D11Resource* resource, UINT subResource);
+
 	ID3D11DeviceContext& m_d3dContext;
 	std::vector<ID3D11Buffer*> m_vertexbuffers;
 	std::vector<ID3D11Buffer*> m_vsConstantBuffers;

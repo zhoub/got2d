@@ -171,7 +171,11 @@ namespace rhi
 
 		virtual MappedResource Map(Buffer* buffer) = 0;
 
+		virtual MappedResource Map(Texture2D* buffer) = 0;
+
 		virtual void Unmap(Buffer* buffer) = 0;
+
+		virtual void Unmap(Texture2D* buffer) = 0;
 
 		virtual void GenerateMipmaps(ShaderResourceView* srView) = 0;
 

@@ -71,16 +71,16 @@ bool Texture2D::Create(uint32_t width, uint32_t height)
 
 void Texture2D::UploadImage(uint8_t* data, bool hasAlpha)
 {
-	D3D11_MAPPED_SUBRESOURCE mappedRes;
-	if (S_OK == GetRenderSystem()->GetContext()->GetRaw()->Map(m_texture->GetRaw(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedRes))
+	auto mappedResouce = GetRenderSystem()->GetContext()->Map(m_texture);
+	if (mappedResouce.success)
 	{
-		uint8_t* colorBuffer = static_cast<uint8_t*>(mappedRes.pData);
+		uint8_t* colorBuffer = static_cast<uint8_t*>(mappedResouce.data);
 		if (hasAlpha)
 		{
 			int srcPitch = m_width * 4;
 			for (uint32_t i = 0; i < m_height; i++)
 			{
-				auto dstPtr = colorBuffer + i * mappedRes.RowPitch;
+				auto dstPtr = colorBuffer + i * mappedResouce.linePitch;
 				auto srcPtr = data + i * srcPitch;
 				memcpy(dstPtr, srcPtr, srcPitch);
 			}
@@ -90,7 +90,7 @@ void Texture2D::UploadImage(uint8_t* data, bool hasAlpha)
 			int srcPitch = m_width * 3;
 			for (uint32_t i = 0; i < m_height; i++)
 			{
-				auto dstPtr = colorBuffer + i * mappedRes.RowPitch;
+				auto dstPtr = colorBuffer + i * mappedResouce.linePitch;
 				auto srcPtr = data + i * srcPitch;
 				for (uint32_t j = 0; j < m_width; j++)
 				{
@@ -100,7 +100,7 @@ void Texture2D::UploadImage(uint8_t* data, bool hasAlpha)
 			}
 		}
 
-		GetRenderSystem()->GetContext()->GetRaw()->Unmap(m_texture->GetRaw(), 0);
+		GetRenderSystem()->GetContext()->Unmap(m_texture);
 		GetRenderSystem()->GetContext()->GenerateMipmaps(m_shaderView);
 	}
 }

@@ -109,9 +109,40 @@ rhi::MappedResource Context::Map(rhi::Buffer * buffer)
 	::Buffer* bufferImpl = reinterpret_cast<::Buffer*>(buffer);
 	ENSURE(bufferImpl != nullptr);
 
+	return Map(bufferImpl->GetRaw(), 0, D3D11_MAP_WRITE_DISCARD, 0);
+}
+
+rhi::MappedResource Context::Map(rhi::Texture2D * buffer)
+{
+	::Texture2D* textureImpl = reinterpret_cast<::Texture2D*>(buffer);
+	ENSURE(textureImpl != nullptr);
+
+	return Map(textureImpl->GetRaw(), 0, D3D11_MAP_WRITE_DISCARD, 0);
+}
+
+void Context::Unmap(rhi::Buffer* buffer)
+{
+	::Buffer* bufferImpl = reinterpret_cast<::Buffer*>(buffer);
+	ENSURE(bufferImpl != nullptr);
+
+	Unmap(bufferImpl->GetRaw(), 0);
+}
+
+void Context::Unmap(rhi::Texture2D * buffer)
+{
+	::Texture2D* textureImpl = reinterpret_cast<::Texture2D*>(buffer);
+	ENSURE(textureImpl != nullptr);
+
+	Unmap(textureImpl->GetRaw(), 0);
+}
+
+
+
+rhi::MappedResource Context::Map(ID3D11Resource * resource, UINT subResource, D3D11_MAP mappingType, UINT flag)
+{
 	D3D11_MAPPED_SUBRESOURCE d3dMappedRes;
 	rhi::MappedResource mappedRes;
-	if (S_OK == m_d3dContext.Map(bufferImpl->GetRaw(), 0, D3D11_MAP_WRITE_DISCARD, 0, &d3dMappedRes))
+	if (S_OK == m_d3dContext.Map(resource, subResource, mappingType, flag, &d3dMappedRes))
 	{
 		mappedRes.success = true;
 		mappedRes.data = d3dMappedRes.pData;
@@ -124,12 +155,9 @@ rhi::MappedResource Context::Map(rhi::Buffer * buffer)
 	return mappedRes;
 }
 
-void Context::Unmap(rhi::Buffer* buffer)
+void Context::Unmap(ID3D11Resource * resource, UINT subResource)
 {
-	::Buffer* bufferImpl = reinterpret_cast<::Buffer*>(buffer);
-	ENSURE(bufferImpl != nullptr);
-
-	m_d3dContext.Unmap(bufferImpl->GetRaw(), 0);
+	m_d3dContext.Unmap(resource, subResource);
 }
 
 void Context::GenerateMipmaps(rhi::ShaderResourceView * srView)
