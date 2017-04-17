@@ -7,7 +7,7 @@ bool RenderSystem::OnResize(uint32_t width, uint32_t height)
 {
 	//though we create an individual render target
 	//we do not use it for rendering, for now.
-	//it will be used after Compositor System finished.
+	//it will be used when building Compositor System.
 	m_colorTexture.release();
 	m_rtView.release();
 	m_bbView.release();
