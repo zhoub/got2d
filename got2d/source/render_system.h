@@ -329,8 +329,9 @@ private:
 	autor<rhi::RenderTargetView> m_rtView = nullptr;
 	autor<rhi::RenderTargetView> m_bbView = nullptr;
 	autor<rhi::Buffer> m_sceneConstBuffer = nullptr;
-	D3D11_VIEWPORT m_viewport;
-	std::map<g2d::BlendMode, ID3D11BlendState*> m_blendModes;
+	rhi::Viewport m_viewport;
+	std::map<g2d::BlendMode, rhi::BlendState*> m_blendModes;
+	std::vector<rhi::TextureSampler*> m_textureSampler;
 
 	gml::color4 m_bkColor = gml::color4::blue();
 
@@ -356,6 +357,7 @@ private:
 	bool m_matrixProjDirty = true;
 	uint32_t m_windowWidth = 0;
 	uint32_t m_windowHeight = 0;
+	
 };
 
 

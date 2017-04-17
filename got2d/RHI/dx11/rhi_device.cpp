@@ -260,8 +260,6 @@ ID3DBlob* CompileShaderSource(std::string sourceCodes, std::string entryPoint, s
 	}
 }
 
-
-
 rhi::ShaderProgram * Device::CreateShaderProgram(
 	const char * vsSource, const char * vsEntry,
 	const char * psSource, const char * psEntry,
@@ -335,4 +333,98 @@ rhi::ShaderProgram * Device::CreateShaderProgram(
 	fb.cancel();
 
 	return new ::ShaderProgram(*vertexShader, *pixelShader, *inputLayout);
+}
+
+rhi::BlendState * Device::CreateBlendState(bool enabled, rhi::BlendFactor source, rhi::BlendFactor dest, rhi::BlendOperator op)
+{
+	const D3D11_BLEND kBlendOperand[] =
+	{
+		D3D11_BLEND_ZERO,			// Zero = 0,
+		D3D11_BLEND_ONE,			// One = 1,
+		D3D11_BLEND_SRC_COLOR,		// SourceColor = 2,
+		D3D11_BLEND_SRC_ALPHA,		// SourceAlpha = 3,
+		D3D11_BLEND_DEST_COLOR,		// DestinationColor = 4,
+		D3D11_BLEND_DEST_ALPHA,		// DestinationAlpha = 5,
+		D3D11_BLEND_INV_SRC_COLOR,	// InverseSourceColor = 6,
+		D3D11_BLEND_INV_SRC_ALPHA,	// InverseSourceAlpha = 7,
+		D3D11_BLEND_INV_DEST_COLOR,	// InverseDestinationColor = 8,
+		D3D11_BLEND_INV_DEST_ALPHA,	// InverseDestinationAlpha = 9,
+	};
+
+	const D3D11_BLEND_OP kBlendOperator[] =
+	{
+		D3D11_BLEND_OP_ADD,			// Add,
+		D3D11_BLEND_OP_SUBTRACT,	// Sub
+	};
+
+	D3D11_BLEND srcBlend = kBlendOperand[(int)source];
+	D3D11_BLEND dstBlend = kBlendOperand[(int)dest];
+	D3D11_BLEND_OP blendOp = kBlendOperator[(int)op];
+	D3D11_BLEND_DESC blendDesc;
+	blendDesc.AlphaToCoverageEnable = FALSE;
+	blendDesc.IndependentBlendEnable = FALSE;
+	for (int i = 0; i < D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT; i++)
+	{
+		blendDesc.RenderTarget[i].BlendEnable = enabled ? TRUE : FALSE;
+
+		blendDesc.RenderTarget[i].SrcBlend = srcBlend;
+		blendDesc.RenderTarget[i].DestBlend = dstBlend;
+		blendDesc.RenderTarget[i].BlendOp = blendOp;
+		// default setting
+		blendDesc.RenderTarget[i].SrcBlendAlpha = D3D11_BLEND_ONE;
+		blendDesc.RenderTarget[i].DestBlendAlpha = D3D11_BLEND_ZERO;
+		blendDesc.RenderTarget[i].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+		blendDesc.RenderTarget[i].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+	}
+
+	ID3D11BlendState* blendState = nullptr;
+	if (S_OK != m_d3dDevice.CreateBlendState(&blendDesc, &blendState))
+	{
+		return nullptr;
+	}
+	else
+	{
+		ENSURE(blendState != nullptr);
+		return new ::BlendState(*blendState, enabled, source, dest, op);
+	}
+}
+
+rhi::TextureSampler* Device::CreateTextureSampler(rhi::SamplerFilter filter, rhi::TextureAddress addressU, rhi::TextureAddress addressV)
+{
+	const D3D11_FILTER kSamplerFilters[] =
+	{
+		D3D11_FILTER_MIN_MAG_MIP_POINT, // MinMagMipPoint
+		D3D11_FILTER_MIN_MAG_MIP_LINEAR, // MinMagMipLinear
+	};
+
+	const D3D11_TEXTURE_ADDRESS_MODE kTextureAddressMode[] =
+	{
+		D3D11_TEXTURE_ADDRESS_WRAP,
+		D3D11_TEXTURE_ADDRESS_CLAMP,
+		D3D11_TEXTURE_ADDRESS_MIRROR
+	};
+
+
+	D3D11_SAMPLER_DESC samlerDesc;
+
+	samlerDesc.Filter = kSamplerFilters[(int)filter];
+	samlerDesc.AddressU = kTextureAddressMode[(int)addressU];
+	samlerDesc.AddressV = kTextureAddressMode[(int)addressV];
+	samlerDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+	samlerDesc.MinLOD = -FLT_MAX;
+	samlerDesc.MaxLOD = FLT_MAX;
+	samlerDesc.MipLODBias = 0.0f;
+	samlerDesc.MaxAnisotropy = 1;
+	samlerDesc.ComparisonFunc = D3D11_COMPARISON_NEVER;
+
+	ID3D11SamplerState* sampler = nullptr;
+	if (S_OK != m_d3dDevice.CreateSamplerState(&samlerDesc, &sampler))
+	{
+		return nullptr;
+	}
+	else
+	{
+		ENSURE(sampler != nullptr);
+		return new ::TextureSampler(*sampler);
+	}
 }

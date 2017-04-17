@@ -118,6 +118,32 @@ ShaderProgram::~ShaderProgram()
 	m_inputLayout.Release();
 }
 
+TextureSampler::TextureSampler(ID3D11SamplerState& samplerState)
+	: m_samplerState(samplerState)
+{
+
+}
+
+TextureSampler::~TextureSampler()
+{
+	m_samplerState.Release();
+}
+
+
+BlendState::BlendState(ID3D11BlendState& blendState, bool enable, rhi::BlendFactor srcFactor, rhi::BlendFactor dstFactor, rhi::BlendOperator blendOp)
+	: m_blendState(blendState)
+	, m_srcFactor(srcFactor)
+	, m_dstFactor(dstFactor)
+	, m_blendOp(blendOp)
+{
+
+}
+
+BlendState::~BlendState()
+{
+	m_blendState.Release();
+}
+
 SwapChain::SwapChain(IDXGISwapChain & swapChain)
 	: m_swapChain(swapChain)
 {

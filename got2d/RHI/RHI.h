@@ -1,8 +1,7 @@
 #pragma once
-#include <Windows.h>
-#include <d3d11.h>
 #include <cinttypes>
 #include <gml/gmlcolor.h>
+#include <gml/gmlvector.h>
 
 namespace rhi
 {
@@ -41,9 +40,40 @@ namespace rhi
 
 	enum class InputFormat : int
 	{
-		Float2,
-		Float3,
-		Float4,
+		Float2, Float3, Float4,
+	};
+
+
+	enum class BlendFactor : int
+	{
+		Zero = 0,
+		One = 1,
+		SourceColor = 2,
+		SourceAlpha = 3,
+		DestinationColor = 4,
+		DestinationAlpha = 5,
+		InverseSourceColor = 6,
+		InverseSourceAlpha = 7,
+		InverseDestinationColor = 8,
+		InverseDestinationAlpha = 9,
+	};
+
+	enum class BlendOperator : int
+	{
+		Add = 0, Sub = 1,
+	};
+
+	enum class SamplerFilter : int
+	{
+		MinMagMipPoint,
+		MinMagMipLinear,
+	};
+
+	enum class TextureAddress : int
+	{
+		Repeat = 0,
+		Clamp = 1,
+		Mirror = 2,
 	};
 
 	class TextureBinding
@@ -87,41 +117,29 @@ namespace rhi
 		virtual uint32_t GetHeight() const = 0;
 
 		virtual TextureFormat GetFormat() const = 0;
-
-		//temporary
-		virtual ID3D11Texture2D* GetRaw() = 0;
 	};
 
-	class RenderTargetView : public RHIObject
+	class RenderTargetView : public RHIObject { };
+
+	class ShaderResourceView : public RHIObject { };
+
+	class DepthStencilView : public RHIObject { };
+
+	class ShaderProgram : public RHIObject { };
+
+	class BlendState : public RHIObject
 	{
+	public:
+		virtual bool IsEnabled() const = 0;
 
+		virtual BlendFactor GetSourceFactor() const = 0;
+
+		virtual BlendFactor GetDestinationFactor() const = 0;
+
+		virtual BlendOperator GetOperator() const = 0;
 	};
 
-	class ShaderResourceView : public RHIObject
-	{
-
-	};
-
-	class DepthStencilView : public RHIObject
-	{
-
-	};
-
-	struct InputLayout
-	{
-		const char* SemanticName = "";
-		uint32_t SemanticIndex = 0;
-		uint32_t InputSlot = 0;
-		uint32_t AlignOffset = 0xFFFFFFFF;
-		InputFormat Format = InputFormat::Float4;
-		bool IsInstanced = false;
-		uint32_t InstanceRepeatRate = 1;
-	};
-
-	class ShaderProgram : public RHIObject
-	{
-
-	};
+	class TextureSampler: public RHIObject { };
 
 	class SwapChain : public RHIObject
 	{
@@ -135,9 +153,17 @@ namespace rhi
 		virtual bool ResizeBackBuffer(uint32_t width, uint32_t height) = 0;
 
 		virtual void Present() = 0;
+	};
 
-		// temporary
-		virtual IDXGISwapChain* GetRaw() = 0;
+	struct InputLayout
+	{
+		const char* SemanticName = "";
+		uint32_t SemanticIndex = 0;
+		uint32_t InputSlot = 0;
+		uint32_t AlignOffset = 0xFFFFFFFF;
+		InputFormat Format = InputFormat::Float4;
+		bool IsInstanced = false;
+		uint32_t InstanceRepeatRate = 1;
 	};
 
 	class Device : public RHIObject
@@ -160,15 +186,16 @@ namespace rhi
 			const char* psSource, const char* psEntry,
 			InputLayout* layouts, uint32_t layoutCount) = 0;
 
-		// temporary
-		virtual ID3D11Device* GetRaw() = 0;
+		virtual BlendState* CreateBlendState(bool enabled, BlendFactor source, BlendFactor dest, BlendOperator op) = 0;
+
+		virtual TextureSampler* CreateTextureSampler(SamplerFilter filter, TextureAddress addressU, TextureAddress addressV) = 0;
 	};
 
-	struct MappedResource
+	struct Viewport
 	{
-		bool success = false;
-		void* data = nullptr;
-		uint32_t linePitch = 0;
+		gml::vec2 LTPosition;
+		gml::vec2 Size;
+		gml::vec2 MinMaxZ;
 	};
 
 	struct VertexBufferInfo
@@ -178,10 +205,19 @@ namespace rhi
 		uint32_t offset = 0;
 	};
 
+	struct MappedResource
+	{
+		bool success = false;
+		void* data = nullptr;
+		uint32_t linePitch = 0;
+	};
+
 	class Context :public RHIObject
 	{
 	public:
 		virtual void ClearRenderTargetView(RenderTargetView* rtView, gml::color4 clearColor) = 0;
+
+		virtual void SetViewport(const rhi::Viewport* viewport, uint32_t count) = 0;
 
 		virtual void SetRenderTargets(uint32_t rtCount, RenderTargetView** renderTargets, DepthStencilView* dsView) = 0;
 
@@ -197,6 +233,10 @@ namespace rhi
 
 		virtual void SetShaderResources(uint32_t startSlot, ShaderResourceView** srViews, uint32_t viewCount) = 0;
 
+		virtual void SetBlendState(BlendState* state) = 0;
+
+		virtual void SetTextureSampler(uint32_t startSlot, TextureSampler** samplers, uint32_t count) = 0;
+
 		virtual void DrawIndexed(Primitive primitive, uint32_t indexCount, uint32_t startIndex, uint32_t baseVertex) = 0;
 
 		virtual MappedResource Map(Buffer* buffer) = 0;
@@ -208,9 +248,6 @@ namespace rhi
 		virtual void Unmap(Texture2D* buffer) = 0;
 
 		virtual void GenerateMipmaps(ShaderResourceView* srView) = 0;
-
-		// temporary
-		virtual ID3D11DeviceContext* GetRaw() = 0;
 	};
 
 	struct RHICreationResult

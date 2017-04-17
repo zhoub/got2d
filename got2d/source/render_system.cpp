@@ -58,83 +58,45 @@ bool RenderSystem::OnResize(uint32_t width, uint32_t height)
 	m_matrixConstBufferDirty = true;
 	m_windowWidth = width;
 	m_windowHeight = height;
-	m_viewport =
-	{
-		0.0f,					//FLOAT TopLeftX;
-		0.0f,					//FLOAT TopLeftY;
-		(FLOAT)m_windowWidth,	//FLOAT Width;
-		(FLOAT)m_windowHeight,	//FLOAT Height;
-		0.0f,					//FLOAT MinDepth;
-		1.0f,					//FLOAT MaxDepth;
-	};
+
+	m_viewport.Size.set(
+		(float)m_windowWidth,
+		(float)m_windowHeight);
 
 	m_context->SetRenderTargets(1, &(m_bbView.pointer), nullptr);
-	m_context->GetRaw()->RSSetViewports(1, &m_viewport);
+	m_context->SetViewport(&m_viewport, 1);
 
 	return true;
 }
 
 bool RenderSystem::CreateBlendModes()
 {
-
-	HRESULT hr = S_OK;
-	ID3D11BlendState* blendState = nullptr;
-	D3D11_BLEND_DESC blendDesc;
 	m_blendModes[g2d::BlendMode::None] = nullptr;
 
-	blendDesc.AlphaToCoverageEnable = FALSE;
-	blendDesc.IndependentBlendEnable = FALSE;
-	for (int i = 0; i < D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT; i++)
-	{
-		blendDesc.RenderTarget[i].BlendEnable = TRUE;
-		blendDesc.RenderTarget[i].SrcBlend = D3D11_BLEND_SRC_ALPHA;
-		blendDesc.RenderTarget[i].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
-		blendDesc.RenderTarget[i].BlendOp = D3D11_BLEND_OP_ADD;
-		blendDesc.RenderTarget[i].SrcBlendAlpha = D3D11_BLEND_ONE;
-		blendDesc.RenderTarget[i].DestBlendAlpha = D3D11_BLEND_ZERO;
-		blendDesc.RenderTarget[i].BlendOpAlpha = D3D11_BLEND_OP_ADD;
-		blendDesc.RenderTarget[i].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
-	}
+	m_blendModes[g2d::BlendMode::Normal] = m_device->CreateBlendState(true,
+		rhi::BlendFactor::SourceAlpha,
+		rhi::BlendFactor::InverseSourceAlpha,
+		rhi::BlendOperator::Add);
 
-	hr = m_device->GetRaw()->CreateBlendState(&blendDesc, &blendState);
-	if (hr != S_OK)
+	if (m_blendModes[g2d::BlendMode::Normal] == nullptr)
 		return false;
-	m_blendModes[g2d::BlendMode::Normal] = blendState;
 
-	for (int i = 0; i < D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT; i++)
-	{
-		blendDesc.RenderTarget[i].BlendEnable = TRUE;
-		blendDesc.RenderTarget[i].SrcBlend = D3D11_BLEND_ONE;
-		blendDesc.RenderTarget[i].DestBlend = D3D11_BLEND_ONE;
-		blendDesc.RenderTarget[i].BlendOp = D3D11_BLEND_OP_ADD;
-		blendDesc.RenderTarget[i].SrcBlendAlpha = D3D11_BLEND_ONE;
-		blendDesc.RenderTarget[i].DestBlendAlpha = D3D11_BLEND_ZERO;
-		blendDesc.RenderTarget[i].BlendOpAlpha = D3D11_BLEND_OP_ADD;
-		blendDesc.RenderTarget[i].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
-	}
+	m_blendModes[g2d::BlendMode::Additve] = m_device->CreateBlendState(true,
+		rhi::BlendFactor::One,
+		rhi::BlendFactor::One,
+		rhi::BlendOperator::Add);
 
-	hr = m_device->GetRaw()->CreateBlendState(&blendDesc, &blendState);
-	if (hr != S_OK)
+	if (m_blendModes[g2d::BlendMode::Additve] == nullptr)
 		return false;
-	m_blendModes[g2d::BlendMode::Additve] = blendState;
-
-	for (int i = 0; i < D3D11_SIMULTANEOUS_RENDER_TARGET_COUNT; i++)
-	{
-		blendDesc.RenderTarget[i].BlendEnable = TRUE;
-		blendDesc.RenderTarget[i].SrcBlend = D3D11_BLEND_ONE;
-		blendDesc.RenderTarget[i].DestBlend = D3D11_BLEND_INV_SRC_COLOR;
-		blendDesc.RenderTarget[i].BlendOp = D3D11_BLEND_OP_ADD;
-		blendDesc.RenderTarget[i].SrcBlendAlpha = D3D11_BLEND_ONE;
-		blendDesc.RenderTarget[i].DestBlendAlpha = D3D11_BLEND_ZERO;
-		blendDesc.RenderTarget[i].BlendOpAlpha = D3D11_BLEND_OP_ADD;
-		blendDesc.RenderTarget[i].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
-	}
 
 	return true;
 }
 
 bool RenderSystem::Create(void* nativeWindow)
 {
+	m_viewport.LTPosition.set(0, 0);
+	m_viewport.MinMaxZ.set(0, 1);
+
 	if (Instance)
 	{
 		return Instance == this;
@@ -142,7 +104,6 @@ bool RenderSystem::Create(void* nativeWindow)
 
 	auto fb = create_fallback([&] { Destroy(); });
 
-	HRESULT hr = S_OK;
 	auto rhiResult = rhi::CreateRHI();
 
 	if (!rhiResult.success)
@@ -260,8 +221,7 @@ void RenderSystem::SetBlendMode(g2d::BlendMode blendMode)
 	if (m_blendModes.count(blendMode) == 0)
 		return;
 
-	ID3D11BlendState* blendState = m_blendModes[blendMode];
-	m_context->GetRaw()->OMSetBlendState(blendState, nullptr, 0xffffffff);
+	m_context->SetBlendState(m_blendModes[blendMode]);
 }
 
 Texture* RenderSystem::CreateTextureFromFile(const char* resPath)
@@ -353,7 +313,7 @@ void RenderSystem::FlushBatch(Mesh& mesh, g2d::Material& material)
 			if (pass->GetTextureCount() > 0)
 			{
 				std::vector<rhi::ShaderResourceView*> views(pass->GetTextureCount());
-				std::vector<ID3D11SamplerState*> samplerstates(pass->GetTextureCount());
+				m_textureSampler.clear();
 				for (uint32_t t = 0; t < pass->GetTextureCount(); t++)
 				{
 					::Texture* timpl = reinterpret_cast<::Texture*>(pass->GetTextureByIndex(t));
@@ -367,11 +327,11 @@ void RenderSystem::FlushBatch(Mesh& mesh, g2d::Material& material)
 					{
 						views[t] = nullptr;
 					}
-					samplerstates[t] = nullptr;
+					m_textureSampler.push_back(nullptr);
 				}
-				UINT numView = static_cast<UINT>(views.size());
+
 				m_context->SetShaderResources(0, &(views[0]), views.size());
-				m_context->GetRaw()->PSSetSamplers(0, numView, &(samplerstates[0]));
+				m_context->SetTextureSampler(0, &(m_textureSampler[0]), m_textureSampler.size());
 			}
 
 			m_context->DrawIndexed(rhi::Primitive::TriangleList, mesh.GetIndexCount(), 0, 0);

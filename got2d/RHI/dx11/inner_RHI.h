@@ -45,13 +45,12 @@ public:
 
 	virtual rhi::TextureFormat GetFormat() const override { return m_textureFormat; }
 
-	//temporary
-	virtual ID3D11Texture2D* GetRaw() override { return &m_texture; }
-
 public:
-	Texture2D(ID3D11Texture2D& texture, rhi::TextureFormat format,uint32_t width, uint32_t height);
+	Texture2D(ID3D11Texture2D& texture, rhi::TextureFormat format, uint32_t width, uint32_t height);
 
 	~Texture2D();
+
+	ID3D11Texture2D* GetRaw() { return &m_texture; }
 
 private:
 	ID3D11Texture2D& m_texture;
@@ -100,7 +99,7 @@ public:
 	ShaderResourceView(ID3D11ShaderResourceView& rtView);
 
 	~ShaderResourceView();
-	
+
 	ID3D11ShaderResourceView* GetRaw() { return &m_srView; }
 
 private:
@@ -129,6 +128,50 @@ private:
 	ID3D11InputLayout& m_inputLayout;
 };
 
+class TextureSampler : public rhi::TextureSampler
+{
+public:
+	virtual void Release() override { delete this; }
+
+public:
+	TextureSampler(ID3D11SamplerState& samplerState);
+
+	~TextureSampler();
+
+	ID3D11SamplerState* GetRaw() { return &m_samplerState; }
+
+private:
+	ID3D11SamplerState& m_samplerState;
+};
+
+class BlendState : public rhi::BlendState
+{
+public:
+	virtual void Release() override { delete this; }
+
+	virtual bool IsEnabled() const override { return m_enabled; }
+
+	virtual rhi::BlendFactor GetSourceFactor() const override { return m_srcFactor; }
+
+	virtual rhi::BlendFactor GetDestinationFactor() const override { return m_dstFactor; }
+
+	virtual rhi::BlendOperator GetOperator() const override { return m_blendOp; }
+
+public:
+	BlendState(ID3D11BlendState& blendState, bool enable, rhi::BlendFactor srcFactor, rhi::BlendFactor dstFactor, rhi::BlendOperator blendOp);
+	
+	~BlendState();
+
+	ID3D11BlendState* GetRaw() { return &m_blendState; }
+		
+private:
+	ID3D11BlendState& m_blendState;
+	bool m_enabled = false;
+	rhi::BlendFactor m_srcFactor = rhi::BlendFactor::One;
+	rhi::BlendFactor m_dstFactor = rhi::BlendFactor::Zero;
+	rhi::BlendOperator m_blendOp = rhi::BlendOperator::Add;
+};
+
 class SwapChain : public rhi::SwapChain
 {
 public:
@@ -144,14 +187,14 @@ public:
 
 	virtual void Present() override;
 
-	virtual IDXGISwapChain* GetRaw() { return &m_swapChain; }
-
 public:
 	SwapChain(IDXGISwapChain& swapChain);
 
 	~SwapChain();
 
 	void UpdateWindowSize();
+
+	IDXGISwapChain* GetRaw() { return &m_swapChain; }
 
 private:
 	IDXGISwapChain& m_swapChain;
@@ -181,12 +224,16 @@ public:
 		const char* psSource, const char* psEntry,
 		rhi::InputLayout* layouts, uint32_t layoutCount) override;
 
-	virtual ID3D11Device* GetRaw() { return &m_d3dDevice; }
+	virtual rhi::BlendState* CreateBlendState(bool enabled, rhi::BlendFactor source, rhi::BlendFactor dest, rhi::BlendOperator op) override;
+
+	virtual rhi::TextureSampler* CreateTextureSampler(rhi::SamplerFilter filter, rhi::TextureAddress addressU, rhi::TextureAddress addressV) override;
 
 public:
 	Device(ID3D11Device& d3dDevice);
 
 	~Device();
+
+	ID3D11Device* GetRaw() { return &m_d3dDevice; }
 
 private:
 
@@ -199,6 +246,8 @@ public:
 	virtual void Release() override { delete this; }
 
 	virtual void ClearRenderTargetView(rhi::RenderTargetView* rtView, gml::color4 clearColor) override;
+
+	virtual void SetViewport(const rhi::Viewport* viewport, uint32_t count) override;
 
 	virtual void SetRenderTargets(uint32_t rtCount, rhi::RenderTargetView** renderTargets, rhi::DepthStencilView* dsView) override;
 
@@ -214,6 +263,10 @@ public:
 
 	virtual void SetShaderResources(uint32_t startSlot, rhi::ShaderResourceView** srViews, uint32_t viewCount) override;
 
+	virtual void SetBlendState(rhi::BlendState* state) override;
+
+	virtual void SetTextureSampler(uint32_t startSlot, rhi::TextureSampler** samplers, uint32_t count) override;
+
 	virtual void DrawIndexed(rhi::Primitive primitive, uint32_t startIndex, uint32_t indexOffset, uint32_t baseVertex) override;
 
 	virtual rhi::MappedResource Map(rhi::Buffer* buffer) override;
@@ -226,12 +279,12 @@ public:
 
 	virtual void GenerateMipmaps(rhi::ShaderResourceView* srView) override;
 
-	virtual ID3D11DeviceContext* GetRaw() { return &m_d3dContext; }
-
 public:
 	Context(ID3D11DeviceContext& d3dContext);
 
 	~Context();
+
+	ID3D11DeviceContext* GetRaw() { return &m_d3dContext; }
 
 private:
 	rhi::MappedResource Map(ID3D11Resource * resource, UINT subResource, D3D11_MAP mappingType, UINT flag);
@@ -244,7 +297,8 @@ private:
 	std::vector<ID3D11Buffer*> m_psConstantBuffers;
 	std::vector<ID3D11RenderTargetView*> m_rtViews;
 	std::vector<ID3D11ShaderResourceView*> m_srViews;
+	std::vector<ID3D11SamplerState*> m_samplerStates;
 	std::vector<UINT> m_vertexBufferStrides;
 	std::vector<UINT> m_vertexBufferOffsets;
-
+	std::vector<D3D11_VIEWPORT> m_viewports;
 };
