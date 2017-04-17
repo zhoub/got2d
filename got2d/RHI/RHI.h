@@ -139,7 +139,7 @@ namespace rhi
 		virtual BlendOperator GetOperator() const = 0;
 	};
 
-	class TextureSampler: public RHIObject { };
+	class TextureSampler : public RHIObject { };
 
 	class SwapChain : public RHIObject
 	{
@@ -151,6 +151,10 @@ namespace rhi
 		virtual uint32_t GetHeight() const = 0;
 
 		virtual bool ResizeBackBuffer(uint32_t width, uint32_t height) = 0;
+
+		virtual void SetFullscreen(bool fullscreen) = 0;
+
+		virtual bool IsFullscreen() const = 0;
 
 		virtual void Present() = 0;
 	};
@@ -169,6 +173,7 @@ namespace rhi
 	class Device : public RHIObject
 	{
 	public:
+		// if width / height is specified as zero, default size of native window will be used.
 		virtual SwapChain* CreateSwapChain(void* nativeWindow, uint32_t windowWidth, uint32_t windowHeight) = 0;
 
 		virtual Buffer* CreateBuffer(BufferBinding binding, ResourceUsage usage, uint32_t bufferLength) = 0;
@@ -252,9 +257,9 @@ namespace rhi
 
 	struct RHICreationResult
 	{
-		bool success = false;
-		Device* device = nullptr;
-		Context* context = nullptr;
+		bool Success = false;
+		Device* DevicePtr = nullptr;
+		Context* ContextPtr = nullptr;
 	};
 
 	RHICreationResult CreateRHI();

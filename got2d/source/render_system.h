@@ -304,9 +304,9 @@ public:
 
 	virtual void RenderMesh(uint32_t layer, g2d::Mesh*, g2d::Material*, const gml::mat32&) override;
 
-	virtual uint32_t GetWindowWidth() const override { return m_windowWidth; }
+	virtual uint32_t GetWindowWidth() const override { return m_swapChain->GetWidth(); }
 
-	virtual uint32_t GetWindowHeight() const override { return m_windowHeight; }
+	virtual uint32_t GetWindowHeight() const override { return m_swapChain->GetHeight(); }
 
 	virtual gml::vec2 ScreenToView(const gml::coord& screen) const override;
 
@@ -354,10 +354,7 @@ private:
 	gml::mat32 m_matView = gml::mat32::identity();
 	gml::mat44 m_matProj = gml::mat44::identity();
 	bool m_matrixConstBufferDirty = true;
-	bool m_matrixProjDirty = true;
-	uint32_t m_windowWidth = 0;
-	uint32_t m_windowHeight = 0;
-	
+	bool m_matrixProjDirty = true;	
 };
 
 

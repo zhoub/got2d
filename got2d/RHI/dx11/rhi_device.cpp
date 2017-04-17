@@ -44,26 +44,20 @@ rhi::SwapChain * Device::CreateSwapChain(void* nativeWindow, uint32_t windowWidt
 	autor<IDXGIAdapter> adapter = nullptr;
 	autor<IDXGIFactory> factory = nullptr;
 
-	HRESULT hr = m_d3dDevice.QueryInterface(__uuidof(IDXGIDevice), (void **)&(dxgiDevice.pointer));
-	if (S_OK != hr)
+	if (S_OK != m_d3dDevice.QueryInterface(__uuidof(IDXGIDevice), (void **)&(dxgiDevice.pointer)))
 	{
 		return nullptr;
 	}
-	ENSURE(dxgiDevice.is_not_null());
 
-	hr = dxgiDevice->GetParent(__uuidof(IDXGIAdapter), (void **)&(adapter.pointer));
-	if (S_OK != hr)
+	if (S_OK != dxgiDevice->GetParent(__uuidof(IDXGIAdapter), (void **)&(adapter.pointer)))
 	{
 		return nullptr;
 	}
-	ENSURE(adapter.is_not_null());
 
-	hr = adapter->GetParent(__uuidof(IDXGIFactory), (void **)&(factory.pointer));
-	if (S_OK != hr)
+	if (S_OK != adapter->GetParent(__uuidof(IDXGIFactory), (void **)&(factory.pointer)))
 	{
 		return nullptr;
 	}
-	ENSURE(factory.is_not_null());
 
 	DXGI_SWAP_CHAIN_DESC scDesc;
 	scDesc.BufferDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
@@ -75,9 +69,8 @@ rhi::SwapChain * Device::CreateSwapChain(void* nativeWindow, uint32_t windowWidt
 	scDesc.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
 	scDesc.BufferCount = 1;
 	scDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-
 	scDesc.OutputWindow = reinterpret_cast<HWND>(nativeWindow);
-	scDesc.Windowed = true;
+	scDesc.Windowed = TRUE;
 	scDesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
 
 	scDesc.SampleDesc.Count = 1;
@@ -85,14 +78,12 @@ rhi::SwapChain * Device::CreateSwapChain(void* nativeWindow, uint32_t windowWidt
 	scDesc.Flags = 0;
 
 	IDXGISwapChain* swapChain = nullptr;
-	hr = factory->CreateSwapChain(&m_d3dDevice, &scDesc, &swapChain);
-	if (S_OK != hr)
+	if (S_OK != factory->CreateSwapChain(&m_d3dDevice, &scDesc, &swapChain))
 	{
 		return nullptr;
 	}
 	else
 	{
-		ENSURE(swapChain != nullptr);
 		return new ::SwapChain(*swapChain);
 	}
 }

@@ -56,12 +56,10 @@ bool RenderSystem::OnResize(uint32_t width, uint32_t height)
 
 	m_matrixProjDirty = true;
 	m_matrixConstBufferDirty = true;
-	m_windowWidth = width;
-	m_windowHeight = height;
 
 	m_viewport.Size.set(
-		(float)m_windowWidth,
-		(float)m_windowHeight);
+		(float)width,
+		(float)height);
 
 	m_context->SetRenderTargets(1, &(m_bbView.pointer), nullptr);
 	m_context->SetViewport(&m_viewport, 1);
@@ -105,23 +103,19 @@ bool RenderSystem::Create(void* nativeWindow)
 	auto fb = create_fallback([&] { Destroy(); });
 
 	auto rhiResult = rhi::CreateRHI();
-
-	if (!rhiResult.success)
+	if (!rhiResult.Success)
 	{
 		return false;
 	}
 
-	m_device = rhiResult.device;
-	m_context = rhiResult.context;
+	m_device = rhiResult.DevicePtr;
+	m_context = rhiResult.ContextPtr;
 
-	auto swapChain = m_device->CreateSwapChain(nativeWindow, m_windowWidth, m_windowHeight);
-	if (swapChain == nullptr)
+	m_swapChain = m_device->CreateSwapChain(nativeWindow, 0, 0);
+	if (m_swapChain.is_null())
 	{
 		return false;
 	}
-	m_swapChain = swapChain;
-	m_windowWidth = m_swapChain->GetWidth();
-	m_windowHeight = m_swapChain->GetHeight();
 
 	m_sceneConstBuffer = m_device->CreateBuffer(rhi::BufferBinding::Constant, rhi::ResourceUsage::Dynamic, sizeof(gml::vec4) * 6);
 	if (m_sceneConstBuffer.is_null())
@@ -129,7 +123,7 @@ bool RenderSystem::Create(void* nativeWindow)
 		return false;
 	}
 
-	if (!OnResize(m_windowWidth, m_windowHeight))
+	if (!OnResize(m_swapChain->GetWidth(), m_swapChain->GetHeight()))
 	{
 		return false;
 	}
@@ -139,13 +133,14 @@ bool RenderSystem::Create(void* nativeWindow)
 		return false;
 	}
 
-
 	SetBlendMode(g2d::BlendMode::None);
 	Instance = this;
 
 	//all creation using RenderSystem should be start here.
 	if (!m_texPool.CreateDefaultTexture())
+	{
 		return false;
+	}
 
 	m_shaderlib = new ShaderLib();
 	fb.cancel();
@@ -201,7 +196,10 @@ const gml::mat44& RenderSystem::GetProjectionMatrix()
 	{
 		m_matrixProjDirty = false;
 		float znear = -1.0f;
-		m_matProj = gml::mat44::ortho2d_lh(static_cast<float>(m_windowWidth), static_cast<float>(m_windowHeight), znear, 1000.0f);
+		m_matProj = gml::mat44::ortho2d_lh(
+			static_cast<float>(GetWindowWidth()),
+			static_cast<float>(GetWindowHeight()),
+			znear, 1000.0f);
 	}
 	return m_matProj;
 }

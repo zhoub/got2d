@@ -58,6 +58,7 @@ list(APPEND GOT2D_RHI_INCLUDE_FILES
 	RHI/dx11/RHI.cpp
 	RHI/dx11/rhi_device.cpp
 	RHI/dx11/rhi_context.cpp
+	RHI/dx11/rhi_swapchain.cpp
 )
 source_group(RHI_DX11 FILES ${GOT2D_RHI_INCLUDE_FILES})
 else()

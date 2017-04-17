@@ -185,6 +185,10 @@ public:
 
 	virtual bool ResizeBackBuffer(uint32_t width, uint32_t height) override;
 
+	virtual void SetFullscreen(bool fullscreen) override;
+
+	virtual bool IsFullscreen() const override { return m_fullscreen; }
+
 	virtual void Present() override;
 
 public:
@@ -198,8 +202,9 @@ public:
 
 private:
 	IDXGISwapChain& m_swapChain;
-	uint32_t m_windowWidth;
-	uint32_t m_windowHeight;
+	uint32_t m_windowWidth = 0;
+	uint32_t m_windowHeight = 0;
+	bool m_fullscreen = false;
 };
 
 class Device : public rhi::Device
