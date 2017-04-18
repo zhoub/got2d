@@ -61,7 +61,6 @@ void SwapChain::SetFullscreen(bool fullscreen)
 		else
 		{
 			FAIL("cannot retrieve fullsreen state");
-			m_fullscreen = false;
 		}
 	};
 }

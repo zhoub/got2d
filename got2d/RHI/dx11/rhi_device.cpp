@@ -19,17 +19,23 @@ rhi::SwapChain* Device::CreateSwapChain(void* nativeWindow, uint32_t windowWidth
 	autor<IDXGIAdapter> adapter = nullptr;
 	autor<IDXGIFactory> factory = nullptr;
 
-	if (S_OK != m_d3dDevice.QueryInterface(__uuidof(IDXGIDevice), (void **)&(dxgiDevice.pointer)))
+	if (S_OK != m_d3dDevice.QueryInterface(
+		__uuidof(IDXGIDevice),
+		reinterpret_cast<void**>(&(dxgiDevice.pointer))))
 	{
 		return nullptr;
 	}
 
-	if (S_OK != dxgiDevice->GetParent(__uuidof(IDXGIAdapter), (void **)&(adapter.pointer)))
+	if (S_OK != dxgiDevice->GetParent(
+		__uuidof(IDXGIAdapter),
+		reinterpret_cast<void**>(&(adapter.pointer))))
 	{
 		return nullptr;
 	}
 
-	if (S_OK != adapter->GetParent(__uuidof(IDXGIFactory), (void **)&(factory.pointer)))
+	if (S_OK != adapter->GetParent(
+		__uuidof(IDXGIFactory),
+		reinterpret_cast<void**>(&(factory.pointer))))
 	{
 		return nullptr;
 	}
@@ -196,9 +202,9 @@ ID3DBlob* CompileShaderSource(std::string sourceCodes, std::string entryPoint, s
 }
 
 rhi::ShaderProgram* Device::CreateShaderProgram(
-	const char * vsSource, const char * vsEntry,
-	const char * psSource, const char * psEntry,
-	rhi::InputLayout * layouts, uint32_t layoutCount)
+	const char* vsSource, const char* vsEntry,
+	const char* psSource, const char* psEntry,
+	rhi::InputLayout* layouts, uint32_t layoutCount)
 {
 	autor<ID3DBlob> vsBlob = CompileShaderSource(vsSource, vsEntry, "vs_5_0");
 	autor<ID3DBlob> psBlob = CompileShaderSource(psSource, psEntry, "ps_5_0");

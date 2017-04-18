@@ -238,7 +238,6 @@ public:
 	ID3D11Device* GetRaw() { return &m_d3dDevice; }
 
 private:
-
 	ID3D11Device& m_d3dDevice;
 };
 
@@ -249,9 +248,11 @@ public:
 
 	virtual void ClearRenderTargetView(rhi::RenderTargetView* rtView, gml::color4 clearColor) override;
 
-	virtual void SetViewport(const rhi::Viewport* viewport, uint32_t count) override;
+	virtual void SetViewport(const rhi::Viewport& viewport) override;
 
-	virtual void SetRenderTargets(uint32_t rtCount, rhi::RenderTargetView** renderTargets, rhi::DepthStencilView* dsView) override;
+	virtual void SetColorRenderTargets(rhi::RenderTargetView** renderTargets, uint32_t rtCount) override;
+
+	virtual void SetRenderTargets(rhi::RenderTargetView** renderTargets, uint32_t rtCount, rhi::DepthStencilView* dsView) override;
 
 	virtual void SetVertexBuffers(uint32_t startSlot, rhi::VertexBufferInfo* buffers, uint32_t bufferCount) override;
 
@@ -263,7 +264,7 @@ public:
 
 	virtual void SetPixelShaderConstantBuffers(uint32_t startSlot, rhi::Buffer** buffers, uint32_t bufferCount) override;
 
-	virtual void SetShaderResources(uint32_t startSlot, rhi::ShaderResourceView** srViews, uint32_t viewCount) override;
+	virtual void SetShaderResources(uint32_t startSlot, rhi::ShaderResourceView** srViews, uint32_t resCount) override;
 
 	virtual void SetBlendState(rhi::BlendState* state) override;
 
@@ -302,5 +303,4 @@ private:
 	std::vector<ID3D11SamplerState*> m_samplerStates;
 	std::vector<UINT> m_vertexBufferStrides;
 	std::vector<UINT> m_vertexBufferOffsets;
-	std::vector<D3D11_VIEWPORT> m_viewports;
 };

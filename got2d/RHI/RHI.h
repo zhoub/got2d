@@ -221,9 +221,11 @@ namespace rhi
 	public:
 		virtual void ClearRenderTargetView(RenderTargetView* rtView, gml::color4 clearColor) = 0;
 
-		virtual void SetViewport(const rhi::Viewport* viewport, uint32_t count) = 0;
+		virtual void SetViewport(const Viewport& viewport) = 0;
 
-		virtual void SetRenderTargets(uint32_t rtCount, RenderTargetView** renderTargets, DepthStencilView* dsView) = 0;
+		virtual void SetColorRenderTargets(RenderTargetView** renderTargets, uint32_t rtCount) = 0;
+
+		virtual void SetRenderTargets(RenderTargetView** renderTargets, uint32_t rtCount, DepthStencilView* dsView) = 0;
 
 		virtual void SetVertexBuffers(uint32_t startSlot, VertexBufferInfo* buffers, uint32_t bufferCount) = 0;
 
@@ -235,7 +237,7 @@ namespace rhi
 
 		virtual void SetPixelShaderConstantBuffers(uint32_t startSlot, Buffer** buffers, uint32_t bufferCount) = 0;
 
-		virtual void SetShaderResources(uint32_t startSlot, ShaderResourceView** srViews, uint32_t viewCount) = 0;
+		virtual void SetShaderResources(uint32_t startSlot, ShaderResourceView** srViews, uint32_t resCount) = 0;
 
 		virtual void SetBlendState(BlendState* state) = 0;
 

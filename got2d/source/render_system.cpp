@@ -61,8 +61,8 @@ bool RenderSystem::OnResize(uint32_t width, uint32_t height)
 		(float)width,
 		(float)height);
 
-	m_context->SetRenderTargets(1, &(m_bbView.pointer), nullptr);
-	m_context->SetViewport(&m_viewport, 1);
+	m_context->SetColorRenderTargets(&(m_bbView.pointer), 1);
+	m_context->SetViewport(m_viewport);
 
 	return true;
 }
