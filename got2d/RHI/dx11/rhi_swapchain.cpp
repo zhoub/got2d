@@ -56,10 +56,11 @@ void SwapChain::SetFullscreen(bool fullscreen)
 		if (S_OK == m_swapChain.GetFullscreenState(&isFullScreen, NULL))
 		{
 			m_fullscreen = (isFullScreen == TRUE);
+			UpdateWindowSize();
 		}
 		else
 		{
-			ENSURE(false);
+			FAIL("cannot retrieve fullsreen state");
 			m_fullscreen = false;
 		}
 	};

@@ -16,7 +16,10 @@ bool g2d::Engine::IsInitialized()
 
 bool g2d::Engine::Initialize(const Config& config)
 {
-	ENSURE(!IsInitialized());
+	if (IsInitialized())
+	{
+		FAIL("can not initialize enging twice");
+	}
 
 	auto& instance = ::Engine::Instance;
 	instance = new ::Engine();
@@ -42,15 +45,24 @@ bool g2d::Engine::Initialize(const Config& config)
 
 void g2d::Engine::Uninitialize()
 {
-	ENSURE(IsInitialized());
+	if (!IsInitialized())
+	{
+		FAIL("cannot unitialized engine before the engine have been initialzied");
+	}
 	delete ::Engine::Instance;
 	::Engine::Instance = nullptr;
 }
 
 g2d::Engine* g2d::Engine::Instance()
 {
-	ENSURE(IsInitialized());
-	return GetEngineImpl();
+	if (IsInitialized())
+	{
+		return GetEngineImpl();
+	}
+	else
+	{
+		FAIL("cannot retrieve engine instance without initialized.");
+	}
 }
 
 Engine::~Engine()

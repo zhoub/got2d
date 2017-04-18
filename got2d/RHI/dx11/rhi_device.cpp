@@ -13,7 +13,7 @@ Device::~Device()
 	m_d3dDevice.Release();
 }
 
-rhi::SwapChain * Device::CreateSwapChain(void* nativeWindow, uint32_t windowWidth, uint32_t windowHeight)
+rhi::SwapChain* Device::CreateSwapChain(void* nativeWindow, uint32_t windowWidth, uint32_t windowHeight)
 {
 	autor<IDXGIDevice> dxgiDevice = nullptr;
 	autor<IDXGIAdapter> adapter = nullptr;
@@ -190,7 +190,7 @@ ID3DBlob* CompileShaderSource(std::string sourceCodes, std::string entryPoint, s
 	{
 		const char* reason = (const char*)errorBlob->GetBufferPointer();
 		errorBlob->Release();
-		assert(false);
+		FAIL("compile shader failed.")(reason);
 		return nullptr;
 	}
 }
