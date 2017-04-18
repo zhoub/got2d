@@ -155,6 +155,10 @@ void Hexagon::OnKeyPress(g2d::KeyCode key, const g2d::Mouse & mouse, const g2d::
 		m_lastColor = gml::color4::random();
 		SetColor(m_lastColor);
 	}
+	else if ((int)key == 'X')
+	{
+		GetSceneNode()->SetVisible(!GetSceneNode()->IsVisible());
+	}
 }
 
 void HexagonBoard::OnCursorHovering(const g2d::Mouse & mouse, const g2d::Keyboard & keyboard)
