@@ -136,12 +136,13 @@ void RenderSystem::Destroy()
 	m_geometry.Destroy();
 	m_texPool.Destroy();
 
+	m_backBufferRT = nullptr;
+	m_shaderlib.release();
 	m_sceneConstBuffer.release();
+	m_renderTarget.release();
 	m_swapChain.release();
 	m_device.release();
-	m_context.release();
-	m_renderTarget.release();
-	m_backBufferRT = nullptr;
+	m_context.release();	
 
 	if (Instance == this)
 	{

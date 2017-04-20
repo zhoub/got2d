@@ -218,6 +218,13 @@ ShaderLib::~ShaderLib()
 		delete vsd.second;
 	}
 	m_vsSources.clear();
+
+	for (auto& shader : m_shaders)
+	{
+		delete shader.second;
+	}
+	m_shaders.clear();
+	
 }
 
 std::string ShaderLib::GetEffectName(const std::string& vsName, const std::string& psName)

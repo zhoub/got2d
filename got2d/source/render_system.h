@@ -180,7 +180,7 @@ private:
 	std::string GetEffectName(const std::string& vsName, const std::string& psName);
 
 	std::map<std::string, VSData*> m_vsSources;
-	std::map<std::string, PSData*>  m_psSources;
+	std::map<std::string, PSData*> m_psSources;
 	std::map<std::string, Shader*> m_shaders;
 };
 

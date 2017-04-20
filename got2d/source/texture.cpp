@@ -130,8 +130,11 @@ bool TexturePool::CreateDefaultTexture()
 		m_textures.insert(std::make_pair<>("", &m_defaultTexture));
 		return true;
 	}
-	m_defaultTexture.Destroy();
-	return false;
+	else
+	{
+		m_defaultTexture.Destroy();
+		return false;
+	}
 }
 
 bool TexturePool::LoadTextureFromFile(std::string resourcePath)

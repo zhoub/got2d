@@ -137,7 +137,5 @@ Texture2D::Texture2D(ID3D11Texture2D & texture, ID3D11DepthStencilView & view, r
 
 Texture2D::~Texture2D()
 {
-	m_rtView.release();
-	m_dsView.release();
 	m_texture.Release();	
 }
