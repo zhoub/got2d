@@ -2,6 +2,7 @@
 #include <cinttypes>
 #include <gml/gmlcolor.h>
 #include <gml/gmlvector.h>
+#include "../source/scope_utility.h"
 
 namespace rhi
 {
@@ -98,6 +99,29 @@ namespace rhi
 		RHIObject& operator=(const RHIObject&) = delete;
 	};
 
+	template<typename T, T TMin, T TMax> struct CountRange
+	{
+		const T Count;
+		constexpr static T Min = TMin;
+		constexpr static T Max = TMax;
+		CountRange(T c) : Count(c) { ENSURE(Count >= TMin && Count <= TMax); }
+		operator T() const { return Count; }
+	};
+
+	template<uint32_t TEnd> struct Index
+	{
+		const uint32_t Value;
+		constexpr static uint32_t End = TEnd;
+		constexpr static uint32_t Max = TEnd - 1;
+		Index(uint32_t i) : Value(i) { ENSURE(Value < TEnd); }
+		operator uint32_t() const { return Value; }
+	};
+
+	constexpr uint32_t MinRenderTarget = 1;
+	constexpr uint32_t MaxRenderTarget = 4;
+	typedef CountRange<uint32_t, MinRenderTarget, MaxRenderTarget> RTCountRange;
+	typedef Index<MaxRenderTarget> RTIndex;
+
 	class Buffer : public RHIObject
 	{
 	public:
@@ -118,12 +142,24 @@ namespace rhi
 		virtual TextureFormat GetFormat() const = 0;
 	};
 
-	class RenderTargetView : public RHIObject { };
+	class RenderTarget : public RHIObject
+	{
+	public:
+		virtual Texture2D* GetColorBufferByIndex(RTIndex index) = 0;
+
+		virtual uint32_t GetColorBufferCount() = 0;
+
+		// return nullptr if depth/stencil is not enabled.
+		virtual Texture2D* GetDepthStencilBuffer() = 0;
+
+		virtual bool IsDepthStencilUsed() const = 0;
+
+		virtual uint32_t GetWidth() const = 0;
+
+		virtual uint32_t GetHeight() const = 0;
+	};
 
 	class ShaderResourceView : public RHIObject { };
-
-	class DepthStencilView : public RHIObject { };
-
 	class ShaderProgram : public RHIObject { };
 
 	class BlendState : public RHIObject
@@ -143,13 +179,13 @@ namespace rhi
 	class SwapChain : public RHIObject
 	{
 	public:
-		virtual Texture2D* GetBackBuffer() = 0;
+		virtual RenderTarget* GetBackBuffer() = 0;
 
 		virtual uint32_t GetWidth() const = 0;
 
 		virtual uint32_t GetHeight() const = 0;
 
-		virtual bool ResizeBackBuffer(uint32_t width, uint32_t height) = 0;
+		virtual bool OnResize(uint32_t width, uint32_t height) = 0;
 
 		virtual void SetFullscreen(bool fullscreen) = 0;
 
@@ -173,17 +209,13 @@ namespace rhi
 	{
 	public:
 		// if width / height is specified as zero, default size of native window will be used.
-		virtual SwapChain* CreateSwapChain(void* nativeWindow, uint32_t windowWidth, uint32_t windowHeight) = 0;
+		virtual SwapChain* CreateSwapChain(void* nativeWindow, bool useDepthStencil, uint32_t windowWidth, uint32_t windowHeight) = 0;
 
 		virtual Buffer* CreateBuffer(BufferBinding binding, ResourceUsage usage, uint32_t bufferLength) = 0;
 
 		virtual Texture2D* CreateTexture2D(TextureFormat format, ResourceUsage usage, uint32_t binding, uint32_t width, uint32_t height) = 0;
 
-		virtual RenderTargetView* CreateRenderTargetView(Texture2D* texture2D) = 0;
-
 		virtual ShaderResourceView* CreateShaderResourceView(Texture2D* texture2D) = 0;
-
-		virtual DepthStencilView* CreateDepthStencilView(Texture2D* texture2D) = 0;
 
 		virtual ShaderProgram* CreateShaderProgram(
 			const char* vsSource, const char* vsEntry,
@@ -193,6 +225,8 @@ namespace rhi
 		virtual BlendState* CreateBlendState(bool enabled, BlendFactor source, BlendFactor dest, BlendOperator op) = 0;
 
 		virtual TextureSampler* CreateTextureSampler(SamplerFilter filter, TextureAddress addressU, TextureAddress addressV) = 0;
+
+		virtual RenderTarget* CreateRenderTarget(uint32_t width, uint32_t height, TextureFormat* rtFormats, RTCountRange rtCount, bool useDpethStencil) = 0;
 	};
 
 	struct Viewport
@@ -219,13 +253,11 @@ namespace rhi
 	class Context :public RHIObject
 	{
 	public:
-		virtual void ClearRenderTargetView(RenderTargetView* rtView, gml::color4 clearColor) = 0;
+		virtual void ClearRenderTarget(RenderTarget* renderTarget, gml::color4 clearColor) = 0;
 
 		virtual void SetViewport(const Viewport& viewport) = 0;
 
-		virtual void SetColorRenderTargets(RenderTargetView** renderTargets, uint32_t rtCount) = 0;
-
-		virtual void SetRenderTargets(RenderTargetView** renderTargets, uint32_t rtCount, DepthStencilView* dsView) = 0;
+		virtual void SetRenderTarget(RenderTarget* renderTarget) = 0;
 
 		virtual void SetVertexBuffers(uint32_t startSlot, VertexBufferInfo* buffers, uint32_t bufferCount) = 0;
 

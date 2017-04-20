@@ -13,7 +13,58 @@ Device::~Device()
 	m_d3dDevice.Release();
 }
 
-rhi::SwapChain* Device::CreateSwapChain(void* nativeWindow, uint32_t windowWidth, uint32_t windowHeight)
+::Texture2D * Device::CreateTexture2DImpl(rhi::TextureFormat format, rhi::ResourceUsage usage, uint32_t binding, uint32_t width, uint32_t height)
+{
+	D3D11_TEXTURE2D_DESC colorTexDesc;
+	colorTexDesc.Width = width;
+	colorTexDesc.Height = height;
+	colorTexDesc.MipLevels = 1;
+	colorTexDesc.ArraySize = 1;
+	colorTexDesc.Format = kTextureFormat[(int)format];
+	colorTexDesc.SampleDesc.Count = 1;
+	colorTexDesc.SampleDesc.Quality = 0;
+	colorTexDesc.Usage = kResourceUsage[(int)usage];
+	colorTexDesc.CPUAccessFlags = usage == rhi::ResourceUsage::Dynamic ? D3D11_CPU_ACCESS_WRITE : 0;
+	colorTexDesc.MiscFlags = 0;
+	colorTexDesc.BindFlags = binding;
+
+	ID3D11Texture2D* texture = nullptr;
+	ID3D11RenderTargetView* rtView = nullptr;
+	ID3D11DepthStencilView* dsView = nullptr;
+	auto fb = create_fallback([&]
+	{
+		SR(rtView);
+		SR(dsView);
+		SR(texture);
+	});
+	if (S_OK == m_d3dDevice.CreateTexture2D(&colorTexDesc, NULL, &texture))
+	{
+		if ((binding & D3D11_BIND_RENDER_TARGET) > 0)
+		{
+			if (S_OK == m_d3dDevice.CreateRenderTargetView(texture, NULL, &rtView))
+			{
+				fb.cancel();
+				return new ::Texture2D(*texture, *rtView, format, width, height);
+			}
+		}
+		else if ((binding & D3D11_BIND_DEPTH_STENCIL) > 0)
+		{
+			if (S_OK == m_d3dDevice.CreateDepthStencilView(texture, NULL, &dsView))
+			{
+				fb.cancel();
+				return new ::Texture2D(*texture, *dsView, format, width, height);
+			}
+		}
+		else
+		{
+			fb.cancel();
+			return new ::Texture2D(*texture, format, width, height);
+		}
+	}
+	return nullptr;
+}
+
+rhi::SwapChain* Device::CreateSwapChain(void* nativeWindow, bool useDepthStencil, uint32_t windowWidth, uint32_t windowHeight)
 {
 	autor<IDXGIDevice> dxgiDevice = nullptr;
 	autor<IDXGIAdapter> adapter = nullptr;
@@ -61,7 +112,7 @@ rhi::SwapChain* Device::CreateSwapChain(void* nativeWindow, uint32_t windowWidth
 	IDXGISwapChain* swapChain = nullptr;
 	if (S_OK == factory->CreateSwapChain(&m_d3dDevice, &scDesc, &swapChain))
 	{
-		return new ::SwapChain(*swapChain);
+		return new ::SwapChain(*this, *swapChain, useDepthStencil);
 	}
 	else
 	{
@@ -94,45 +145,7 @@ rhi::Buffer* Device::CreateBuffer(rhi::BufferBinding binding, rhi::ResourceUsage
 
 rhi::Texture2D* Device::CreateTexture2D(rhi::TextureFormat format, rhi::ResourceUsage usage, uint32_t binding, uint32_t width, uint32_t height)
 {
-	D3D11_TEXTURE2D_DESC colorTexDesc;
-	colorTexDesc.Width = width;
-	colorTexDesc.Height = height;
-	colorTexDesc.MipLevels = 1;
-	colorTexDesc.ArraySize = 1;
-	colorTexDesc.Format = kTextureFormat[(int)format];
-	colorTexDesc.SampleDesc.Count = 1;
-	colorTexDesc.SampleDesc.Quality = 0;
-	colorTexDesc.Usage = kResourceUsage[(int)usage];
-	colorTexDesc.CPUAccessFlags = usage == rhi::ResourceUsage::Dynamic ? D3D11_CPU_ACCESS_WRITE : 0;
-	colorTexDesc.MiscFlags = 0;
-	colorTexDesc.BindFlags = GetTextureBindFlag(binding);
-
-	ID3D11Texture2D* texture = nullptr;
-	if (S_OK == m_d3dDevice.CreateTexture2D(&colorTexDesc, NULL, &texture))
-	{
-		return new ::Texture2D(*texture, format, width, height);
-	}
-	else
-	{
-		return nullptr;
-	}
-}
-
-rhi::RenderTargetView* Device::CreateRenderTargetView(rhi::Texture2D* texture2D)
-{
-	::Texture2D* textureImpl = reinterpret_cast<::Texture2D*>(texture2D);
-	ENSURE(textureImpl != nullptr);
-
-	ID3D11RenderTargetView* rtView = nullptr;
-	if (S_OK == m_d3dDevice.CreateRenderTargetView(textureImpl->GetRaw(), NULL, &rtView))
-	{
-		return new ::RenderTargetView(*rtView);
-	}
-	else
-	{
-		return nullptr;
-	}
-
+	return CreateTexture2DImpl(format, usage, GetTextureBindFlag(binding), width, height);
 }
 
 rhi::ShaderResourceView* Device::CreateShaderResourceView(rhi::Texture2D* texture2D)
@@ -151,22 +164,6 @@ rhi::ShaderResourceView* Device::CreateShaderResourceView(rhi::Texture2D* textur
 	if (S_OK == m_d3dDevice.CreateShaderResourceView(textureImpl->GetRaw(), &viewDesc, &srView))
 	{
 		return new ::ShaderResourceView(*srView);
-	}
-	else
-	{
-		return nullptr;
-	}
-}
-
-rhi::DepthStencilView* Device::CreateDepthStencilView(rhi::Texture2D* texture2D)
-{
-	::Texture2D* textureImpl = reinterpret_cast<::Texture2D*>(texture2D);
-	ENSURE(textureImpl != nullptr);
-
-	ID3D11DepthStencilView* dsView = nullptr;
-	if (S_OK == m_d3dDevice.CreateDepthStencilView(textureImpl->GetRaw(), NULL, &dsView))
-	{
-		return new ::DepthStencilView(*dsView);
 	}
 	else
 	{
@@ -324,4 +321,39 @@ rhi::TextureSampler* Device::CreateTextureSampler(rhi::SamplerFilter filter, rhi
 	{
 		return nullptr;
 	}
+}
+
+rhi::RenderTarget * Device::CreateRenderTarget(uint32_t width, uint32_t height, rhi::TextureFormat * rtFormats, rhi::RTCountRange rtCount, bool useDpethStencil)
+{
+	std::vector<::Texture2D*> colorBuffers(rtCount);
+	::Texture2D* dsBuffer = nullptr;
+
+	auto fb = create_fallback([&]
+	{
+		for (auto& t : colorBuffers)
+		{
+			SR(t);
+		}
+		colorBuffers.clear();
+		SR(dsBuffer);
+	});
+
+	uint32_t binding = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
+	for (uint32_t i = 0, n = rtCount; i < n; i++)
+	{
+		colorBuffers[i] = CreateTexture2DImpl(rtFormats[i], rhi::ResourceUsage::Default, binding, width, height);
+		if (colorBuffers[i] == nullptr)
+			return nullptr;
+	}
+
+	binding = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_DEPTH_STENCIL;
+	if (useDpethStencil)
+	{
+		dsBuffer = CreateTexture2DImpl(rhi::TextureFormat::D24S8, rhi::ResourceUsage::Default, binding, width, height);
+		if (dsBuffer == nullptr)
+			return nullptr;
+	}
+
+	fb.cancel();
+	return new RenderTarget(width, height, std::move(colorBuffers), dsBuffer);
 }

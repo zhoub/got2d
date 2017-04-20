@@ -325,9 +325,8 @@ private:
 	autor<rhi::Context> m_context = nullptr;
 	autor<rhi::SwapChain> m_swapChain = nullptr;
 
-	autor<rhi::Texture2D> m_colorTexture = nullptr;
-	autor<rhi::RenderTargetView> m_rtView = nullptr;
-	autor<rhi::RenderTargetView> m_bbView = nullptr;
+	rhi::RenderTarget* m_backBufferRT = nullptr;
+	autor<rhi::RenderTarget> m_renderTarget = nullptr;
 	autor<rhi::Buffer> m_sceneConstBuffer = nullptr;
 	rhi::Viewport m_viewport;
 	std::map<g2d::BlendMode, rhi::BlendState*> m_blendModes;
@@ -354,7 +353,7 @@ private:
 	gml::mat32 m_matView = gml::mat32::identity();
 	gml::mat44 m_matProj = gml::mat44::identity();
 	bool m_matrixConstBufferDirty = true;
-	bool m_matrixProjDirty = true;	
+	bool m_matrixProjDirty = true;
 };
 
 

@@ -2,14 +2,48 @@
 #include "../source/scope_utility.h"
 #include "dx11_enum.h"
 
-SwapChain::SwapChain(IDXGISwapChain & swapChain)
-	: m_swapChain(swapChain)
+::Texture2D* RenderTarget::GetColorBufferImplByIndex(rhi::RTIndex index)
 {
-	UpdateWindowSize();
+	ENSURE(index < m_colorBuffers.size());
+	return m_colorBuffers.at(index);
+}
+
+RenderTarget::RenderTarget(uint32_t width, uint32_t height, std::vector<::Texture2D*>&& colorbuffers, ::Texture2D* dsBuffer)
+	: m_width(width)
+	, m_height(height)
+	, m_colorBuffers(std::move(colorbuffers))
+	, m_depthStencilBuffer(dsBuffer)
+{
+}
+
+RenderTarget::~RenderTarget()
+{
+	for (auto& t : m_colorBuffers)
+	{
+		t->Release();
+	}
+	m_colorBuffers.clear();
+}
+
+
+SwapChain::SwapChain(::Device& device, IDXGISwapChain& swapChain, bool useDepthStencil)
+	: m_device(device)
+	, m_swapChain(swapChain)
+	, m_useDepthStencil(useDepthStencil)
+{
+	if (CreateRenderTarget())
+	{
+		UpdateWindowSize();
+	}
+	else
+	{
+		FAIL("cannot create RenderTarget");
+	}
 }
 
 SwapChain::~SwapChain()
 {
+	m_renderTarget.release();
 	if (IsFullscreen())
 	{
 		SetFullscreen(false);
@@ -17,34 +51,18 @@ SwapChain::~SwapChain()
 	m_swapChain.Release();
 }
 
-rhi::Texture2D* SwapChain::GetBackBuffer()
+bool SwapChain::OnResize(uint32_t width, uint32_t height)
 {
-	ID3D11Texture2D* backBuffer = nullptr;
-	if (S_OK == m_swapChain.GetBuffer(0, _uuidof(ID3D11Texture2D), reinterpret_cast<void**>(&backBuffer)))
-	{
-		D3D11_TEXTURE2D_DESC desc;
-		backBuffer->GetDesc(&desc);
-		return new ::Texture2D(*backBuffer,
-			GetTextureFormatDX11(desc.Format),
-			desc.Width, desc.Height);
-	}
-	else
-	{
-		return nullptr;
-	}
-}
-
-bool SwapChain::ResizeBackBuffer(uint32_t width, uint32_t height)
-{
+	m_renderTarget.release();
 	if (S_OK == m_swapChain.ResizeBuffers(0, width, height, DXGI_FORMAT_UNKNOWN, 0))
 	{
-		UpdateWindowSize();
-		return true;
+		if (CreateRenderTarget())
+		{
+			UpdateWindowSize();
+			return true;
+		}
 	}
-	else
-	{
-		return false;
-	}
+	return false;
 }
 
 void SwapChain::SetFullscreen(bool fullscreen)
@@ -76,4 +94,59 @@ void SwapChain::UpdateWindowSize()
 	m_swapChain.GetDesc(&scDesc);
 	m_windowWidth = scDesc.BufferDesc.Width;
 	m_windowHeight = scDesc.BufferDesc.Height;
+}
+
+bool SwapChain::CreateRenderTarget()
+{
+	if (m_renderTarget.is_not_null())
+		return false;
+
+	ID3D11Texture2D* backBuffer = nullptr;
+	if (S_OK == m_swapChain.GetBuffer(0, _uuidof(ID3D11Texture2D), reinterpret_cast<void**>(&backBuffer)))
+	{
+		auto fbWhenCreateRTViewFail = create_fallback([&] { backBuffer->Release(); });
+
+		::ID3D11RenderTargetView* rtView = nullptr;
+		if (S_OK != m_device.GetRaw()->CreateRenderTargetView(backBuffer, NULL, &rtView))
+		{
+			return false;
+		}
+
+		D3D11_TEXTURE2D_DESC bbDesc;
+		backBuffer->GetDesc(&bbDesc);
+		std::vector<::Texture2D*> colorBuffers(1);
+		colorBuffers[0] = new ::Texture2D(*backBuffer, *rtView,
+			GetTextureFormatDX11(bbDesc.Format),
+			bbDesc.Width, bbDesc.Height);
+
+		fbWhenCreateRTViewFail.cancel();
+		if (m_useDepthStencil)
+		{	
+			auto fbWhenCreateDSFail = create_fallback([&]
+			{
+				colorBuffers[0]->Release();
+			});
+
+			auto dsTexture = m_device.CreateTexture2DImpl(
+				rhi::TextureFormat::D24S8,
+				rhi::ResourceUsage::Default,
+				D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_DEPTH_STENCIL,
+				bbDesc.Width, bbDesc.Height);
+
+			if (dsTexture == nullptr)
+				return false;
+
+			fbWhenCreateDSFail.cancel();
+			m_renderTarget = new ::RenderTarget(bbDesc.Width, bbDesc.Height, std::move(colorBuffers), dsTexture);
+		}
+		else
+		{
+			m_renderTarget = new ::RenderTarget(bbDesc.Width, bbDesc.Height, std::move(colorBuffers), nullptr);
+		}
+		return true;
+	}
+	else
+	{
+		return false;
+	}
 }

@@ -5,54 +5,23 @@ RenderSystem* RenderSystem::Instance = nullptr;
 
 bool RenderSystem::OnResize(uint32_t width, uint32_t height)
 {
+	if (!m_swapChain->OnResize(width, height))
+	{
+		return false;
+	}
+
 	//though we create an individual render target
 	//we do not use it for rendering, for now.
 	//it will be used when building Compositor System.
-	m_colorTexture.release();
-	m_rtView.release();
-	m_bbView.release();
-
-	autor<rhi::Texture2D> colorTexture = nullptr;
-	autor<rhi::RenderTargetView> rtView = nullptr;
-	autor<rhi::RenderTargetView> rtViewBackBuffer = nullptr;
-
-	if (!m_swapChain->ResizeBackBuffer(width, height))
+	auto rtFormat = rhi::TextureFormat::BGRA;
+	autor<rhi::RenderTarget> renderTarget = m_device->CreateRenderTarget(width, height, &rtFormat, 1, false);
+	if (renderTarget.is_null())
 	{
 		return false;
 	}
 
-	//CreateRenderTarget and Views.
-	colorTexture = m_device->CreateTexture2D(
-		rhi::TextureFormat::BGRA,
-		rhi::ResourceUsage::Default,
-		rhi::TextureBinding::RenderTarget | rhi::TextureBinding::ShaderResource,
-		width, height);
-	if (colorTexture.is_null())
-	{
-		return false;
-	}
-
-	rtView = m_device->CreateRenderTargetView(colorTexture);
-	if (rtView.is_null())
-	{
-		return false;
-	}
-
-	autor<rhi::Texture2D> backBuffer = m_swapChain->GetBackBuffer();
-	if (backBuffer.is_null())
-	{
-		return false;
-	}
-
-	rtViewBackBuffer = m_device->CreateRenderTargetView(backBuffer);
-	if (rtViewBackBuffer.is_null())
-	{
-		return false;
-	}
-
-	m_colorTexture = std::move(colorTexture);
-	m_rtView = std::move(rtView);
-	m_bbView = std::move(rtViewBackBuffer);
+	m_renderTarget = std::move(renderTarget);
+	m_backBufferRT = m_swapChain->GetBackBuffer();
 
 	m_matrixProjDirty = true;
 	m_matrixConstBufferDirty = true;
@@ -61,7 +30,7 @@ bool RenderSystem::OnResize(uint32_t width, uint32_t height)
 		(float)width,
 		(float)height);
 
-	m_context->SetColorRenderTargets(&(m_bbView.pointer), 1);
+	m_context->SetRenderTarget(m_backBufferRT);
 	m_context->SetViewport(m_viewport);
 
 	return true;
@@ -111,7 +80,7 @@ bool RenderSystem::Create(void* nativeWindow)
 	m_device = rhiResult.DevicePtr;
 	m_context = rhiResult.ContextPtr;
 
-	m_swapChain = m_device->CreateSwapChain(nativeWindow, 0, 0);
+	m_swapChain = m_device->CreateSwapChain(nativeWindow, false, 0, 0);
 	if (m_swapChain.is_null())
 	{
 		return false;
@@ -171,9 +140,8 @@ void RenderSystem::Destroy()
 	m_swapChain.release();
 	m_device.release();
 	m_context.release();
-	m_colorTexture.release();
-	m_rtView.release();
-	m_bbView.release();
+	m_renderTarget.release();
+	m_backBufferRT = nullptr;
 
 	if (Instance == this)
 	{
@@ -206,7 +174,7 @@ const gml::mat44& RenderSystem::GetProjectionMatrix()
 
 void RenderSystem::Clear()
 {
-	m_context->ClearRenderTargetView(m_bbView, m_bkColor);
+	m_context->ClearRenderTarget(m_backBufferRT, m_bkColor);
 }
 
 void RenderSystem::Present()

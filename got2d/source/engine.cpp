@@ -62,6 +62,7 @@ g2d::Engine* g2d::Engine::Instance()
 	else
 	{
 		FAIL("cannot retrieve engine instance without initialized.");
+		return nullptr;
 	}
 }
 

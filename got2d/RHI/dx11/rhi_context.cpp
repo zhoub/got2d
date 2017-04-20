@@ -12,11 +12,19 @@ Context::~Context()
 	m_d3dContext.Release();
 }
 
-void Context::ClearRenderTargetView(rhi::RenderTargetView* rtView, gml::color4 clearColor)
+void Context::ClearRenderTarget(rhi::RenderTarget * renderTarget, gml::color4 clearColor)
 {
-	::RenderTargetView* rtViewImpl = reinterpret_cast<::RenderTargetView*>(rtView);
-	ENSURE(rtViewImpl != nullptr);
-	m_d3dContext.ClearRenderTargetView(rtViewImpl->GetRaw(), static_cast<float*>(clearColor));
+	::RenderTarget* renderTargetImpl = reinterpret_cast<::RenderTarget*>(renderTarget);
+	ENSURE(renderTargetImpl != nullptr);
+
+	auto colorBufferCount = renderTargetImpl->GetColorBufferCount();
+	for (uint32_t i = 0; i < colorBufferCount; i++)
+	{
+		m_d3dContext.ClearRenderTargetView(
+			renderTargetImpl->GetColorBufferImplByIndex(i)->GetRTView(),
+			static_cast<float*>(clearColor));
+	}
+	
 }
 
 void Context::SetViewport(const rhi::Viewport& viewport)
@@ -32,32 +40,26 @@ void Context::SetViewport(const rhi::Viewport& viewport)
 	};
 	m_d3dContext.RSSetViewports(1, &vp11);
 }
-void Context::SetColorRenderTargets(rhi::RenderTargetView** renderTargets, uint32_t rtCount)
+void Context::SetRenderTarget(rhi::RenderTarget* renderTarget)
 {
-	ENSURE(renderTargets != nullptr);
-	SetRenderTargets(renderTargets, rtCount, nullptr);
-}
+	auto renderTargetImpl = reinterpret_cast<::RenderTarget*>(renderTarget);
+	ENSURE(renderTargetImpl != nullptr);
 
-void Context::SetRenderTargets(rhi::RenderTargetView** renderTargets, uint32_t rtCount, rhi::DepthStencilView* dsView)
-{
-	ENSURE(renderTargets != nullptr);
-
-	if (m_rtViews.size() < rtCount)
+	auto colorBufferCount = renderTargetImpl->GetColorBufferCount();
+	if (m_rtViews.size() < colorBufferCount)
 	{
-		m_rtViews.resize(rtCount);
+		m_rtViews.resize(colorBufferCount);
 	}
 
-	::RenderTargetView* rtViewImpl = nullptr;
-	for (uint32_t i = 0; i < rtCount; i++)
+	for (uint32_t i = 0; i < colorBufferCount; i++)
 	{
-		rtViewImpl = reinterpret_cast<::RenderTargetView*>(renderTargets[i]);
-		m_rtViews[i] = rtViewImpl == nullptr ? nullptr : rtViewImpl->GetRaw();
+		m_rtViews[i] = renderTargetImpl->GetColorBufferImplByIndex(i)->GetRTView();
 	}
 
-	::DepthStencilView* dsViewImpl = reinterpret_cast<::DepthStencilView*>(dsView);
-	ID3D11DepthStencilView* dsView11 = dsViewImpl == nullptr ? nullptr : dsViewImpl->GetRaw();
+	ID3D11DepthStencilView* dsView = renderTargetImpl->IsDepthStencilUsed() ? 
+		renderTargetImpl->GetDepthStencilBufferImpl()->GetDSView() : nullptr;
 
-	m_d3dContext.OMSetRenderTargets(rtCount, &(m_rtViews[0]), dsView11);
+	m_d3dContext.OMSetRenderTargets(colorBufferCount, &(m_rtViews[0]), dsView);
 }
 
 void Context::SetVertexBuffers(uint32_t startSlot, rhi::VertexBufferInfo* buffers, uint32_t bufferCount)

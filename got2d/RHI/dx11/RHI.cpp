@@ -54,27 +54,6 @@ Buffer::~Buffer()
 	m_buffer.Release();
 }
 
-
-RenderTargetView::RenderTargetView(ID3D11RenderTargetView & rtView)
-	: m_rtView(rtView)
-{
-}
-
-RenderTargetView::~RenderTargetView()
-{
-	m_rtView.Release();
-}
-
-DepthStencilView::DepthStencilView(ID3D11DepthStencilView & dsView)
-	: m_dsView(dsView)
-{
-}
-
-DepthStencilView::~DepthStencilView()
-{
-	m_dsView.Release();
-}
-
 ShaderResourceView::ShaderResourceView(ID3D11ShaderResourceView & srView)
 	: m_srView(srView)
 {
@@ -128,6 +107,28 @@ BlendState::~BlendState()
 
 Texture2D::Texture2D(ID3D11Texture2D& texture, rhi::TextureFormat format, uint32_t width, uint32_t height)
 	: m_texture(texture)
+	, m_rtView(nullptr)
+	, m_dsView(nullptr)
+	, m_textureWidth(width)
+	, m_textureHeight(height)
+	, m_textureFormat(format)
+{
+}
+
+Texture2D::Texture2D(ID3D11Texture2D& texture, ID3D11RenderTargetView& view, rhi::TextureFormat format, uint32_t width, uint32_t height)
+	: m_texture(texture)
+	, m_rtView(&view)
+	, m_dsView(nullptr)
+	, m_textureWidth(width)
+	, m_textureHeight(height)
+	, m_textureFormat(format)
+{
+}
+
+Texture2D::Texture2D(ID3D11Texture2D & texture, ID3D11DepthStencilView & view, rhi::TextureFormat format, uint32_t width, uint32_t height)
+	: m_texture(texture)
+	, m_rtView(nullptr)
+	, m_dsView(&view)
 	, m_textureWidth(width)
 	, m_textureHeight(height)
 	, m_textureFormat(format)
@@ -136,5 +137,7 @@ Texture2D::Texture2D(ID3D11Texture2D& texture, rhi::TextureFormat format, uint32
 
 Texture2D::~Texture2D()
 {
-	m_texture.Release();
+	m_rtView.release();
+	m_dsView.release();
+	m_texture.Release();	
 }
