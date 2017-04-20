@@ -216,7 +216,7 @@ public:
 
 	virtual void SetBlendMode(g2d::BlendMode blendMode) override { m_blendMode = blendMode; }
 
-	virtual g2d::Texture* GetTextureByIndex(uint32_t index) const override { return m_textures[index]; }
+	virtual g2d::Texture* GetTextureByIndex(uint32_t index) const override { return m_textures.at(index); }
 
 	virtual uint32_t GetTextureCount() const override { return static_cast<uint32_t>(m_textures.size()); }
 

@@ -183,5 +183,5 @@ Texture2D* TexturePool::GetTexture(const std::string& resource)
 		}
 	}
 
-	return m_textures[resource];
+	return m_textures.at(resource);
 }

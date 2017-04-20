@@ -457,7 +457,7 @@ g2d::Camera* Scene::CreateCameraNode()
 g2d::Camera* Scene::GetCameraByIndex(uint32_t index) const
 {
 	ENSURE(index < m_cameras.size());
-	return m_cameras[index];
+	return m_cameras.at(index);
 }
 
 uint32_t Scene::GetCameraCount() const

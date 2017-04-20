@@ -235,7 +235,7 @@ Shader* ShaderLib::GetShaderByName(const std::string& vsName, const std::string&
 			return false;
 		}
 	}
-	return m_shaders[effectName];
+	return m_shaders.at(effectName);
 }
 
 bool ShaderLib::BuildShader(const std::string& effectName, const std::string& vsName, const std::string& psName)
@@ -430,7 +430,7 @@ Material::~Material()
 g2d::Pass* Material::GetPassByIndex(uint32_t index) const
 {
 	ENSURE(index < m_passes.size());
-	return m_passes[index];
+	return m_passes.at(index);
 }
 
 uint32_t Material::GetPassCount() const

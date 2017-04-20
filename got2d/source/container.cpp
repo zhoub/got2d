@@ -204,7 +204,7 @@ void SceneNodeContainer::Collect()
 ::SceneNode* SceneNodeContainer::At(uint32_t index) const
 {
 	ENSURE(index < m_children.size());
-	return m_children[index];
+	return m_children.at(index);
 }
 
 ::SceneNode * SceneNodeContainer::First() const
