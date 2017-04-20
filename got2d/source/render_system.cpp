@@ -200,7 +200,7 @@ void RenderSystem::UpdateConstBuffer(rhi::Buffer* cbuffer, const void* data, uin
 	auto mappedData = m_context->Map(cbuffer);
 	if (mappedData.success)
 	{
-		uint8_t*  dstBuffre = reinterpret_cast<uint8_t*>(mappedData.data);
+		auto dstBuffre = reinterpret_cast<uint8_t*>(mappedData.data);
 		memcpy(dstBuffre, data, length);
 		m_context->Unmap(cbuffer);
 	}
@@ -215,7 +215,7 @@ void RenderSystem::UpdateSceneConstBuffer()
 	auto mappedData = m_context->Map(m_sceneConstBuffer);
 	if (mappedData.success)
 	{
-		uint8_t*  dstBuffer = reinterpret_cast<uint8_t*>(mappedData.data);
+		auto dstBuffer = reinterpret_cast<uint8_t*>(mappedData.data);
 		memcpy(dstBuffer, &(m_matView.row[0]), sizeof(gml::vec3));
 		memcpy(dstBuffer + sizeof(gml::vec4), &(m_matView.row[1]), sizeof(gml::vec3));
 		memcpy(dstBuffer + sizeof(gml::vec4) * 2, GetProjectionMatrix().m, sizeof(gml::mat44));
@@ -282,7 +282,7 @@ void RenderSystem::FlushBatch(Mesh& mesh, g2d::Material& material)
 				m_textureSampler.clear();
 				for (uint32_t t = 0; t < pass->GetTextureCount(); t++)
 				{
-					::Texture* timpl = reinterpret_cast<::Texture*>(pass->GetTextureByIndex(t));
+					auto timpl = reinterpret_cast<::Texture*>(pass->GetTextureByIndex(t));
 					std::string textureName = (timpl == nullptr) ? "" : timpl->GetResourceName();
 					auto texture = m_texPool.GetTexture(textureName);
 					if (texture)

@@ -23,25 +23,25 @@ void Scene::RegisterKeyEventReceiver()
 
 	m_keyPressReceiver.Functor = [](void* userData, g2d::KeyCode key)
 	{
-		::Scene* scene = reinterpret_cast<::Scene*>(userData);
+		auto scene = reinterpret_cast<::Scene*>(userData);
 		scene->OnKeyPress(key);
 	};
 
 	m_keyPressingBeginReceiver.Functor = [](void* userData, g2d::KeyCode key)
 	{
-		::Scene* scene = reinterpret_cast<::Scene*>(userData);
+		auto scene = reinterpret_cast<::Scene*>(userData);
 		scene->OnKeyPressingBegin(key);
 	};
 
 	m_keyPressingReceiver.Functor = [](void* userData, g2d::KeyCode key)
 	{
-		::Scene* scene = reinterpret_cast<::Scene*>(userData);
+		auto scene = reinterpret_cast<::Scene*>(userData);
 		scene->OnKeyPressing(key);
 	};
 
 	m_keyPressingEndReceiver.Functor = [](void* userData, g2d::KeyCode key)
 	{
-		::Scene* scene = reinterpret_cast<::Scene*>(userData);
+		auto scene = reinterpret_cast<::Scene*>(userData);
 		scene->OnKeyPressingEnd(key);
 	};
 
@@ -63,37 +63,37 @@ void Scene::RegisterMouseEventReceiver()
 
 	m_mousePressReceiver.Functor = [](void* userData, g2d::MouseButton button)
 	{
-		::Scene* scene = reinterpret_cast<::Scene*>(userData);
+		auto scene = reinterpret_cast<::Scene*>(userData);
 		scene->OnMousePress(button);
 	};
 
 	m_mousePressingBeginReceiver.Functor = [](void* userData, g2d::MouseButton button)
 	{
-		::Scene* scene = reinterpret_cast<::Scene*>(userData);
+		auto scene = reinterpret_cast<::Scene*>(userData);
 		scene->OnMousePressingBegin(button);
 	};
 
 	m_mousePressingReceiver.Functor = [](void* userData, g2d::MouseButton button)
 	{
-		::Scene* scene = reinterpret_cast<::Scene*>(userData);
+		auto scene = reinterpret_cast<::Scene*>(userData);
 		scene->OnMousePressing(button);
 	};
 
 	m_mousePressingEndReceiver.Functor = [](void* userData, g2d::MouseButton button)
 	{
-		::Scene* scene = reinterpret_cast<::Scene*>(userData);
+		auto scene = reinterpret_cast<::Scene*>(userData);
 		scene->OnMousePressingEnd(button);
 	};
 
 	m_mouseMovingReceiver.Functor = [](void* userData, g2d::MouseButton button)
 	{
-		::Scene* scene = reinterpret_cast<::Scene*>(userData);
+		auto scene = reinterpret_cast<::Scene*>(userData);
 		scene->OnMouseMoving();
 	};
 
 	m_mouseDoubleClickReceiver.Functor = [](void* userData, g2d::MouseButton button)
 	{
-		::Scene* scene = reinterpret_cast<::Scene*>(userData);
+		auto scene = reinterpret_cast<::Scene*>(userData);
 		scene->OnMouseDoubleClick(button);
 	};
 

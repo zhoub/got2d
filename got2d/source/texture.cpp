@@ -21,7 +21,7 @@ bool Texture::IsSame(g2d::Texture* other) const
 	if (!same_type(other, this))
 		return false;
 
-	Texture* timpl = reinterpret_cast<Texture*>(other);
+	auto timpl = reinterpret_cast<::Texture*>(other);
 	return timpl->m_resPath == m_resPath;
 }
 

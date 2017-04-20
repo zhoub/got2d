@@ -150,7 +150,7 @@ rhi::Texture2D* Device::CreateTexture2D(rhi::TextureFormat format, rhi::Resource
 
 rhi::ShaderResourceView* Device::CreateShaderResourceView(rhi::Texture2D* texture2D)
 {
-	::Texture2D* textureImpl = reinterpret_cast<::Texture2D*>(texture2D);
+	auto textureImpl = reinterpret_cast<::Texture2D*>(texture2D);
 	ENSURE(textureImpl != nullptr);
 
 	D3D11_SHADER_RESOURCE_VIEW_DESC viewDesc;

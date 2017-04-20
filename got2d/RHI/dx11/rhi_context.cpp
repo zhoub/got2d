@@ -14,7 +14,7 @@ Context::~Context()
 
 void Context::ClearRenderTarget(rhi::RenderTarget * renderTarget, gml::color4 clearColor)
 {
-	::RenderTarget* renderTargetImpl = reinterpret_cast<::RenderTarget*>(renderTarget);
+	auto renderTargetImpl = reinterpret_cast<::RenderTarget*>(renderTarget);
 	ENSURE(renderTargetImpl != nullptr);
 
 	auto colorBufferCount = renderTargetImpl->GetColorBufferCount();
@@ -91,7 +91,7 @@ void Context::SetVertexBuffers(uint32_t startSlot, rhi::VertexBufferInfo* buffer
 
 void Context::SetIndexBuffer(rhi::Buffer* buffer, uint32_t offset, rhi::IndexFormat format)
 {
-	::Buffer* bufferImpl = reinterpret_cast<::Buffer*>(buffer);
+	auto bufferImpl = reinterpret_cast<::Buffer*>(buffer);
 
 	ID3D11Buffer* indexBuffer = bufferImpl == nullptr ? nullptr : bufferImpl->GetRaw();
 	m_d3dContext.IASetIndexBuffer(indexBuffer, kIndexFormat[(int)format], offset);
@@ -135,7 +135,7 @@ void Context::SetPixelShaderConstantBuffers(uint32_t startSlot, rhi::Buffer** bu
 
 void Context::SetShaderProgram(rhi::ShaderProgram * program)
 {
-	::ShaderProgram* programImpl = reinterpret_cast<::ShaderProgram*>(program);
+	auto programImpl = reinterpret_cast<::ShaderProgram*>(program);
 	ENSURE(programImpl != nullptr);
 
 	m_d3dContext.IASetInputLayout(programImpl->GetInputLayout());
@@ -163,7 +163,7 @@ void Context::SetShaderResources(uint32_t startSlot, rhi::ShaderResourceView** s
 
 void Context::SetBlendState(rhi::BlendState* state)
 {
-	::BlendState* stateImpl = reinterpret_cast<::BlendState*>(state);
+	auto stateImpl = reinterpret_cast<::BlendState*>(state);
 	ID3D11BlendState* blendState = stateImpl == nullptr ? nullptr : stateImpl->GetRaw();
 	m_d3dContext.OMSetBlendState(blendState, nullptr, 0xFFFFFFFF);
 }
@@ -194,7 +194,7 @@ void Context::DrawIndexed(rhi::Primitive primitive, uint32_t startIndex, uint32_
 
 rhi::MappedResource Context::Map(rhi::Buffer* buffer)
 {
-	::Buffer* bufferImpl = reinterpret_cast<::Buffer*>(buffer);
+	auto bufferImpl = reinterpret_cast<::Buffer*>(buffer);
 	ENSURE(bufferImpl != nullptr);
 
 	return Map(bufferImpl->GetRaw(), 0, D3D11_MAP_WRITE_DISCARD, 0);
@@ -202,7 +202,7 @@ rhi::MappedResource Context::Map(rhi::Buffer* buffer)
 
 rhi::MappedResource Context::Map(rhi::Texture2D * buffer)
 {
-	::Texture2D* textureImpl = reinterpret_cast<::Texture2D*>(buffer);
+	auto textureImpl = reinterpret_cast<::Texture2D*>(buffer);
 	ENSURE(textureImpl != nullptr);
 
 	return Map(textureImpl->GetRaw(), 0, D3D11_MAP_WRITE_DISCARD, 0);
@@ -210,7 +210,7 @@ rhi::MappedResource Context::Map(rhi::Texture2D * buffer)
 
 void Context::Unmap(rhi::Buffer* buffer)
 {
-	::Buffer* bufferImpl = reinterpret_cast<::Buffer*>(buffer);
+	auto bufferImpl = reinterpret_cast<::Buffer*>(buffer);
 	ENSURE(bufferImpl != nullptr);
 
 	Unmap(bufferImpl->GetRaw(), 0);
@@ -218,7 +218,7 @@ void Context::Unmap(rhi::Buffer* buffer)
 
 void Context::Unmap(rhi::Texture2D* buffer)
 {
-	::Texture2D* textureImpl = reinterpret_cast<::Texture2D*>(buffer);
+	auto textureImpl = reinterpret_cast<::Texture2D*>(buffer);
 	ENSURE(textureImpl != nullptr);
 
 	Unmap(textureImpl->GetRaw(), 0);
@@ -248,7 +248,7 @@ void Context::Unmap(ID3D11Resource* resource, UINT subResource)
 
 void Context::GenerateMipmaps(rhi::ShaderResourceView* srView)
 {
-	::ShaderResourceView* srViewImpl = reinterpret_cast<::ShaderResourceView*>(srView);
+	auto srViewImpl = reinterpret_cast<::ShaderResourceView*>(srView);
 	ENSURE(srViewImpl != nullptr);
 	m_d3dContext.GenerateMips(srViewImpl->GetRaw());
 }

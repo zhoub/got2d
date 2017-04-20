@@ -302,7 +302,7 @@ bool Pass::IsSame(g2d::Pass* other) const
 	if (!IsSameType(other))
 		return false;
 
-	Pass* p = reinterpret_cast<Pass*>(&other);
+	auto p = reinterpret_cast<Pass*>(&other);
 
 	if (this == p)
 		return true;

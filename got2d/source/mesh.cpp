@@ -162,7 +162,7 @@ void Geometry::UploadVertices(uint32_t offset, g2d::GeometryVertex* vertices, ui
 	if (mappedResource.success)
 	{
 		count = __min(m_numVertices - offset, count);
-		g2d::GeometryVertex* data = reinterpret_cast<g2d::GeometryVertex*>(mappedResource.data);
+		auto data = reinterpret_cast<g2d::GeometryVertex*>(mappedResource.data);
 		memcpy(data + offset, vertices, sizeof(g2d::GeometryVertex) * count);
 		GetRenderSystem()->GetContext()->Unmap(m_vertexBuffer);
 	}
@@ -176,7 +176,7 @@ void Geometry::UploadIndices(uint32_t offset, uint32_t* indices, uint32_t count)
 	if (mappedResource.success)
 	{
 		count = __min(m_numIndices - offset, count);
-		uint32_t* data = reinterpret_cast<uint32_t*>(mappedResource.data);
+		auto data = reinterpret_cast<uint32_t*>(mappedResource.data);
 		memcpy(data + offset, indices, sizeof(uint32_t) * count);
 		GetRenderSystem()->GetContext()->Unmap(m_indexBuffer);
 	}
