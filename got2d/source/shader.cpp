@@ -1,4 +1,3 @@
-#include <d3dcompiler.h>
 #include "render_system.h"
 
 g2d::Material* g2d::Material::CreateColorTexture()
@@ -30,7 +29,7 @@ bool Shader::Create(const std::string& vsCode, uint32_t vcbLength, const std::st
 	{
 		{ "POSITION" , 0, 0, 0xFFFFFFFF, rhi::InputFormat::Float2, false, 0 },
 		{ "TEXCOORD" , 0, 0, 0xFFFFFFFF, rhi::InputFormat::Float2, false, 0 },
-		{ "COLOR" , 0, 0, 0xFFFFFFFF, rhi::InputFormat::Float4, false, 0 },
+		{ "COLOR" ,    0, 0, 0xFFFFFFFF, rhi::InputFormat::Float4, false, 0 },
 	};
 
 	autor<rhi::VertexShader> vertexShader = GetRenderSystem()->GetDevice()->CreateVertexShader(vsCode.c_str(), "VSMain", layouts, 3);
@@ -241,7 +240,7 @@ Shader* ShaderLib::GetShaderByName(const std::string& vsName, const std::string&
 	{
 		if (!BuildShader(effectName, vsName, psName))
 		{
-			return false;
+			return nullptr;
 		}
 	}
 	return m_shaders.at(effectName);
