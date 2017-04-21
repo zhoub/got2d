@@ -2,9 +2,9 @@
 #include "../source/scope_utility.h"
 #include "dx11_enum.h"
 
-::Texture2D* RenderTarget::GetColorBufferImplByIndex(rhi::RTIndex index)
+::Texture2D* RenderTarget::GetColorBufferImplByIndex(rhi::RTIndex index) const
 {
-	ENSURE(index < m_colorBuffers.size());
+	ENSURE(index < GetColorBufferCount());
 	return m_colorBuffers.at(index);
 }
 

@@ -76,26 +76,73 @@ private:
 	rhi::TextureFormat m_format;
 };
 
+class VertexShader : public rhi::VertexShader
+{
+public:
+	virtual void Release() override;
+
+	virtual void AddReference() override;
+
+	virtual rhi::Semantic GetSemanticByIndex(rhi::SemanticIndex index) const override;
+
+	virtual rhi::SemanticIndex GetSemanticCount() const override;
+
+public:
+	VertexShader(ID3D11VertexShader& vertexShader, ID3D11InputLayout& inputLayout, std::vector<rhi::Semantic>&& layouts);
+
+	~VertexShader();
+
+	ID3D11VertexShader* GetRaw() { return &m_vertexShader; }
+
+	ID3D11InputLayout* GetInputLayout() { return &m_inputLayout; }
+
+private:
+	uint32_t m_refCount = 1;
+	ID3D11VertexShader& m_vertexShader;
+	ID3D11InputLayout& m_inputLayout;
+	std::vector<rhi::Semantic> m_semantics;
+};
+
+class PixelShader : public rhi::PixelShader
+{
+public:
+	virtual void Release() override;
+
+	virtual void AddReference() override;
+
+public:
+	PixelShader(ID3D11PixelShader& pixelShader);
+
+	~PixelShader();
+
+	ID3D11PixelShader* GetRaw() { return &m_pixelShader; }
+
+private:
+	uint32_t m_refCount = 1;
+	ID3D11PixelShader& m_pixelShader;
+};
+
 class ShaderProgram : public rhi::ShaderProgram
 {
 public:
 	virtual void Release() override { delete this; }
 
+	virtual rhi::VertexShader* GetVertexShader() const override { return m_vertexShader; }
+
+	virtual rhi::PixelShader* GetPixelShader() const override { return m_pixelShader; }
+
 public:
-	ShaderProgram(ID3D11VertexShader& vertexShader, ID3D11PixelShader& pixelShader, ID3D11InputLayout& inputLayout);
+	ShaderProgram(::VertexShader& vertexShader, ::PixelShader& pixelShader);
 
-	~ShaderProgram();
+	ID3D11VertexShader* GetVertexShader() { return m_vertexShader->GetRaw(); }
 
-	ID3D11VertexShader* GetVertexShader() { return &m_vertexShader; }
+	ID3D11PixelShader* GetPixelShader() { return m_pixelShader->GetRaw(); }
 
-	ID3D11PixelShader* GetPixelShader() { return &m_pixelShader; }
-
-	ID3D11InputLayout* GetInputLayout() { return &m_inputLayout; }
+	ID3D11InputLayout* GetInputLayout() { return m_vertexShader->GetInputLayout(); }
 
 private:
-	ID3D11VertexShader&  m_vertexShader;
-	ID3D11PixelShader& m_pixelShader;
-	ID3D11InputLayout& m_inputLayout;
+	autor<::VertexShader> m_vertexShader = nullptr;
+	autor<::PixelShader> m_pixelShader = nullptr;
 };
 
 class TextureSampler : public rhi::TextureSampler
@@ -147,11 +194,11 @@ class RenderTarget : public rhi::RenderTarget
 public:
 	virtual void Release() { delete this; }
 
-	virtual rhi::Texture2D* GetColorBufferByIndex(rhi::RTIndex index) override { return GetColorBufferImplByIndex(index); }
+	virtual rhi::Texture2D* GetColorBufferByIndex(rhi::RTIndex index) const override { return GetColorBufferImplByIndex(index); }
 
-	virtual uint32_t GetColorBufferCount() override { return static_cast<uint32_t>(m_colorBuffers.size()); }
+	virtual uint32_t GetColorBufferCount() const override { return static_cast<uint32_t>(m_colorBuffers.size()); }
 
-	virtual rhi::Texture2D* GetDepthStencilBuffer() override { return GetDepthStencilBufferImpl(); }
+	virtual rhi::Texture2D* GetDepthStencilBuffer() const override { return GetDepthStencilBufferImpl(); }
 
 	virtual bool IsDepthStencilUsed() const override { return m_depthStencilBuffer.is_not_null(); }
 
@@ -163,9 +210,9 @@ public:
 
 	~RenderTarget();
 
-	::Texture2D* GetColorBufferImplByIndex(rhi::RTIndex index);
+	::Texture2D* GetColorBufferImplByIndex(rhi::RTIndex index) const;
 
-	::Texture2D* GetDepthStencilBufferImpl() { return m_depthStencilBuffer; }
+	::Texture2D* GetDepthStencilBufferImpl() const { return m_depthStencilBuffer; }
 
 private:
 	const uint32_t m_width;
@@ -179,7 +226,7 @@ class SwapChain : public rhi::SwapChain
 public:
 	virtual void Release() override { delete this; }
 
-	virtual rhi::RenderTarget* GetBackBuffer() override { return m_renderTarget; }
+	virtual rhi::RenderTarget* GetBackBuffer() const override { return m_renderTarget; }
 
 	virtual uint32_t GetWidth() const override { return m_windowWidth; }
 
@@ -225,16 +272,17 @@ public:
 
 	virtual rhi::Texture2D* CreateTexture2D(rhi::TextureFormat format, rhi::ResourceUsage usage, uint32_t binding, uint32_t width, uint32_t height) override;
 
-	virtual rhi::ShaderProgram* CreateShaderProgram(
-		const char* vsSource, const char* vsEntry,
-		const char* psSource, const char* psEntry,
-		rhi::InputLayout* layouts, uint32_t layoutCount) override;
+	virtual rhi::VertexShader* CreateVertexShader(const char* source, const char* entry, rhi::Semantic* layouts, rhi::SemanticCount layoutCount) override;
+
+	virtual rhi::PixelShader* CreatePixelShader(const char* source, const char* entry) override;
+
+	virtual rhi::ShaderProgram* LinkShader(rhi::VertexShader* vertexShader, rhi::PixelShader* pixelShader)  override;
 
 	virtual rhi::BlendState* CreateBlendState(bool enabled, rhi::BlendFactor source, rhi::BlendFactor dest, rhi::BlendOperator op) override;
 
 	virtual rhi::TextureSampler* CreateTextureSampler(rhi::SamplerFilter filter, rhi::TextureAddress addressU, rhi::TextureAddress addressV) override;
 
-	virtual rhi::RenderTarget* CreateRenderTarget(uint32_t width, uint32_t height, rhi::TextureFormat* rtFormats, rhi::RTCountRange rtCount, bool useDpethStencil) override;
+	virtual rhi::RenderTarget* CreateRenderTarget(uint32_t width, uint32_t height, rhi::TextureFormat* rtFormats, rhi::RTCount rtCount, bool useDpethStencil) override;
 
 public:
 	Device(ID3D11Device& d3dDevice);

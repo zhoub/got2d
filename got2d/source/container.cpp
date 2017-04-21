@@ -203,7 +203,7 @@ void SceneNodeContainer::Collect()
 
 ::SceneNode* SceneNodeContainer::At(uint32_t index) const
 {
-	ENSURE(index < m_children.size());
+	ENSURE(index < GetCount());
 	return m_children.at(index);
 }
 
@@ -243,7 +243,7 @@ void SceneNodeContainer::Remove(::SceneNode& child)
 
 bool SceneNodeContainer::Move(uint32_t from, uint32_t to)
 {
-	ENSURE(to < m_children.size() && from < m_children.size());
+	ENSURE(to < GetCount() && from < GetCount());
 	if (from == to)
 		return false;
 

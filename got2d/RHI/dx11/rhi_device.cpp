@@ -193,25 +193,20 @@ ID3DBlob* CompileShaderSource(std::string sourceCodes, std::string entryPoint, s
 	}
 }
 
-rhi::ShaderProgram* Device::CreateShaderProgram(
-	const char* vsSource, const char* vsEntry,
-	const char* psSource, const char* psEntry,
-	rhi::InputLayout* layouts, uint32_t layoutCount)
+rhi::VertexShader* Device::CreateVertexShader(const char* source, const char* entry, rhi::Semantic * layouts, rhi::SemanticCount layoutCount)
 {
-	autor<ID3DBlob> vsBlob = CompileShaderSource(vsSource, vsEntry, "vs_5_0");
-	autor<ID3DBlob> psBlob = CompileShaderSource(psSource, psEntry, "ps_5_0");
 
-	if (vsBlob.is_null() || psBlob.is_null())
+	autor<ID3DBlob> vsBlob = CompileShaderSource(source, entry, "vs_5_0");
+
+	if (vsBlob.is_null())
 		return nullptr;
 
 	ID3D11VertexShader* vertexShader = nullptr;
-	ID3D11PixelShader* pixelShader = nullptr;
 	ID3D11InputLayout* inputLayout = nullptr;
 
 	auto fb = create_fallback([&]
 	{
 		SR(vertexShader);
-		SR(pixelShader);
 		SR(inputLayout);
 	});
 
@@ -224,28 +219,18 @@ rhi::ShaderProgram* Device::CreateShaderProgram(
 		return nullptr;
 	}
 
-	if (S_OK != m_d3dDevice.CreatePixelShader(
-		psBlob->GetBufferPointer(),
-		psBlob->GetBufferSize(),
-		NULL,
-		&pixelShader))
-	{
-		return nullptr;
-	}
-
-	std::vector<D3D11_INPUT_ELEMENT_DESC> m_inputLayouts;
+	std::vector<rhi::Semantic> m_semantics(layouts, layouts + layoutCount);
+	std::vector<D3D11_INPUT_ELEMENT_DESC> m_inputLayouts(layoutCount);
 	for (uint32_t i = 0; i < layoutCount; i++)
 	{
-		rhi::InputLayout& layout = layouts[i];
-		D3D11_INPUT_ELEMENT_DESC elementDesc;
-		elementDesc.SemanticName = layout.SemanticName;
-		elementDesc.SemanticIndex = layout.SemanticIndex;
-		elementDesc.Format = kInputFormat[(int)layout.Format];
-		elementDesc.InputSlot = layout.InputSlot;
-		elementDesc.AlignedByteOffset = (layout.AlignOffset == 0xFFFFFFFF) ? D3D11_APPEND_ALIGNED_ELEMENT : layout.AlignOffset;
-		elementDesc.InputSlotClass = layout.IsInstanced ? D3D11_INPUT_PER_INSTANCE_DATA : D3D11_INPUT_PER_VERTEX_DATA;
-		elementDesc.InstanceDataStepRate = layout.InstanceRepeatRate;
-		m_inputLayouts.push_back(elementDesc);
+		rhi::Semantic& layout = m_semantics[i];
+		m_inputLayouts[i].SemanticName = layout.SemanticName;
+		m_inputLayouts[i].SemanticIndex = layout.SemanticIndex;
+		m_inputLayouts[i].Format = kInputFormat[(int)layout.Format];
+		m_inputLayouts[i].InputSlot = layout.InputSlot;
+		m_inputLayouts[i].AlignedByteOffset = (layout.AlignOffset == 0xFFFFFFFF) ? D3D11_APPEND_ALIGNED_ELEMENT : layout.AlignOffset;
+		m_inputLayouts[i].InputSlotClass = layout.IsInstanced ? D3D11_INPUT_PER_INSTANCE_DATA : D3D11_INPUT_PER_VERTEX_DATA;
+		m_inputLayouts[i].InstanceDataStepRate = layout.InstanceRepeatRate;
 	}
 
 	if (S_OK != m_d3dDevice.CreateInputLayout(
@@ -257,7 +242,38 @@ rhi::ShaderProgram* Device::CreateShaderProgram(
 	}
 
 	fb.cancel();
-	return new ::ShaderProgram(*vertexShader, *pixelShader, *inputLayout);
+	return new ::VertexShader(*vertexShader, *inputLayout, std::move(m_semantics));
+}
+
+rhi::PixelShader* Device::CreatePixelShader(const char* source, const char* entry)
+{
+	autor<ID3DBlob> psBlob = CompileShaderSource(source, entry, "ps_5_0");
+
+	if (psBlob.is_null())
+		return nullptr;
+
+	ID3D11PixelShader* pixelShader = nullptr;
+
+	if (S_OK != m_d3dDevice.CreatePixelShader(
+		psBlob->GetBufferPointer(),
+		psBlob->GetBufferSize(),
+		NULL,
+		&pixelShader))
+	{
+		return nullptr;
+	}
+
+	return new ::PixelShader(*pixelShader);
+}
+
+rhi::ShaderProgram* Device::LinkShader(rhi::VertexShader* vertexShader, rhi::PixelShader* pixelShader)
+{
+	auto vertexShaderImpl = reinterpret_cast<::VertexShader*>(vertexShader);
+	auto pixelShaderImpl = reinterpret_cast<::PixelShader*>(pixelShader);
+	if (vertexShaderImpl == nullptr || pixelShaderImpl == nullptr)
+		return nullptr;
+
+	return new ::ShaderProgram(*vertexShaderImpl, *pixelShaderImpl);
 }
 
 rhi::BlendState* Device::CreateBlendState(bool enabled, rhi::BlendFactor source, rhi::BlendFactor dest, rhi::BlendOperator op)
@@ -318,7 +334,7 @@ rhi::TextureSampler* Device::CreateTextureSampler(rhi::SamplerFilter filter, rhi
 	}
 }
 
-rhi::RenderTarget * Device::CreateRenderTarget(uint32_t width, uint32_t height, rhi::TextureFormat * rtFormats, rhi::RTCountRange rtCount, bool useDpethStencil)
+rhi::RenderTarget * Device::CreateRenderTarget(uint32_t width, uint32_t height, rhi::TextureFormat * rtFormats, rhi::RTCount rtCount, bool useDpethStencil)
 {
 	std::vector<::Texture2D*> colorBuffers(rtCount);
 	::Texture2D* dsBuffer = nullptr;

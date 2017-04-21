@@ -26,22 +26,24 @@ g2d::Material* g2d::Material::CreateSimpleColor()
 
 bool Shader::Create(const std::string& vsCode, uint32_t vcbLength, const std::string& psCode, uint32_t pcbLength)
 {
-	autor<rhi::ShaderProgram> shaderProgram = nullptr;
-	autor<rhi::Buffer> vertexConstBuffer = nullptr;
-	autor<rhi::Buffer> pixelConstBuffer = nullptr;
-
-	rhi::InputLayout layouts[3] =
+	rhi::Semantic layouts[3] =
 	{
-		{ "POSITION" , 0, 0, 0xFFFFFFFF, rhi::InputFormat::Float2, false, 0},
+		{ "POSITION" , 0, 0, 0xFFFFFFFF, rhi::InputFormat::Float2, false, 0 },
 		{ "TEXCOORD" , 0, 0, 0xFFFFFFFF, rhi::InputFormat::Float2, false, 0 },
 		{ "COLOR" , 0, 0, 0xFFFFFFFF, rhi::InputFormat::Float4, false, 0 },
 	};
 
-	shaderProgram = GetRenderSystem()->GetDevice()->CreateShaderProgram(
-		vsCode.c_str(), "VSMain",
-		psCode.c_str(), "PSMain",
-		layouts, 3);
+	autor<rhi::VertexShader> vertexShader = GetRenderSystem()->GetDevice()->CreateVertexShader(vsCode.c_str(), "VSMain", layouts, 3);
+	autor<rhi::PixelShader> pixelShader = GetRenderSystem()->GetDevice()->CreatePixelShader(psCode.c_str(), "PSMain");
 
+	if (vertexShader.is_null() || pixelShader.is_null())
+		return false;
+
+	autor<rhi::ShaderProgram> shaderProgram = nullptr;
+	autor<rhi::Buffer> vertexConstBuffer = nullptr;
+	autor<rhi::Buffer> pixelConstBuffer = nullptr;
+
+	shaderProgram = GetRenderSystem()->GetDevice()->LinkShader(vertexShader, pixelShader);
 	if (shaderProgram.is_null())
 		return false;
 
@@ -224,7 +226,7 @@ ShaderLib::~ShaderLib()
 		delete shader.second;
 	}
 	m_shaders.clear();
-	
+
 }
 
 std::string ShaderLib::GetEffectName(const std::string& vsName, const std::string& psName)
@@ -421,7 +423,7 @@ Material::Material(const Material& other)
 
 void Material::SetPass(uint32_t index, Pass* p)
 {
-	ENSURE(index < m_passes.size());
+	ENSURE(index < GetPassCount());
 	m_passes[index] = p;
 }
 
@@ -436,7 +438,7 @@ Material::~Material()
 
 g2d::Pass* Material::GetPassByIndex(uint32_t index) const
 {
-	ENSURE(index < m_passes.size());
+	ENSURE(index < GetPassCount());
 	return m_passes.at(index);
 }
 

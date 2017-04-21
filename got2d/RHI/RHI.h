@@ -106,6 +106,8 @@ namespace rhi
 		constexpr static T Max = TMax;
 		CountRange(T c) : Count(c) { ENSURE(Count >= TMin && Count <= TMax); }
 		operator T() const { return Count; }
+		CountRange operator+(T offset) const { return Count + offset; }
+		CountRange operator-(T offset) const { return Count - offset; }
 	};
 
 	template<uint32_t TEnd> struct Index
@@ -115,12 +117,21 @@ namespace rhi
 		constexpr static uint32_t Max = TEnd - 1;
 		Index(uint32_t i) : Value(i) { ENSURE(Value < TEnd); }
 		operator uint32_t() const { return Value; }
+		Index operator+(uint32_t offset) const { return Value + offset; }
+		Index operator-(uint32_t offset) const { return Value - offset; }
 	};
 
 	constexpr uint32_t MinRenderTarget = 1;
 	constexpr uint32_t MaxRenderTarget = 4;
-	typedef CountRange<uint32_t, MinRenderTarget, MaxRenderTarget> RTCountRange;
+	typedef CountRange<uint32_t, MinRenderTarget, MaxRenderTarget> RTCount;
 	typedef Index<MaxRenderTarget> RTIndex;
+
+
+	constexpr uint32_t MinSemantic = 1;
+	constexpr uint32_t MaxSemantic = 8;
+	typedef CountRange<uint32_t, MinSemantic, MaxSemantic> SemanticCount;
+	typedef Index<MaxSemantic> SemanticIndex;
+
 
 	class Buffer : public RHIObject
 	{
@@ -151,12 +162,12 @@ namespace rhi
 	class RenderTarget : public RHIObject
 	{
 	public:
-		virtual Texture2D* GetColorBufferByIndex(RTIndex index) = 0;
+		virtual Texture2D* GetColorBufferByIndex(RTIndex index) const = 0;
 
-		virtual uint32_t GetColorBufferCount() = 0;
+		virtual uint32_t GetColorBufferCount() const = 0;
 
 		// return nullptr if depth/stencil is not enabled.
-		virtual Texture2D* GetDepthStencilBuffer() = 0;
+		virtual Texture2D* GetDepthStencilBuffer() const = 0;
 
 		virtual bool IsDepthStencilUsed() const = 0;
 
@@ -165,7 +176,49 @@ namespace rhi
 		virtual uint32_t GetHeight() const = 0;
 	};
 
-	class ShaderProgram : public RHIObject { };
+
+	struct Semantic
+	{
+		const char* SemanticName = "";
+		uint32_t SemanticIndex = 0;
+		uint32_t InputSlot = 0;
+		uint32_t AlignOffset = 0xFFFFFFFF;
+		InputFormat Format = InputFormat::Float4;
+		bool IsInstanced = false;
+		uint32_t InstanceRepeatRate = 1;
+	};
+
+	class VertexShader : public RHIObject
+	{
+	public:
+		virtual void AddReference() = 0;
+
+		virtual Semantic GetSemanticByIndex(SemanticIndex index) const = 0;
+
+		virtual SemanticIndex GetSemanticCount() const = 0;
+
+		//virtual uint32_t GetConstantBufferLength() const = 0;
+	};
+
+	class PixelShader : public RHIObject
+	{
+	public:
+		virtual void AddReference() = 0;
+
+		//virtual uint32_t GetConstantBufferLength() const = 0;
+
+		//virtual uint32_t GetTextureSlotByIndex() const = 0;
+
+		//virtual uint32_t GetUsedTextureSlotCount() const = 0;
+	};
+
+	class ShaderProgram : public RHIObject
+	{
+	public:
+		virtual VertexShader* GetVertexShader() const = 0;
+
+		virtual PixelShader* GetPixelShader() const = 0;
+	};
 
 	class BlendState : public RHIObject
 	{
@@ -184,7 +237,7 @@ namespace rhi
 	class SwapChain : public RHIObject
 	{
 	public:
-		virtual RenderTarget* GetBackBuffer() = 0;
+		virtual RenderTarget* GetBackBuffer() const = 0;
 
 		virtual uint32_t GetWidth() const = 0;
 
@@ -199,17 +252,6 @@ namespace rhi
 		virtual void Present() = 0;
 	};
 
-	struct InputLayout
-	{
-		const char* SemanticName = "";
-		uint32_t SemanticIndex = 0;
-		uint32_t InputSlot = 0;
-		uint32_t AlignOffset = 0xFFFFFFFF;
-		InputFormat Format = InputFormat::Float4;
-		bool IsInstanced = false;
-		uint32_t InstanceRepeatRate = 1;
-	};
-
 	class Device : public RHIObject
 	{
 	public:
@@ -220,16 +262,17 @@ namespace rhi
 
 		virtual Texture2D* CreateTexture2D(TextureFormat format, ResourceUsage usage, uint32_t binding, uint32_t width, uint32_t height) = 0;
 
-		virtual ShaderProgram* CreateShaderProgram(
-			const char* vsSource, const char* vsEntry,
-			const char* psSource, const char* psEntry,
-			InputLayout* layouts, uint32_t layoutCount) = 0;
+		virtual VertexShader* CreateVertexShader(const char* source, const char* entry, Semantic* layouts, SemanticCount layoutCount) = 0;
+
+		virtual PixelShader* CreatePixelShader(const char* source, const char* entry) = 0;
+
+		virtual ShaderProgram* LinkShader(VertexShader*, PixelShader*) = 0;
 
 		virtual BlendState* CreateBlendState(bool enabled, BlendFactor source, BlendFactor dest, BlendOperator op) = 0;
 
 		virtual TextureSampler* CreateTextureSampler(SamplerFilter filter, TextureAddress addressU, TextureAddress addressV) = 0;
 
-		virtual RenderTarget* CreateRenderTarget(uint32_t width, uint32_t height, TextureFormat* rtFormats, RTCountRange rtCount, bool useDpethStencil) = 0;
+		virtual RenderTarget* CreateRenderTarget(uint32_t width, uint32_t height, TextureFormat* rtFormats, RTCount rtCount, bool useDpethStencil) = 0;
 	};
 
 	struct Viewport

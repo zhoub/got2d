@@ -54,21 +54,6 @@ Buffer::~Buffer()
 	m_buffer.Release();
 }
 
-ShaderProgram::ShaderProgram(ID3D11VertexShader& vertexShader, ID3D11PixelShader& pixelShader, ID3D11InputLayout& inputLayout)
-	: m_vertexShader(vertexShader)
-	, m_pixelShader(pixelShader)
-	, m_inputLayout(inputLayout)
-{
-
-}
-
-ShaderProgram::~ShaderProgram()
-{
-	m_vertexShader.Release();
-	m_pixelShader.Release();
-	m_inputLayout.Release();
-}
-
 TextureSampler::TextureSampler(ID3D11SamplerState& samplerState)
 	: m_samplerState(samplerState)
 {
