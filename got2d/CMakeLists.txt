@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 3.8)
-
 set(GOT2D_INCLUDE_FILES
 	include/g2dconfig.h
 	include/g2dengine.h
@@ -82,8 +80,10 @@ list(APPEND GOT2D_SOURCE_FILES
 
 include_directories(got2d ../extern/res)
 add_library(got2d SHARED ${GOT2D_INCLUDE_FILES} ${GOT2D_SOURCE_FILES})
+add_dependencies(got2d gml)
 set_target_properties(got2d PROPERTIES COMPILE_DEFINITIONS GOT2D_EXPORTS)
-target_link_libraries(got2d res gml)
+target_include_directories(got2d PRIVATE ${GML_STAGE_DIR}/include)
+target_link_libraries(got2d res)
 if(MSVC)
 target_link_libraries(got2d d3d11.lib dxgi.lib d3dcompiler.lib)
 endif(MSVC)
