@@ -140,6 +140,12 @@ namespace rhi
 		virtual uint32_t GetHeight() const = 0;
 
 		virtual TextureFormat GetFormat() const = 0;
+
+		virtual bool IsRenderTarget() const = 0;
+
+		virtual bool IsShaderResource() const = 0;
+
+		virtual bool IsDepthStencil() const = 0;
 	};
 
 	class RenderTarget : public RHIObject
@@ -159,7 +165,6 @@ namespace rhi
 		virtual uint32_t GetHeight() const = 0;
 	};
 
-	class ShaderResourceView : public RHIObject { };
 	class ShaderProgram : public RHIObject { };
 
 	class BlendState : public RHIObject
@@ -215,8 +220,6 @@ namespace rhi
 
 		virtual Texture2D* CreateTexture2D(TextureFormat format, ResourceUsage usage, uint32_t binding, uint32_t width, uint32_t height) = 0;
 
-		virtual ShaderResourceView* CreateShaderResourceView(Texture2D* texture2D) = 0;
-
 		virtual ShaderProgram* CreateShaderProgram(
 			const char* vsSource, const char* vsEntry,
 			const char* psSource, const char* psEntry,
@@ -269,7 +272,7 @@ namespace rhi
 
 		virtual void SetPixelShaderConstantBuffers(uint32_t startSlot, Buffer** buffers, uint32_t bufferCount) = 0;
 
-		virtual void SetShaderResources(uint32_t startSlot, ShaderResourceView** srViews, uint32_t resCount) = 0;
+		virtual void SetTextures(uint32_t startSlot, Texture2D** textures, uint32_t resCount) = 0;
 
 		virtual void SetBlendState(BlendState* state) = 0;
 
@@ -285,7 +288,7 @@ namespace rhi
 
 		virtual void Unmap(Texture2D* buffer) = 0;
 
-		virtual void GenerateMipmaps(ShaderResourceView* srView) = 0;
+		virtual void GenerateMipmaps(Texture2D* texture) = 0;
 	};
 
 	struct RHICreationResult

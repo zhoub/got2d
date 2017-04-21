@@ -31,20 +31,38 @@ Device::~Device()
 	ID3D11Texture2D* texture = nullptr;
 	ID3D11RenderTargetView* rtView = nullptr;
 	ID3D11DepthStencilView* dsView = nullptr;
+	ID3D11ShaderResourceView* srView = nullptr;
 	auto fb = create_fallback([&]
 	{
 		SR(rtView);
 		SR(dsView);
 		SR(texture);
+		SR(srView);
 	});
+
 	if (S_OK == m_d3dDevice.CreateTexture2D(&colorTexDesc, NULL, &texture))
 	{
+		if (binding & D3D11_BIND_SHADER_RESOURCE)
+		{
+			D3D11_SHADER_RESOURCE_VIEW_DESC viewDesc;
+			::ZeroMemory(&viewDesc, sizeof(viewDesc));
+			viewDesc.Format = colorTexDesc.Format;
+			viewDesc.ViewDimension = D3D_SRV_DIMENSION_TEXTURE2D;
+			viewDesc.Texture2D.MipLevels = -1;
+			viewDesc.Texture2D.MostDetailedMip = 0;
+
+			if (S_OK != m_d3dDevice.CreateShaderResourceView(texture, &viewDesc, &srView))
+			{
+				return nullptr;
+			}
+		}
+
 		if ((binding & D3D11_BIND_RENDER_TARGET) > 0)
 		{
 			if (S_OK == m_d3dDevice.CreateRenderTargetView(texture, NULL, &rtView))
 			{
 				fb.cancel();
-				return new ::Texture2D(*texture, *rtView, format, width, height);
+				return new ::Texture2D(*texture, *rtView, srView, format, width, height);
 			}
 		}
 		else if ((binding & D3D11_BIND_DEPTH_STENCIL) > 0)
@@ -52,13 +70,13 @@ Device::~Device()
 			if (S_OK == m_d3dDevice.CreateDepthStencilView(texture, NULL, &dsView))
 			{
 				fb.cancel();
-				return new ::Texture2D(*texture, *dsView, format, width, height);
+				return new ::Texture2D(*texture, *dsView, srView, format, width, height);
 			}
 		}
 		else
 		{
 			fb.cancel();
-			return new ::Texture2D(*texture, format, width, height);
+			return new ::Texture2D(*texture, srView, format, width, height);
 		}
 	}
 	return nullptr;
@@ -146,29 +164,6 @@ rhi::Buffer* Device::CreateBuffer(rhi::BufferBinding binding, rhi::ResourceUsage
 rhi::Texture2D* Device::CreateTexture2D(rhi::TextureFormat format, rhi::ResourceUsage usage, uint32_t binding, uint32_t width, uint32_t height)
 {
 	return CreateTexture2DImpl(format, usage, GetTextureBindFlag(binding), width, height);
-}
-
-rhi::ShaderResourceView* Device::CreateShaderResourceView(rhi::Texture2D* texture2D)
-{
-	auto textureImpl = reinterpret_cast<::Texture2D*>(texture2D);
-	ENSURE(textureImpl != nullptr);
-
-	D3D11_SHADER_RESOURCE_VIEW_DESC viewDesc;
-	::ZeroMemory(&viewDesc, sizeof(viewDesc));
-	viewDesc.Format = kTextureFormat[(int)textureImpl->GetFormat()];
-	viewDesc.ViewDimension = D3D_SRV_DIMENSION_TEXTURE2D;
-	viewDesc.Texture2D.MipLevels = -1;
-	viewDesc.Texture2D.MostDetailedMip = 0;
-
-	ID3D11ShaderResourceView* srView = nullptr;
-	if (S_OK == m_d3dDevice.CreateShaderResourceView(textureImpl->GetRaw(), &viewDesc, &srView))
-	{
-		return new ::ShaderResourceView(*srView);
-	}
-	else
-	{
-		return nullptr;
-	}
 }
 
 ID3DBlob* CompileShaderSource(std::string sourceCodes, std::string entryPoint, std::string profileTarget)

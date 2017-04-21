@@ -24,7 +24,7 @@ void Context::ClearRenderTarget(rhi::RenderTarget * renderTarget, gml::color4 cl
 			renderTargetImpl->GetColorBufferImplByIndex(i)->GetRTView(),
 			static_cast<float*>(clearColor));
 	}
-	
+
 }
 
 void Context::SetViewport(const rhi::Viewport& viewport)
@@ -56,7 +56,7 @@ void Context::SetRenderTarget(rhi::RenderTarget* renderTarget)
 		m_rtViews[i] = renderTargetImpl->GetColorBufferImplByIndex(i)->GetRTView();
 	}
 
-	ID3D11DepthStencilView* dsView = renderTargetImpl->IsDepthStencilUsed() ? 
+	ID3D11DepthStencilView* dsView = renderTargetImpl->IsDepthStencilUsed() ?
 		renderTargetImpl->GetDepthStencilBufferImpl()->GetDSView() : nullptr;
 
 	m_d3dContext.OMSetRenderTargets(colorBufferCount, &(m_rtViews[0]), dsView);
@@ -143,20 +143,20 @@ void Context::SetShaderProgram(rhi::ShaderProgram * program)
 	m_d3dContext.PSSetShader(programImpl->GetPixelShader(), nullptr, 0);
 }
 
-void Context::SetShaderResources(uint32_t startSlot, rhi::ShaderResourceView** srViews, uint32_t resCount)
+void Context::SetTextures(uint32_t startSlot, rhi::Texture2D** textures, uint32_t resCount)
 {
-	ENSURE(srViews != nullptr);
+	ENSURE(textures != nullptr);
 
 	if (m_srViews.size() < resCount)
 	{
 		m_srViews.resize(resCount);
 	}
 
-	::ShaderResourceView* srViewImpl = nullptr;
+	::Texture2D* texImpl = nullptr;
 	for (uint32_t i = 0; i < resCount; i++)
 	{
-		srViewImpl = reinterpret_cast<::ShaderResourceView*>(srViews[i]);
-		m_srViews[i] = srViewImpl == nullptr ? nullptr : srViewImpl->GetRaw();
+		texImpl = reinterpret_cast<::Texture2D*>(textures[i]);
+		m_srViews[i] = (texImpl == nullptr || !texImpl->IsShaderResource()) ? nullptr : texImpl->GetSRView();
 	}
 	m_d3dContext.PSSetShaderResources(startSlot, resCount, &(m_srViews[0]));
 }
@@ -246,9 +246,9 @@ void Context::Unmap(ID3D11Resource* resource, UINT subResource)
 	m_d3dContext.Unmap(resource, subResource);
 }
 
-void Context::GenerateMipmaps(rhi::ShaderResourceView* srView)
+void Context::GenerateMipmaps(rhi::Texture2D* srView)
 {
-	auto srViewImpl = reinterpret_cast<::ShaderResourceView*>(srView);
-	ENSURE(srViewImpl != nullptr);
-	m_d3dContext.GenerateMips(srViewImpl->GetRaw());
+	auto texImpl = reinterpret_cast<::Texture2D*>(srView);
+	ENSURE(texImpl != nullptr && texImpl->IsShaderResource());
+	m_d3dContext.GenerateMips(texImpl->GetSRView());
 }

@@ -54,16 +54,6 @@ Buffer::~Buffer()
 	m_buffer.Release();
 }
 
-ShaderResourceView::ShaderResourceView(ID3D11ShaderResourceView & srView)
-	: m_srView(srView)
-{
-}
-
-ShaderResourceView::~ShaderResourceView()
-{
-	m_srView.Release();
-}
-
 ShaderProgram::ShaderProgram(ID3D11VertexShader& vertexShader, ID3D11PixelShader& pixelShader, ID3D11InputLayout& inputLayout)
 	: m_vertexShader(vertexShader)
 	, m_pixelShader(pixelShader)
@@ -105,37 +95,40 @@ BlendState::~BlendState()
 	m_blendState.Release();
 }
 
-Texture2D::Texture2D(ID3D11Texture2D& texture, rhi::TextureFormat format, uint32_t width, uint32_t height)
+Texture2D::Texture2D(ID3D11Texture2D& texture, ID3D11ShaderResourceView* srView, rhi::TextureFormat format, uint32_t width, uint32_t height)
 	: m_texture(texture)
+	, m_srView(srView)
 	, m_rtView(nullptr)
 	, m_dsView(nullptr)
-	, m_textureWidth(width)
-	, m_textureHeight(height)
-	, m_textureFormat(format)
+	, m_width(width)
+	, m_height(height)
+	, m_format(format)
 {
 }
 
-Texture2D::Texture2D(ID3D11Texture2D& texture, ID3D11RenderTargetView& view, rhi::TextureFormat format, uint32_t width, uint32_t height)
+Texture2D::Texture2D(ID3D11Texture2D& texture, ID3D11RenderTargetView& view, ID3D11ShaderResourceView* srView, rhi::TextureFormat format, uint32_t width, uint32_t height)
 	: m_texture(texture)
+	, m_srView(srView)
 	, m_rtView(&view)
 	, m_dsView(nullptr)
-	, m_textureWidth(width)
-	, m_textureHeight(height)
-	, m_textureFormat(format)
+	, m_width(width)
+	, m_height(height)
+	, m_format(format)
 {
 }
 
-Texture2D::Texture2D(ID3D11Texture2D & texture, ID3D11DepthStencilView & view, rhi::TextureFormat format, uint32_t width, uint32_t height)
+Texture2D::Texture2D(ID3D11Texture2D & texture, ID3D11DepthStencilView & view, ID3D11ShaderResourceView* srView, rhi::TextureFormat format, uint32_t width, uint32_t height)
 	: m_texture(texture)
+	, m_srView(srView)
 	, m_rtView(nullptr)
 	, m_dsView(&view)
-	, m_textureWidth(width)
-	, m_textureHeight(height)
-	, m_textureFormat(format)
+	, m_width(width)
+	, m_height(height)
+	, m_format(format)
 {
 }
 
 Texture2D::~Texture2D()
 {
-	m_texture.Release();	
+	m_texture.Release();
 }

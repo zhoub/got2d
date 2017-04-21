@@ -37,18 +37,24 @@ class Texture2D : public rhi::Texture2D
 public:
 	virtual void Release() override { delete this; }
 
-	virtual uint32_t GetWidth() const override { return m_textureWidth; }
+	virtual uint32_t GetWidth() const override { return m_width; }
 
-	virtual uint32_t GetHeight() const override { return m_textureHeight; }
+	virtual uint32_t GetHeight() const override { return m_height; }
 
-	virtual rhi::TextureFormat GetFormat() const override { return m_textureFormat; }
+	virtual rhi::TextureFormat GetFormat() const override { return m_format; }
+
+	virtual bool IsRenderTarget() const override { return m_rtView.is_not_null(); }
+
+	virtual bool IsShaderResource() const override { return m_srView.is_not_null(); }
+
+	virtual bool IsDepthStencil() const override { return m_dsView.is_not_null(); }
 
 public:
-	Texture2D(ID3D11Texture2D& texture, rhi::TextureFormat format, uint32_t width, uint32_t height);
+	Texture2D(ID3D11Texture2D& texture, ID3D11ShaderResourceView* srView, rhi::TextureFormat format, uint32_t width, uint32_t height);
 
-	Texture2D(ID3D11Texture2D& texture, ID3D11RenderTargetView& view, rhi::TextureFormat format, uint32_t width, uint32_t height);
+	Texture2D(ID3D11Texture2D& texture, ID3D11RenderTargetView& view, ID3D11ShaderResourceView* srView, rhi::TextureFormat format, uint32_t width, uint32_t height);
 
-	Texture2D(ID3D11Texture2D& texture, ID3D11DepthStencilView& view, rhi::TextureFormat format, uint32_t width, uint32_t height);
+	Texture2D(ID3D11Texture2D& texture, ID3D11DepthStencilView& view, ID3D11ShaderResourceView* srView, rhi::TextureFormat format, uint32_t width, uint32_t height);
 
 	~Texture2D();
 
@@ -58,28 +64,16 @@ public:
 
 	ID3D11DepthStencilView* GetDSView() { return m_dsView; }
 
+	ID3D11ShaderResourceView* GetSRView() { return m_srView; }
+
 private:
 	ID3D11Texture2D& m_texture;
+	autor<ID3D11ShaderResourceView> m_srView = nullptr;
 	autor<ID3D11RenderTargetView> m_rtView = nullptr;
 	autor<ID3D11DepthStencilView> m_dsView = nullptr;
-	const uint32_t m_textureWidth;
-	const uint32_t m_textureHeight;
-	rhi::TextureFormat m_textureFormat;
-};
-
-class ShaderResourceView : public rhi::ShaderResourceView
-{
-public:
-	virtual void Release() override { delete this; }
-public:
-	ShaderResourceView(ID3D11ShaderResourceView& rtView);
-
-	~ShaderResourceView();
-
-	ID3D11ShaderResourceView* GetRaw() { return &m_srView; }
-
-private:
-	ID3D11ShaderResourceView& m_srView;
+	const uint32_t m_width;
+	const uint32_t m_height;
+	rhi::TextureFormat m_format;
 };
 
 class ShaderProgram : public rhi::ShaderProgram
@@ -215,7 +209,7 @@ private:
 	IDXGISwapChain& m_swapChain;
 	autor<::RenderTarget> m_renderTarget = nullptr;
 	uint32_t m_windowWidth = 0;
-	uint32_t m_windowHeight = 0;	
+	uint32_t m_windowHeight = 0;
 	const bool m_useDepthStencil;
 	bool m_fullscreen = false;
 };
@@ -230,8 +224,6 @@ public:
 	virtual rhi::Buffer* CreateBuffer(rhi::BufferBinding binding, rhi::ResourceUsage usage, uint32_t bufferLength) override;
 
 	virtual rhi::Texture2D* CreateTexture2D(rhi::TextureFormat format, rhi::ResourceUsage usage, uint32_t binding, uint32_t width, uint32_t height) override;
-
-	virtual rhi::ShaderResourceView* CreateShaderResourceView(rhi::Texture2D* texture2D) override;
 
 	virtual rhi::ShaderProgram* CreateShaderProgram(
 		const char* vsSource, const char* vsEntry,
@@ -278,7 +270,7 @@ public:
 
 	virtual void SetPixelShaderConstantBuffers(uint32_t startSlot, rhi::Buffer** buffers, uint32_t bufferCount) override;
 
-	virtual void SetShaderResources(uint32_t startSlot, rhi::ShaderResourceView** srViews, uint32_t resCount) override;
+	virtual void SetTextures(uint32_t startSlot, rhi::Texture2D** textures, uint32_t resCount) override;
 
 	virtual void SetBlendState(rhi::BlendState* state) override;
 
@@ -294,7 +286,7 @@ public:
 
 	virtual void Unmap(rhi::Texture2D* buffer) override;
 
-	virtual void GenerateMipmaps(rhi::ShaderResourceView* srView) override;
+	virtual void GenerateMipmaps(rhi::Texture2D* textures) override;
 
 public:
 	Context(ID3D11DeviceContext& d3dContext);

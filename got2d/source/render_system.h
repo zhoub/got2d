@@ -98,7 +98,6 @@ public:
 	void Destroy();
 
 	autor<rhi::Texture2D> m_texture = nullptr;
-	autor<rhi::ShaderResourceView> m_shaderView = nullptr;
 	uint32_t m_width = 0;
 	uint32_t m_height = 0;
 };
@@ -324,13 +323,13 @@ private:
 	autor<rhi::Device> m_device = nullptr;
 	autor<rhi::Context> m_context = nullptr;
 	autor<rhi::SwapChain> m_swapChain = nullptr;
-
-	rhi::RenderTarget* m_backBufferRT = nullptr;
 	autor<rhi::RenderTarget> m_renderTarget = nullptr;
 	autor<rhi::Buffer> m_sceneConstBuffer = nullptr;
+	rhi::RenderTarget* m_backBufferRT = nullptr;
 	rhi::Viewport m_viewport;
 	std::map<g2d::BlendMode, rhi::BlendState*> m_blendModes;
-	std::vector<rhi::TextureSampler*> m_textureSampler;
+	std::vector<rhi::TextureSampler*> m_textureSamplers;
+	std::vector<rhi::Texture2D*> m_textures;
 
 	gml::color4 m_bkColor = gml::color4::blue();
 

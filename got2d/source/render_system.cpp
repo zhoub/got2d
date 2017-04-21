@@ -142,7 +142,7 @@ void RenderSystem::Destroy()
 	m_renderTarget.release();
 	m_swapChain.release();
 	m_device.release();
-	m_context.release();	
+	m_context.release();
 
 	if (Instance == this)
 	{
@@ -279,26 +279,35 @@ void RenderSystem::FlushBatch(Mesh& mesh, g2d::Material& material)
 
 			if (pass->GetTextureCount() > 0)
 			{
-				std::vector<rhi::ShaderResourceView*> views(pass->GetTextureCount());
-				m_textureSampler.clear();
+				if (m_textures.size() < pass->GetTextureCount())
+				{
+					m_textures.resize(pass->GetTextureCount());
+					m_textureSamplers.resize(pass->GetTextureCount());
+				}
 				for (uint32_t t = 0; t < pass->GetTextureCount(); t++)
 				{
 					auto timpl = reinterpret_cast<::Texture*>(pass->GetTextureByIndex(t));
-					std::string textureName = (timpl == nullptr) ? "" : timpl->GetResourceName();
-					auto texture = m_texPool.GetTexture(textureName);
-					if (texture)
+					if (timpl != nullptr)
 					{
-						views[t] = texture->m_shaderView;
+						auto texture = m_texPool.GetTexture(timpl->GetResourceName());
+						if (texture && texture->m_texture->IsShaderResource())
+						{
+							m_textures[t] = texture->m_texture;
+						}
+						else
+						{
+							m_textures[t] = m_texPool.GetDefaultTexture().m_texture;
+						}
 					}
 					else
 					{
-						views[t] = nullptr;
+						m_textures[t] = m_texPool.GetDefaultTexture().m_texture;
 					}
-					m_textureSampler.push_back(nullptr);
+					m_textureSamplers[t] = nullptr;
 				}
 
-				m_context->SetShaderResources(0, &(views[0]), views.size());
-				m_context->SetTextureSampler(0, &(m_textureSampler[0]), m_textureSampler.size());
+				m_context->SetTextures(0, &(m_textures[0]), pass->GetTextureCount());
+				m_context->SetTextureSampler(0, &(m_textureSamplers[0]), pass->GetTextureCount());
 			}
 
 			m_context->DrawIndexed(rhi::Primitive::TriangleList, mesh.GetIndexCount(), 0, 0);

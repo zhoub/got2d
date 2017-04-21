@@ -115,13 +115,13 @@ bool SwapChain::CreateRenderTarget()
 		D3D11_TEXTURE2D_DESC bbDesc;
 		backBuffer->GetDesc(&bbDesc);
 		std::vector<::Texture2D*> colorBuffers(1);
-		colorBuffers[0] = new ::Texture2D(*backBuffer, *rtView,
+		colorBuffers[0] = new ::Texture2D(*backBuffer, *rtView, nullptr,
 			GetTextureFormatDX11(bbDesc.Format),
 			bbDesc.Width, bbDesc.Height);
 
 		fbWhenCreateRTViewFail.cancel();
 		if (m_useDepthStencil)
-		{	
+		{
 			auto fbWhenCreateDSFail = create_fallback([&]
 			{
 				colorBuffers[0]->Release();

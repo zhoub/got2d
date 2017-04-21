@@ -44,7 +44,6 @@ bool Texture2D::Create(uint32_t width, uint32_t height)
 		return false;
 
 	autor<rhi::Texture2D> texturePtr = nullptr;
-	autor<rhi::ShaderResourceView> shaderResourceViewPtr = nullptr;
 
 	texturePtr = GetRenderSystem()->GetDevice()->CreateTexture2D(
 		rhi::TextureFormat::RGBA,
@@ -56,14 +55,7 @@ bool Texture2D::Create(uint32_t width, uint32_t height)
 		return false;
 	}
 
-	shaderResourceViewPtr = GetRenderSystem()->GetDevice()->CreateShaderResourceView(texturePtr);
-	if (shaderResourceViewPtr.is_null())
-	{
-		return false;
-	}
-
 	m_texture = std::move(texturePtr);
-	m_shaderView = std::move(shaderResourceViewPtr);
 	m_width = width;
 	m_height = height;
 	return true;
@@ -101,14 +93,13 @@ void Texture2D::UploadImage(uint8_t* data, bool hasAlpha)
 		}
 
 		GetRenderSystem()->GetContext()->Unmap(m_texture);
-		GetRenderSystem()->GetContext()->GenerateMipmaps(m_shaderView);
+		GetRenderSystem()->GetContext()->GenerateMipmaps(m_texture);
 	}
 }
 
 void Texture2D::Destroy()
 {
 	m_texture.release();
-	m_shaderView.release();
 	m_width = 0;
 	m_height = 0;
 }
