@@ -88,20 +88,6 @@ private:
 	std::string m_resPath;
 };
 
-class Texture2D
-{
-public:
-	bool Create(uint32_t width, uint32_t height);
-
-	void UploadImage(uint8_t* data, bool hasAlpha);
-
-	void Destroy();
-
-	autor<rhi::Texture2D> m_texture = nullptr;
-	uint32_t m_width = 0;
-	uint32_t m_height = 0;
-};
-
 class TexturePool
 {
 public:
@@ -109,15 +95,15 @@ public:
 
 	void Destroy();
 
-	Texture2D* GetTexture(const std::string& resource);
+	rhi::Texture2D* GetTexture(const std::string& resource);
 
-	Texture2D& GetDefaultTexture() { return m_defaultTexture; }
+	rhi::Texture2D* GetDefaultTexture() { return m_defaultTexture; }
 
 private:
 	bool LoadTextureFromFile(std::string resourcePath);
 
-	std::map<std::string, Texture2D*> m_textures;
-	Texture2D m_defaultTexture;
+	std::map<std::string, rhi::Texture2D*> m_textures;
+	autor<rhi::Texture2D> m_defaultTexture = nullptr;
 };
 
 class VSData

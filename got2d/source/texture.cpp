@@ -7,7 +7,8 @@ g2d::Texture* g2d::Texture::LoadFromFile(const char* path)
 	return ::GetRenderSystem()->CreateTextureFromFile(resourcePath.c_str());
 }
 
-Texture::Texture(std::string resPath) : m_resPath(std::move(resPath))
+Texture::Texture(std::string resPath)
+	: m_resPath(std::move(resPath))
 {
 
 }
@@ -38,39 +39,17 @@ void Texture::Release()
 	}
 }
 
-bool Texture2D::Create(uint32_t width, uint32_t height)
+void UploadImageToTexture(rhi::Texture2D* texture, uint8_t* data, bool hasAlpha)
 {
-	if (width == 0 || height == 0)
-		return false;
-
-	autor<rhi::Texture2D> texturePtr = nullptr;
-
-	texturePtr = GetRenderSystem()->GetDevice()->CreateTexture2D(
-		rhi::TextureFormat::RGBA,
-		rhi::ResourceUsage::Dynamic,
-		rhi::TextureBinding::ShaderResource,
-		width, height);
-	if (texturePtr.is_null())
-	{
-		return false;
-	}
-
-	m_texture = std::move(texturePtr);
-	m_width = width;
-	m_height = height;
-	return true;
-}
-
-void Texture2D::UploadImage(uint8_t* data, bool hasAlpha)
-{
-	auto mappedResouce = GetRenderSystem()->GetContext()->Map(m_texture);
+	auto mappedResouce = GetRenderSystem()->GetContext()->Map(texture);
 	if (mappedResouce.success)
 	{
 		uint8_t* colorBuffer = static_cast<uint8_t*>(mappedResouce.data);
 		if (hasAlpha)
 		{
-			int srcPitch = m_width * 4;
-			for (uint32_t i = 0; i < m_height; i++)
+			auto srcPitch = texture->GetWidth() * 4;
+			auto height = texture->GetHeight();
+			for (uint32_t i = 0; i < height; i++)
 			{
 				auto dstPtr = colorBuffer + i * mappedResouce.linePitch;
 				auto srcPtr = data + i * srcPitch;
@@ -79,12 +58,16 @@ void Texture2D::UploadImage(uint8_t* data, bool hasAlpha)
 		}
 		else
 		{
-			int srcPitch = m_width * 3;
-			for (uint32_t i = 0; i < m_height; i++)
+
+			auto width = texture->GetWidth();
+			auto height = texture->GetHeight();
+			auto srcPitch = width * 3;
+			for (uint32_t i = 0; i < height; i++)
 			{
 				auto dstPtr = colorBuffer + i * mappedResouce.linePitch;
 				auto srcPtr = data + i * srcPitch;
-				for (uint32_t j = 0; j < m_width; j++)
+
+				for (uint32_t j = 0; j < width; j++)
 				{
 					memcpy(dstPtr + j * 4, srcPtr + j * 3, 3);
 					dstPtr[3 + j * 4] = 255;
@@ -92,16 +75,9 @@ void Texture2D::UploadImage(uint8_t* data, bool hasAlpha)
 			}
 		}
 
-		GetRenderSystem()->GetContext()->Unmap(m_texture);
-		GetRenderSystem()->GetContext()->GenerateMipmaps(m_texture);
+		GetRenderSystem()->GetContext()->Unmap(texture);
+		GetRenderSystem()->GetContext()->GenerateMipmaps(texture);
 	}
-}
-
-void Texture2D::Destroy()
-{
-	m_texture.release();
-	m_width = 0;
-	m_height = 0;
 }
 
 #include "engine.h"
@@ -110,20 +86,24 @@ void Texture2D::Destroy()
 
 bool TexturePool::CreateDefaultTexture()
 {
-	if (m_defaultTexture.Create(2, 2))
+	m_defaultTexture = GetRenderSystem()->GetDevice()->CreateTexture2D(
+		rhi::TextureFormat::RGBA,
+		rhi::ResourceUsage::Dynamic,
+		rhi::TextureBinding::ShaderResource,
+		2, 2);
+
+	if (m_defaultTexture != nullptr)
 	{
 		uint8_t boardData[] =
 		{
 			0,0,0,255,255,255,
 			255,255,255,0,0,0
 		};
-		m_defaultTexture.UploadImage(boardData, false);
-		m_textures.insert(std::make_pair<>("", &m_defaultTexture));
+		UploadImageToTexture(m_defaultTexture, boardData, false);
 		return true;
 	}
 	else
 	{
-		m_defaultTexture.Destroy();
 		return false;
 	}
 }
@@ -142,13 +122,17 @@ bool TexturePool::LoadTextureFromFile(std::string resourcePath)
 
 	if (result)
 	{
-		auto tex = new ::Texture2D();
-		result = tex->Create(img.width, img.height);
-		if (result)
+		auto tex = GetRenderSystem()->GetDevice()->CreateTexture2D(
+			rhi::TextureFormat::RGBA,
+			rhi::ResourceUsage::Dynamic,
+			rhi::TextureBinding::ShaderResource,
+			img.width, img.height);
+		if (tex != nullptr)
 		{
-			tex->UploadImage(img.raw_data, img.has_alpha);
+			UploadImageToTexture(tex, img.raw_data, img.has_alpha);
 			m_textures[resourcePath] = tex;
 		}
+
 		destroy_img_data(img);
 		return result;
 	}
@@ -157,23 +141,21 @@ bool TexturePool::LoadTextureFromFile(std::string resourcePath)
 
 void TexturePool::Destroy()
 {
-	m_textures.erase("");
-	m_defaultTexture.Destroy();
+	m_defaultTexture.release();
 	for (auto& t : m_textures)
 	{
-		t.second->Destroy();
-		delete t.second;
+		t.second->Release();
 	}
 	m_textures.clear();
 }
 
-Texture2D* TexturePool::GetTexture(const std::string& resource)
+rhi::Texture2D* TexturePool::GetTexture(const std::string& resource)
 {
 	if (m_textures.count(resource) == 0)
 	{
 		if (!LoadTextureFromFile(resource))
 		{
-			return nullptr;
+			return m_defaultTexture;
 		}
 	}
 

@@ -289,19 +289,11 @@ void RenderSystem::FlushBatch(Mesh& mesh, g2d::Material& material)
 					auto timpl = reinterpret_cast<::Texture*>(pass->GetTextureByIndex(t));
 					if (timpl != nullptr)
 					{
-						auto texture = m_texPool.GetTexture(timpl->GetResourceName());
-						if (texture && texture->m_texture->IsShaderResource())
-						{
-							m_textures[t] = texture->m_texture;
-						}
-						else
-						{
-							m_textures[t] = m_texPool.GetDefaultTexture().m_texture;
-						}
+						m_textures[t] = m_texPool.GetTexture(timpl->GetResourceName());
 					}
 					else
 					{
-						m_textures[t] = m_texPool.GetDefaultTexture().m_texture;
+						m_textures[t] = m_texPool.GetDefaultTexture();
 					}
 					m_textureSamplers[t] = nullptr;
 				}
